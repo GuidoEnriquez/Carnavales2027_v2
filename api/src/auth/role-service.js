@@ -31,6 +31,10 @@ async function runTransaction(client, operation) {
 }
 
 async function grantRoleWithClient(client, { actorUserId, userId, roleCode }) {
+  if (roleCode === "ADMIN") {
+    await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [lastAdminLockKey]);
+  }
+
   const { rows } = await client.query(
     `INSERT INTO user_role (user_id, role_code)
      VALUES ($1, $2)

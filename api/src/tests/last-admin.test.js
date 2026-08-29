@@ -33,6 +33,9 @@ test("el último ADMIN no puede perder su rol ni eliminarse, pero sí puede hace
 
   try {
     await client.query("BEGIN");
+    await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
+      "carnavales2027_v2_last_admin",
+    ]);
     await client.query("SET LOCAL session_replication_role = 'replica'");
     await client.query("DELETE FROM user_role WHERE role_code = 'ADMIN'");
     await client.query("SET LOCAL session_replication_role = 'origin'");
@@ -123,7 +126,12 @@ test("el último ADMIN no puede perder su rol ni eliminarse, pero sí puede hace
     assert.deepEqual(revocation, { removed: true });
 
     const { rows: remainingRoles } = await client.query(
-      "SELECT user_id FROM user_role WHERE role_code = 'ADMIN' ORDER BY user_id",
+      `SELECT user_id
+       FROM user_role
+       WHERE role_code = 'ADMIN'
+         AND user_id = ANY($1::text[])
+       ORDER BY user_id`,
+      [[firstAdminId, secondAdminId]],
     );
     assert.deepEqual(remainingRoles, [{ user_id: secondAdminId }]);
   } finally {
