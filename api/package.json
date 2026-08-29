@@ -11,10 +11,12 @@
     "start": "node src/server.js",
     "test": "node --test",
     "db:migrate": "node src/db/migrate.js",
+    "auth:migrate": "npx auth@1.6.27 migrate --config src/auth/auth.js --yes",
     "db:seed": "node src/db/seed.js",
     "db:test": "node --test src/db/tests/**/*.test.js"
   },
   "dependencies": {
+    "better-auth": "1.6.27",
     "dotenv": "^16.6.1",
     "express": "^5.1.0",
     "pg": "^8.16.3"
