@@ -79,6 +79,9 @@ Debe permitir registrar, habilitar y asignar jurados; cargar y confirmar puntuac
 - **RF-01q.** EN desarrollo y testing, EL SISTEMA DEBE permitir crear administradores exclusivamente mediante seeds controlados habilitados fuera de producción. EN producción, el primer administrador DEBE crearse mediante un bootstrap explícito, seguro y ejecutable una única vez por un operador.
 - **RF-01r.** UNA VEZ inicializado el sistema, la base de datos DEBE ser la única fuente de verdad para roles. EL SISTEMA DEBE permitir crear o promover administradores únicamente a usuarios autorizados y DEBE auditar toda creación o modificación de privilegios.
 - **RF-01s.** EL SISTEMA DEBE impedir eliminar o degradar al último administrador activo.
+- **RF-01t.** EL SISTEMA DEBE exigir verificación en dos pasos para todos los roles antes de conceder acceso a rutas protegidas, incluido el panel administrativo. Una autenticación de email y contraseña sin OTP verificado NO DEBE considerarse sesión plenamente autorizada.
+- **RF-01u.** EL SISTEMA DEBE usar OTP numérico de seis dígitos, con expiración de cinco minutos y almacenamiento cifrado. En desarrollo el envío puede usar un adaptador de consola; en producción DEBE usar un proveedor de correo configurado y fallar de forma segura si no está disponible.
+- **RF-01v.** CUANDO un usuario complete correctamente la verificación 2FA, EL SISTEMA DEBE rotar su sesión y revocar las sesiones previas conforme a la política de autenticación.
 - **RF-02.** EL SISTEMA DEBE distinguir jornadas de competencia de jornadas sin votación.
 - **RF-03.** CUANDO un usuario se registra o inicia sesión, EL SISTEMA NO DEBE habilitarlo a votar solo por tener correo válido.
 - **RF-04.** EL SISTEMA DEBE habilitar la votación únicamente si existe una asignación activa del jurado para el evento, la noche y la especialidad correspondiente.
@@ -117,6 +120,7 @@ Debe permitir registrar, habilitar y asignar jurados; cargar y confirmar puntuac
 - **RNF-04 — Calidad:** toda regla crítica debe vincularse a test o verificación concreta antes de declararse cumplida.
 - **RNF-05 — Trazabilidad:** cada requisito debe mantener referencia a Jira, Confluence u Obsidian.
 - **RNF-06 — Bootstrap seguro:** la creación inicial de ADMIN en producción debe usar configuración segura de operador, poder ejecutarse una única vez y no exponer secretos ni mecanismos de promoción pública.
+- **RNF-07 — 2FA:** el proveedor y el almacenamiento de OTP deben usar mecanismos criptográficos de Better Auth; ninguna ruta protegida debe depender solo de una sesión primaria sin verificación 2FA.
 
 ## Fuera de alcance inicial
 

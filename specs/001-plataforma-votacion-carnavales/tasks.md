@@ -70,16 +70,18 @@
 
 **Hecho cuando:** ejecutar migraciones dos veces deja la segunda ejecución sin migraciones pendientes y el test lo demuestra.
 
-## T06 — Integrar Better Auth sin modificar su esquema
+## T06 — Integrar Better Auth y 2FA obligatorio sin modificar su esquema
 
-**RF:** RF-01p, RNF-01.  
+**RF:** RF-01p, RF-01t–RF-01v, RNF-01.  
 **Dependencias:** T02, T04, T05.
 
-- Configurar Better Auth con su mecanismo oficial de migración.
+- Configurar Better Auth y su plugin oficial 2FA con OTP cifrado.
 - Mantener la identidad/sesión de Better Auth separada del dominio.
 - Verificar el tipo real de `user.id` antes de crear FKs de aplicación.
+- Configurar el adaptador de OTP: consola en desarrollo/test y proveedor de correo obligatorio en producción.
+- Añadir middleware de sesión plenamente verificada para las rutas protegidas futuras.
 
-**Hecho cuando:** se puede obtener una sesión válida y no se agrega ninguna columna de aplicación a tablas internas de Better Auth.
+**Hecho cuando:** se puede verificar una sesión OTP de seis dígitos en test; una sesión de email/contraseña sin 2FA no accede a rutas protegidas; las migraciones de Better Auth se ejecutan sin modificar sus tablas manualmente.
 
 ## T07 — Crear roles de aplicación y middleware ADMIN
 

@@ -37,6 +37,7 @@ Si cambia un requisito, actualizar primero la spec y sus artefactos derivados. N
 - No hacer push, merge, deploy ni cambios de producción.
 - No ejecutar borrados destructivos de base de datos, esquemas, tablas ni migraciones irreversibles.
 - No crear autoasignación pública del rol ADMIN.
+- Exigir 2FA/OTP verificado para toda ruta protegida; una sesión primaria no basta.
 - No eliminar ni degradar al último ADMIN activo.
 - No implementar votación, nominaciones operativas, sorteo, offline, escrutinio ni actas mientras I1 no las incluya explícitamente.
 

@@ -6,7 +6,7 @@
 
 **Architecture:** Monorepo mínimo con `api/` y `client/`. La API Express expone recursos administrativos versionados bajo `/api/v1`, usa PostgreSQL con migraciones incrementales y aplica autorización ADMIN en el servidor. El cliente React/Vite consume esos contratos y concentra la administración dentro de un backoffice; no contiene reglas de autorización ni de apertura que reemplacen las validaciones transaccionales del servidor.
 
-**Tech Stack:** Node.js 20+, JavaScript ESM, Express, PostgreSQL y `pg`; Better Auth para autenticación; React + Vite para el cliente; `node:test` + PostgreSQL aislada para integración de API/dominio. TypeScript queda fuera de I1 para mantener coherencia con el stack del proyecto anterior y limitar el alcance.
+**Tech Stack:** Node.js 20+, JavaScript ESM, Express, PostgreSQL y `pg`; Better Auth con 2FA/OTP obligatorio para autenticación; React + Vite para el cliente; `node:test` + PostgreSQL aislada para integración de API/dominio. TypeScript queda fuera de I1 para mantener coherencia con el stack del proyecto anterior y limitar el alcance.
 
 ---
 
