@@ -7,6 +7,7 @@ import { createEvent, createNight, getEvent, listEvents, listNights, updateEvent
 import { createCategory, createTroupe, listCategories, updateCategory } from "../modules/troupes/category-service.js";
 import { createSpecialty, listSpecialties, updateSpecialty } from "../modules/specialties/specialty-service.js";
 import { createItem, createRubric, getRubric } from "../modules/rubrics/rubric-service.js";
+import { getReadiness, openEvent } from "../modules/events/event-readiness.service.js";
 
 function createWriteHandler(action, entityType, operation) {
   return async (request, response, next) => {
@@ -46,6 +47,8 @@ export function createEventsRouter({ requireSession }) {
   router.get("/events", async (_request, response, next) => {
     try { response.json(await listEvents()); } catch (error) { next(error); }
   });
+  router.get("/events/:eventId/readiness", async (request,response,next)=>{try{return response.json(await getReadiness({eventId:request.params.eventId}));}catch(error){return next(error);}});
+  router.post("/events/:eventId/open", async (request,response,next)=>{try{const event=await openEvent({eventId:request.params.eventId,actorUserId:request.user.id});return response.json(event);}catch(error){if(error.message==='EVENT_CONFIGURATION_INCOMPLETE')return response.status(409).json({error:{code:error.message,details:error.readiness}});if(error.message==='EVENT_LOCKED')return response.status(409).json({code:error.message});return next(error);}});
   router.get("/events/:eventId", async (request, response, next) => {
     try {
       const event = await getEvent({ eventId: request.params.eventId });
