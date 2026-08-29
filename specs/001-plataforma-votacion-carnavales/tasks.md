@@ -12,8 +12,8 @@
 
 | ID | Estado | Dependencias |
 |---|---|---|
-| T01–T08 | Completadas | Ver tareas individuales |
-| T09–T25 | Pendientes | Ver tareas individuales |
+| T01–T09 | Completadas | Ver tareas individuales |
+| T10–T25 | Pendientes | Ver tareas individuales |
 
 ---
 

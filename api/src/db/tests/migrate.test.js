@@ -29,6 +29,7 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
     filename === "001_extensions.sql"
     || filename === "002_authorization.sql"
     || filename === "003_audit.sql"
+    || filename === "004_bootstrap.sql"
   )));
 
   const status = await getMigrationStatus();
@@ -46,6 +47,11 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
     {
       filename: "003_audit.sql",
       version: "003",
+      applied: true,
+    },
+    {
+      filename: "004_bootstrap.sql",
+      version: "004",
       applied: true,
     },
   ]);

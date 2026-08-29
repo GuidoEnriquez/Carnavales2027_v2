@@ -12,6 +12,7 @@
     "test": "node --test",
     "db:migrate": "node src/db/migrate.js",
     "auth:migrate": "npx auth@1.6.27 migrate --config src/auth/auth.js --yes",
+    "bootstrap:admin": "node src/scripts/bootstrap-admin.js",
     "db:seed": "node src/db/seed.js",
     "db:test": "node --test src/db/tests/**/*.test.js"
   },
