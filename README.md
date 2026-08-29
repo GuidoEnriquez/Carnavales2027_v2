@@ -2,6 +2,10 @@
 
 Plataforma configurable de administración y votación para Carnavales. Goya 2027 es la configuración inicial de referencia, no una restricción del producto.
 
+## Seguridad de cliente
+
+Las rutas y guardas del cliente solo orientan la UX. La autorización real —sesión, 2FA y rol `ADMIN`— se verifica exclusivamente en la API antes de exponer o modificar datos.
+
 ## Estado
 
 El proyecto sigue **Spec-Driven Development (SDD)**. El primer incremento implementará la configuración administrativa de eventos, noches, categorías, comparsas, especialidades, rubros e ítems evaluables.
