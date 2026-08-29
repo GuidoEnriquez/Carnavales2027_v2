@@ -6,6 +6,7 @@ import { getPool } from "../db/pool.js";
 import { createEvent, createNight, getEvent, listEvents, listNights, updateEvent, updateNight } from "../modules/events/event-service.js";
 import { createCategory, createTroupe, listCategories, updateCategory } from "../modules/troupes/category-service.js";
 import { createSpecialty, listSpecialties, updateSpecialty } from "../modules/specialties/specialty-service.js";
+import { createItem, createRubric, getRubric } from "../modules/rubrics/rubric-service.js";
 
 function createWriteHandler(action, entityType, operation) {
   return async (request, response, next) => {
@@ -68,5 +69,8 @@ export function createEventsRouter({ requireSession }) {
   router.get("/events/:eventId/specialties", async (request, response, next) => { try { return response.json(await listSpecialties({ eventId: request.params.eventId })); } catch (error) { return next(error); } });
   router.post("/events/:eventId/specialties", createWriteHandler("SPECIALTY_CREATED", "event_specialty", (client, request) => createSpecialty({ client, eventId: request.params.eventId, ...request.body })));
   router.patch("/specialties/:specialtyId", createWriteHandler("SPECIALTY_UPDATED", "event_specialty", (client, request) => updateSpecialty({ client, specialtyId: request.params.specialtyId, ...request.body })));
+  router.get("/rubrics/:rubricId", async (request,response,next)=>{try{const rubric=await getRubric({rubricId:request.params.rubricId});if(!rubric)return response.status(404).json({code:'RUBRIC_NOT_FOUND'});return response.json(rubric);}catch(error){return next(error);}});
+  router.post("/events/:eventId/rubrics", createWriteHandler("RUBRIC_CREATED", "rubric", (client,request)=>createRubric({client,eventId:request.params.eventId,...request.body})));
+  router.post("/rubrics/:rubricId/items", createWriteHandler("EVALUATION_ITEM_CREATED", "evaluation_item", (client,request)=>createItem({client,rubricId:request.params.rubricId,...request.body})));
   return router;
 }
