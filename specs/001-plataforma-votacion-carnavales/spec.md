@@ -2,8 +2,8 @@
 
 ## Estado
 
-- **Fase SDD:** especificación inicial; en clarificación.
-- **Implementación:** prohibida hasta completar clarificaciones, plan y tareas.
+- **Fase SDD:** implementación de I1; validación final en curso.
+- **Implementación:** autorizada para I1 mediante el plan aprobado y `tasks.md`; el alcance posterior continúa sujeto a clarificación.
 - **Fuentes:** `docs/source-map.md`, especialmente la copia de Confluence C2 en Obsidian.
 
 ## Contexto y objetivo
@@ -140,7 +140,6 @@ Debe permitir registrar, habilitar y asignar jurados; cargar y confirmar puntuac
 
 ## Pendientes de clarificación
 
-- `[NECESITA ACLARACIÓN]` Alcance exacto del Incremento I1 respecto de autenticación, invitaciones y gestión de usuarios.
 - `[NECESITA ACLARACIÓN]` Datos definitivos de los ítems/rubros nominativos, aleatorios y derivados.
 - `[NECESITA ACLARACIÓN]` Regla autorizada para corregir una planilla o un voto confirmado: quién puede hacerlo, en qué ventana, y qué evidencia exige.
 - `[NECESITA ACLARACIÓN]` Semántica exacta de una puntuación 0: qué entidad se marca como no presentada y quién tiene facultad para declararlo.

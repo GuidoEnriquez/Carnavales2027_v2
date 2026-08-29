@@ -1,0 +1,5 @@
+CREATE TABLE configuration_seed (
+  seed_key TEXT PRIMARY KEY,
+  event_id UUID NOT NULL UNIQUE REFERENCES carnival_event(id) ON DELETE RESTRICT,
+  initialized_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

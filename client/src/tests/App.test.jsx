@@ -7,6 +7,8 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.getByRole("heading", { name: "Carnavales 2027" })).toBeInTheDocument();
-    expect(screen.getByText("Iniciá sesión para acceder al panel administrativo.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Correo")).toBeInTheDocument();
+    expect(screen.getByLabelText("Contraseña")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continuar" })).toBeInTheDocument();
   });
 });

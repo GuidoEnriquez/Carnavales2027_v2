@@ -139,6 +139,10 @@ test("verifica OTP cifrado, habilita 2FA y rota la sesión", {
   const cookie = signUpResponse.headers.get("set-cookie").split(";")[0];
   const session = await auth.api.getSession({ headers: new Headers({ cookie }) });
 
+  await auth.api.enableTwoFactor({
+    body: { password: "TestPassword-2026!" },
+    headers: new Headers({ cookie }),
+  });
   await auth.api.sendTwoFactorOTP({
     body: {},
     headers: new Headers({ cookie }),
@@ -165,7 +169,12 @@ test("verifica OTP cifrado, habilita 2FA y rota la sesión", {
     `SELECT id FROM session WHERE "userId" = $1`,
     [session.user.id],
   );
+  const { rows: twoFactorRows } = await getPool().query(
+    `SELECT id FROM "twoFactor" WHERE "userId" = $1`,
+    [session.user.id],
+  );
 
   assert.equal(userRows[0].twoFactorEnabled, true);
+  assert.equal(twoFactorRows.length, 1);
   assert.equal(sessionRows.length, 1);
 });

@@ -39,6 +39,11 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
     || filename === "011_rubrics.sql"
     || filename === "012_nominations.sql"
     || filename === "013_night_schedule.sql"
+    || filename === "014_event_configuration_guard.sql"
+    || filename === "015_configuration_seed.sql"
+    || filename === "016_forbid_event_reassignment.sql"
+    || filename === "017_complete_event_immutability.sql"
+    || filename === "018_require_audited_event_open.sql"
   )));
 
   const status = await getMigrationStatus();
@@ -106,6 +111,31 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
     {
       filename: "013_night_schedule.sql",
       version: "013",
+      applied: true,
+    },
+    {
+      filename: "014_event_configuration_guard.sql",
+      version: "014",
+      applied: true,
+    },
+    {
+      filename: "015_configuration_seed.sql",
+      version: "015",
+      applied: true,
+    },
+    {
+      filename: "016_forbid_event_reassignment.sql",
+      version: "016",
+      applied: true,
+    },
+    {
+      filename: "017_complete_event_immutability.sql",
+      version: "017",
+      applied: true,
+    },
+    {
+      filename: "018_require_audited_event_open.sql",
+      version: "018",
       applied: true,
     },
   ]);

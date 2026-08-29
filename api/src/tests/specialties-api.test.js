@@ -20,6 +20,33 @@ test("API ADMIN mantiene especialidades independientes por evento sin defaults g
     const eventA = await createEvent("Especialidades A"); const eventB = await createEvent("Especialidades B");
     const specialty = await fetch(`${base}/api/v1/events/${eventA.id}/specialties`, { method: "POST", headers, body: JSON.stringify({ name: "Especialidad propia", code: "PROPIA", displayOrder: 1 }) });
     assert.equal(specialty.status, 201);
+    const createdSpecialty = await specialty.json();
+    const edited = await fetch(`${base}/api/v1/specialties/${createdSpecialty.id}`, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ name: "Baile editado", code: "BAILE_EDITADO", displayOrder: 2, active: false }),
+    });
+    assert.equal(edited.status, 200);
+    assert.deepEqual(await edited.json(), {
+      ...createdSpecialty,
+      name: "Baile editado",
+      code: "BAILE_EDITADO",
+      displayOrder: 2,
+      active: false,
+    });
+    const partiallyEdited = await fetch(`${base}/api/v1/specialties/${createdSpecialty.id}`, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ active: true }),
+    });
+    assert.equal(partiallyEdited.status, 200);
+    assert.deepEqual(await partiallyEdited.json(), {
+      ...createdSpecialty,
+      name: "Baile editado",
+      code: "BAILE_EDITADO",
+      displayOrder: 2,
+      active: true,
+    });
     const listA = await fetch(`${base}/api/v1/events/${eventA.id}/specialties`, { headers });
     const listB = await fetch(`${base}/api/v1/events/${eventB.id}/specialties`, { headers });
     assert.equal((await listA.json()).length, 1); assert.deepEqual(await listB.json(), []);

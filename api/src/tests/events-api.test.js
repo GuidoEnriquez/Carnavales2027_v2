@@ -88,7 +88,29 @@ test("la API ADMIN gestiona eventos y jornadas, y bloquea eventos OPEN", {
     });
     assert.equal(updateEvent.status, 200);
 
-    await pool.query("UPDATE carnival_event SET status = 'OPEN' WHERE id = $1", [event.id]);
+    await pool.query("UPDATE night SET kind='COMPETITION' WHERE event_id=$1", [event.id]);
+    const { rows: categories } = await pool.query(
+      "INSERT INTO event_category(event_id,name,code,display_order) VALUES($1,'Categoría','CAT_API',1) RETURNING id",
+      [event.id],
+    );
+    await pool.query("INSERT INTO event_troupe(event_id,category_id,name) VALUES($1,$2,'Comparsa')", [event.id, categories[0].id]);
+    const { rows: specialties } = await pool.query(
+      "INSERT INTO event_specialty(event_id,name,code,display_order) VALUES($1,'Baile','BAILE_API',1) RETURNING id",
+      [event.id],
+    );
+    const { rows: rubrics } = await pool.query(
+      "INSERT INTO rubric(event_id,name,code,evaluation_target) VALUES($1,'Rubro','RUBRO_API','TROUPE') RETURNING id",
+      [event.id],
+    );
+    await pool.query(
+      "INSERT INTO evaluation_item(event_id,rubric_id,specialty_id,name,code) VALUES($1,$2,$3,'Ítem','ITEM_API')",
+      [event.id, rubrics[0].id, specialties[0].id],
+    );
+    const openEvent = await fetch(`${baseUrl}/api/v1/events/${event.id}/open`, {
+      method: "POST",
+      headers: { "x-test-session": "admin" },
+    });
+    assert.equal(openEvent.status, 200);
     const lockedUpdate = await fetch(`${baseUrl}/api/v1/events/${event.id}`, {
       method: "PATCH",
       headers: { "content-type": "application/json", "x-test-session": "admin" },

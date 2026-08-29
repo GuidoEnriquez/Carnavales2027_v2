@@ -13,7 +13,7 @@
 | ID | Estado | Dependencias |
 |---|---|---|
 | T01–T24 | Completadas | Ver tareas individuales |
-| T25 | Pendiente | Ver tarea individual |
+| T25 | Completada | T10, T22, T24 |
 
 ---
 

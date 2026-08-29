@@ -2,8 +2,8 @@
 
 ## Estado
 
-- **Fase SDD:** clarificación.
-- **Código:** aún no autorizado.
+- **Fase SDD:** clarificación de I1 cerrada; implementación y validación final en curso.
+- **Código:** autorizado para el alcance I1 por el plan aprobado y `tasks.md`.
 - **Base revisada:** `spec.md`, `docs/source-map.md` y las notas de Obsidian referenciadas.
 
 ## Decisiones ya resueltas

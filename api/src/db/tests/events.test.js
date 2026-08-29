@@ -74,6 +74,15 @@ test("modela eventos configurables y jornadas competitivas o de premios", {
       }),
       /check/i,
     );
+    await client.query("ROLLBACK TO SAVEPOINT invalid_night_kind");
+
+    const destinationEvent = await createEvent({ client, name: "Destino configurable" });
+    await client.query("SAVEPOINT event_reassignment");
+    await assert.rejects(
+      () => client.query("UPDATE night SET event_id=$2 WHERE id=$1", [competitionNight.id, destinationEvent.id]),
+      /EVENT_REASSIGNMENT_FORBIDDEN/,
+    );
+    await client.query("ROLLBACK TO SAVEPOINT event_reassignment");
   } finally {
     await client.query("ROLLBACK");
     client.release();
