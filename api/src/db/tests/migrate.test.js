@@ -25,14 +25,23 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
   process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
 
   const firstRun = await migrate();
-  assert.ok(firstRun.applied.every((filename) => filename === "001_extensions.sql"));
+  assert.ok(firstRun.applied.every((filename) => (
+    filename === "001_extensions.sql" || filename === "002_authorization.sql"
+  )));
 
   const status = await getMigrationStatus();
-  assert.deepEqual(status, [{
-    filename: "001_extensions.sql",
-    version: "001",
-    applied: true,
-  }]);
+  assert.deepEqual(status, [
+    {
+      filename: "001_extensions.sql",
+      version: "001",
+      applied: true,
+    },
+    {
+      filename: "002_authorization.sql",
+      version: "002",
+      applied: true,
+    },
+  ]);
 
   const secondRun = await migrate();
   assert.deepEqual(secondRun.applied, []);
