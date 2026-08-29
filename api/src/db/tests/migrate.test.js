@@ -26,7 +26,9 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
 
   const firstRun = await migrate();
   assert.ok(firstRun.applied.every((filename) => (
-    filename === "001_extensions.sql" || filename === "002_authorization.sql"
+    filename === "001_extensions.sql"
+    || filename === "002_authorization.sql"
+    || filename === "003_audit.sql"
   )));
 
   const status = await getMigrationStatus();
@@ -39,6 +41,11 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
     {
       filename: "002_authorization.sql",
       version: "002",
+      applied: true,
+    },
+    {
+      filename: "003_audit.sql",
+      version: "003",
       applied: true,
     },
   ]);

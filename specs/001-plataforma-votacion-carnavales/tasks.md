@@ -12,8 +12,7 @@
 
 | ID | Estado | Dependencias |
 |---|---|---|
-| T01–T07 | Completadas | Ver tareas individuales |
-| T08 | En progreso — infraestructura verificada; integración con cambios de rol pendiente en T09/T11 | T05, T07 |
+| T01–T08 | Completadas | Ver tareas individuales |
 | T09–T25 | Pendientes | Ver tareas individuales |
 
 ---
