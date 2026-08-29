@@ -59,6 +59,7 @@
 6. **Nominaciones y programación preparadas, no expuestas.** Se crean tablas/entidades con FKs y restricciones básicas, pero no rutas ni pantallas de gestión. Esto no debe convertirse en una implementación parcial de votación.
 7. **Auditoría de dominio append-only.** `audit_event` almacena actor, acción, tipo/id de entidad, datos antes/después acotados y timestamp. Triggers bloquean UPDATE/DELETE de la auditoría. No registrar contraseñas, tokens ni secretos.
 8. **Better Auth sin modificar su esquema.** Un `app_role` o `user_role` de aplicación referencia `user.id`; Better Auth gestiona identidad/sesión y la aplicación gestiona autorización. No agregar columna de rol a la tabla de Better Auth.
+9. **Último ADMIN en I1.** ADMIN activo significa usuario existente con rol `ADMIN`; no se añade estado de cuenta ni se modifica Better Auth. Los servicios de revocación de rol y eliminación de usuario deben impedir que el conteo llegue a cero.
 
 ## 3. Modelo de datos propuesto
 

@@ -12,8 +12,8 @@
 
 | ID | Estado | Dependencias |
 |---|---|---|
-| T01–T10 | Completadas | Ver tareas individuales |
-| T11–T25 | Pendientes | Ver tareas individuales |
+| T01–T11 | Completadas | Ver tareas individuales |
+| T12–T25 | Pendientes | Ver tareas individuales |
 
 ---
 
@@ -133,7 +133,8 @@
 **Dependencias:** T07, T08.
 
 - Implementar servicio/regla transaccional para cambios de rol.
-- Rechazar eliminación o degradación del último ADMIN activo.
+- En I1, considerar ADMIN activo a todo usuario existente con el rol `ADMIN`; no modelar estado de cuenta.
+- Rechazar eliminación de usuario o modificación de roles que deje cero usuarios con rol `ADMIN`.
 - Auditar alta, promoción, degradación e intento rechazado relevante.
 
 **Hecho cuando:** los tests prueban que un único ADMIN no puede perder el rol y que sí puede hacerlo cuando existe otro ADMIN activo.
