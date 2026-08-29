@@ -5,6 +5,7 @@ import { requireTwoFactor } from "../auth/two-factor.js";
 import { getPool } from "../db/pool.js";
 import { createEvent, createNight, getEvent, listEvents, listNights, updateEvent, updateNight } from "../modules/events/event-service.js";
 import { createCategory, createTroupe, listCategories, updateCategory } from "../modules/troupes/category-service.js";
+import { createSpecialty, listSpecialties, updateSpecialty } from "../modules/specialties/specialty-service.js";
 
 function createWriteHandler(action, entityType, operation) {
   return async (request, response, next) => {
@@ -64,5 +65,8 @@ export function createEventsRouter({ requireSession }) {
   router.post("/events/:eventId/categories", createWriteHandler("CATEGORY_CREATED", "event_category", (client, request) => createCategory({ client, eventId: request.params.eventId, ...request.body })));
   router.patch("/categories/:categoryId", createWriteHandler("CATEGORY_UPDATED", "event_category", (client, request) => updateCategory({ client, categoryId: request.params.categoryId, ...request.body })));
   router.post("/events/:eventId/troupes", createWriteHandler("TROUPE_CREATED", "event_troupe", (client, request) => createTroupe({ client, eventId: request.params.eventId, ...request.body })));
+  router.get("/events/:eventId/specialties", async (request, response, next) => { try { return response.json(await listSpecialties({ eventId: request.params.eventId })); } catch (error) { return next(error); } });
+  router.post("/events/:eventId/specialties", createWriteHandler("SPECIALTY_CREATED", "event_specialty", (client, request) => createSpecialty({ client, eventId: request.params.eventId, ...request.body })));
+  router.patch("/specialties/:specialtyId", createWriteHandler("SPECIALTY_UPDATED", "event_specialty", (client, request) => updateSpecialty({ client, specialtyId: request.params.specialtyId, ...request.body })));
   return router;
 }
