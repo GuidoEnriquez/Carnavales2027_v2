@@ -37,6 +37,7 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
     || filename === "009_troupes.sql"
     || filename === "010_specialties.sql"
     || filename === "011_rubrics.sql"
+    || filename === "012_nominations.sql"
   )));
 
   const status = await getMigrationStatus();
@@ -94,6 +95,11 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
     {
       filename: "011_rubrics.sql",
       version: "011",
+      applied: true,
+    },
+    {
+      filename: "012_nominations.sql",
+      version: "012",
       applied: true,
     },
   ]);
