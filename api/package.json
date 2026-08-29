@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "test": "node --test",
+    "test": "node --test --test-concurrency=1",
     "db:migrate": "node src/db/migrate.js",
     "auth:migrate": "npx auth@1.6.27 migrate --config src/auth/auth.js --yes",
     "bootstrap:admin": "node src/scripts/bootstrap-admin.js",

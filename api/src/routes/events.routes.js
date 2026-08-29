@@ -4,6 +4,7 @@ import { requireAdmin } from "../auth/require-admin.js";
 import { requireTwoFactor } from "../auth/two-factor.js";
 import { getPool } from "../db/pool.js";
 import { createEvent, createNight, getEvent, listEvents, listNights, updateEvent, updateNight } from "../modules/events/event-service.js";
+import { createCategory, createTroupe, listCategories, updateCategory } from "../modules/troupes/category-service.js";
 
 function createWriteHandler(action, entityType, operation) {
   return async (request, response, next) => {
@@ -24,6 +25,10 @@ function createWriteHandler(action, entityType, operation) {
       await client.query("ROLLBACK");
       if (error.message === "EVENT_LOCKED") {
         response.status(409).json({ code: "EVENT_LOCKED" });
+        return;
+      }
+      if (error instanceof TypeError) {
+        response.status(400).json({ code: "VALIDATION_ERROR" });
         return;
       }
       next(error);
@@ -53,5 +58,11 @@ export function createEventsRouter({ requireSession }) {
   router.patch("/events/:eventId", createWriteHandler("EVENT_UPDATED", "carnival_event", (client, request) => updateEvent({ client, eventId: request.params.eventId, ...request.body })));
   router.post("/events/:eventId/nights", createWriteHandler("NIGHT_CREATED", "night", (client, request) => createNight({ client, eventId: request.params.eventId, ...request.body })));
   router.patch("/nights/:nightId", createWriteHandler("NIGHT_UPDATED", "night", (client, request) => updateNight({ client, nightId: request.params.nightId, ...request.body })));
+  router.get("/events/:eventId/categories", async (request, response, next) => {
+    try { return response.json(await listCategories({ eventId: request.params.eventId, eligible: request.query.eligible === "true" })); } catch (error) { return next(error); }
+  });
+  router.post("/events/:eventId/categories", createWriteHandler("CATEGORY_CREATED", "event_category", (client, request) => createCategory({ client, eventId: request.params.eventId, ...request.body })));
+  router.patch("/categories/:categoryId", createWriteHandler("CATEGORY_UPDATED", "event_category", (client, request) => updateCategory({ client, categoryId: request.params.categoryId, ...request.body })));
+  router.post("/events/:eventId/troupes", createWriteHandler("TROUPE_CREATED", "event_troupe", (client, request) => createTroupe({ client, eventId: request.params.eventId, ...request.body })));
   return router;
 }
