@@ -34,5 +34,5 @@ test("getPool conecta usando TEST_DATABASE_URL", {
 
   const { rows } = await getPool().query("SELECT current_database() AS name");
 
-  assert.equal(rows[0].name, "postgres");
+  assert.equal(rows[0].name, new URL(process.env.TEST_DATABASE_URL).pathname.slice(1));
 });

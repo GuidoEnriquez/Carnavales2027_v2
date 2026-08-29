@@ -1,0 +1,39 @@
+import assert from "node:assert/strict";
+import { afterEach, test } from "node:test";
+import { closePool } from "../pool.js";
+import { getMigrationStatus, migrate } from "../migrate.js";
+
+const originalDatabaseUrl = process.env.DATABASE_URL;
+
+function restoreDatabaseUrl() {
+  if (originalDatabaseUrl === undefined) {
+    delete process.env.DATABASE_URL;
+    return;
+  }
+
+  process.env.DATABASE_URL = originalDatabaseUrl;
+}
+
+afterEach(async () => {
+  await closePool();
+  restoreDatabaseUrl();
+});
+
+test("aplica migraciones pendientes una vez y conserva su estado", {
+  skip: !process.env.TEST_DATABASE_URL,
+}, async () => {
+  process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
+
+  const firstRun = await migrate();
+  assert.ok(firstRun.applied.every((filename) => filename === "001_extensions.sql"));
+
+  const status = await getMigrationStatus();
+  assert.deepEqual(status, [{
+    filename: "001_extensions.sql",
+    version: "001",
+    applied: true,
+  }]);
+
+  const secondRun = await migrate();
+  assert.deepEqual(secondRun.applied, []);
+});
