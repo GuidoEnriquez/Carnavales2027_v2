@@ -504,6 +504,151 @@ form {
   align-items: stretch;
 }
 
+.judge-ballot-page {
+  max-inline-size: 960px;
+  margin-inline: auto;
+  container-type: inline-size;
+}
+
+.ballot-header,
+.ballot-footer,
+.voting-pickers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.ballot-header {
+  margin-block-end: 1.25rem;
+  border-block-end: 4px solid var(--accent-color);
+  padding-block: 0.75rem 1.25rem;
+}
+
+.ballot-header h1 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2rem, 7vw, 4rem);
+  line-height: 0.95;
+}
+
+.ballot-header p:not(.eyebrow) {
+  margin-block: 0.55rem 0;
+  color: var(--muted-color);
+}
+
+.ballot-status-open {
+  color: #063b75;
+  background: #dce8ff;
+}
+
+.ballot-status-reopened {
+  color: #603b00;
+  background: #fde7b2;
+}
+
+.ballot-status-submitted {
+  color: #075332;
+  background: #cceedd;
+}
+
+.ballot-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.ballot-troupe {
+  border: 1px solid var(--line-color);
+  border-inline-start: 6px solid var(--accent-color);
+  border-radius: 0.7rem;
+  background: var(--card-bg);
+  overflow: hidden;
+}
+
+.ballot-troupe > header {
+  padding: 1rem 1rem 0;
+}
+
+.ballot-troupe h2,
+.ballot-troupe h3,
+.ballot-troupe p {
+  margin-block: 0 0.35rem;
+}
+
+.ballot-rubric {
+  margin: 1rem;
+  border-block-start: 1px solid #d5dae4;
+  padding-block-start: 0.9rem;
+}
+
+.score-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(8.5rem, 11rem);
+  align-items: center;
+  gap: 1rem;
+  border-block-end: 1px solid #e6eaf0;
+  padding-block: 0.75rem;
+  color: var(--text-color);
+  font-size: 1rem;
+}
+
+.score-row:last-child {
+  border-block-end: 0;
+}
+
+.ballot-footer {
+  margin-block: 1.5rem;
+}
+
+.voting-page {
+  container-type: inline-size;
+}
+
+.voting-pickers {
+  justify-content: flex-start;
+}
+
+.voting-pickers label {
+  min-inline-size: min(100%, 14rem);
+}
+
+.voting-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin-block-end: 1.25rem;
+  overflow: hidden;
+  border: 1px solid var(--line-color);
+  border-radius: 0.7rem;
+  background: var(--line-color);
+}
+
+.voting-summary div {
+  display: grid;
+  gap: 0.15rem;
+  background: var(--card-bg);
+  padding: 1rem;
+}
+
+.voting-summary span {
+  color: var(--muted-color);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.voting-summary strong {
+  color: var(--primary-dark);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.75rem, 6vw, 3rem);
+}
+
+.reopen-form {
+  margin-block-start: 1rem;
+}
+
 @container (min-width: 38rem) {
   .config-grid,
   .records-grid,
@@ -537,6 +682,10 @@ form {
   .judge-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .voting-summary {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 @container (min-width: 62rem) {
@@ -565,5 +714,18 @@ form {
 
   .judge-card-heading {
     flex-direction: column;
+  }
+
+  .ballot-header,
+  .ballot-footer,
+  .voting-pickers,
+  .voting-pickers label,
+  .ballot-footer > * {
+    inline-size: 100%;
+  }
+
+  .score-row {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
   }
 }

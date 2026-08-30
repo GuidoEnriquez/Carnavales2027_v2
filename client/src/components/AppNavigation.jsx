@@ -24,6 +24,7 @@ export function AppNavigation({ session }) {
         {session.roles?.includes("ADMIN") && <a href="#/admin/events">Eventos</a>}
         {session.roles?.includes("ADMIN") && <a href="#/admin/judges">Jurados</a>}
         {session.roles?.includes("ADMIN") && <a href="#/admin/assignments">Asignaciones</a>}
+        {session.roles?.includes("ADMIN") && <a href="#/admin/voting">Votación</a>}
         {session.roles?.includes("JUDGE") && <a href="#/judge">Mi panel</a>}
       </nav>
       <div className="session-actions">

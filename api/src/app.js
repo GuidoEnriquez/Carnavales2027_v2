@@ -7,6 +7,7 @@ import { createJudgesRouter } from "./routes/judges.routes.js";
 import { createJudgeInvitationsRouter } from "./routes/judge-invitations.routes.js";
 import { createJudgeRouter } from "./routes/judge.routes.js";
 import { createAssignmentsRouter } from "./routes/assignments.routes.js";
+import { createVotingRouter } from "./routes/voting.routes.js";
 import { sendKnownError } from "./routes/http-errors.js";
 import { requireTrustedOrigin } from "./auth/trusted-origin.js";
 
@@ -32,6 +33,9 @@ export function createApp({
   app.use("/api/v1", createJudgeInvitationsRouter({ createUser }));
 
   if (getSession) {
+    app.use("/api/v1", createVotingRouter({
+      requireSession: createRequireSession(getSession),
+    }));
     app.use("/api/v1", createAssignmentsRouter({
       requireSession: createRequireSession(getSession),
     }));

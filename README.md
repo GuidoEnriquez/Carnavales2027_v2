@@ -1,6 +1,6 @@
 # Carnavales2027_v2
 
-Plataforma configurable de administración para Carnavales, preparada para incorporar votación digital en incrementos posteriores. Goya 2027 es una configuración inicial de referencia, no una restricción del producto.
+Plataforma configurable de administración y votación para Carnavales. Goya 2027 es una configuración inicial de referencia, no una restricción del producto.
 
 ## Estado del proyecto
 
@@ -9,8 +9,9 @@ Implementado y validado:
 - **I1/I1-C:** eventos, noches, categorías, comparsas, especialidades, rubros, ítems, criterios descriptivos, readiness, apertura transaccional y administración de privilegios.
 - **I2-A:** padrón de jurados, invitaciones seguras, aceptación, 2FA, suspensión/reactivación y rol `JUDGE`.
 - **I2-B:** cupos por noche/especialidad, asignaciones `PRIMARY`/`SUBSTITUTE`, revocaciones, reemplazos auditados y cierre operativo de noches.
+- **I3:** apertura y cierre de votación, planillas por jurado, puntuaciones por comparsa, confirmación inmutable, reapertura única, secreto de puntajes, supervisión por `VEEDOR` y subsanaciones reglamentarias auditadas por `SCRUTINEER`.
 
-Todavía fuera de alcance: planillas, puntuaciones, votación, operación offline/sync, penalizaciones, escrutinio, resultados y actas.
+Todavía fuera de alcance: operación offline/sync, penalizaciones, consolidación de resultados, rankings, escrutinio de resultados y actas.
 
 ## Arquitectura
 
@@ -69,10 +70,12 @@ Abrir `http://localhost:5173/#/login`. En desarrollo, Vite redirige `/api` a `ht
 - `#/admin/events`: configuración y apertura de eventos.
 - `#/admin/judges`: padrón e invitaciones de jurados.
 - `#/admin/assignments`: cupos, asignaciones y reemplazos.
-- `#/judge`: consulta de asignaciones propias; no habilita votación.
+- `#/admin/voting`: apertura, cierre, estado y reapertura de planillas.
+- `#/judge`: consulta de asignaciones y planillas propias.
+- `#/judge/ballot?ballotId=:ballotId`: carga y confirmación de una planilla propia.
 - `#/invitations/accept`: aceptación de invitaciones.
 
-Las rutas protegidas requieren 2FA verificado. `ADMIN` administra el sistema; `JUDGE` solo accede a sus capacidades autorizadas y a sus asignaciones activas.
+Las rutas protegidas requieren 2FA verificado. `ADMIN` administra el sistema; `JUDGE` solo accede a sus asignaciones activas y planillas propias; `VEEDOR` ve conteos operativos sin puntajes; `SCRUTINEER` registra omisiones y subsanaciones reglamentarias sin modificar votos confirmados.
 
 ## API principal
 
@@ -89,6 +92,19 @@ La API expone, entre otros, estos contratos bajo `/api/v1`:
 - `POST /judge-assignments/:assignmentId/revoke`
 - `POST /judge-assignments/:assignmentId/replace`
 - `GET /judge/assignments`
+- `GET /judge/ballots`
+- `GET /judge/ballots/:ballotId`
+- `PUT /judge/ballots/:ballotId/scores/:scoreId`
+- `POST /judge/ballots/:ballotId/submit`
+- `POST /events/:eventId/nights/:nightId/voting/open`
+- `POST /events/:eventId/nights/:nightId/voting/close`
+- `GET /events/:eventId/nights/:nightId/voting/status`
+- `GET /events/:eventId/nights/:nightId/voting/ballots`
+- `POST /events/:eventId/ballots/:ballotId/reopen`
+- `POST /scrutiny/ballots/:ballotId/scores/:scoreId/omissions`
+- `POST /scrutiny/ballots/:ballotId/scores/:scoreId/subsanations`
+
+Una omisión se conserva como score `NULL` y solo `SCRUTINEER` puede marcarla antes de confirmar la planilla. Para una omisión confirmada, `SCRUTINEER` registra por separado una subsanación inmutable de 5 puntos; el voto original no se reabre ni modifica.
 
 ## Producción
 
@@ -124,7 +140,7 @@ npm run build
 npm audit
 ```
 
-Las pruebas PostgreSQL requieren que `TEST_DATABASE_URL` apunte a una base aislada. La evidencia detallada está en [`specs/002-jurados-asignaciones/validation.md`](specs/002-jurados-asignaciones/validation.md).
+Las pruebas PostgreSQL requieren que `TEST_DATABASE_URL` apunte a una base aislada. La evidencia detallada está en [`specs/002-jurados-asignaciones/validation.md`](specs/002-jurados-asignaciones/validation.md) y [`specs/003-votacion-planillas/validation.md`](specs/003-votacion-planillas/validation.md).
 
 ## SDD y seguridad
 
@@ -136,5 +152,10 @@ Las pruebas PostgreSQL requieren que `TEST_DATABASE_URL` apunte a una base aisla
 - [Spec 002](specs/002-jurados-asignaciones/spec.md)
 - [Validación I2](specs/002-jurados-asignaciones/validation.md)
 - [Plan I2-B](.hermes/plans/2026-08-30_i2-b-cupos-asignaciones.md)
+- [Spec 003](specs/003-votacion-planillas/spec.md)
+- [Clarificaciones I3](specs/003-votacion-planillas/clarifications.md)
+- [Tareas I3](specs/003-votacion-planillas/tasks.md)
+- [Validación I3](specs/003-votacion-planillas/validation.md)
+- [Plan I3](.hermes/plans/2026-08-30_i3-votacion-planillas.md)
 
 No commitear `.env`, contraseñas, tokens ni secretos. No existe autoasignación pública de `ADMIN`. La seguridad del sistema se aplica del lado del servidor.

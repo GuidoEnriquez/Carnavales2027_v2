@@ -42,6 +42,31 @@ export function sendKnownError(response, error) {
     response.status(409).json({ code: error.message });
     return true;
   }
+  if (error.message === "BALLOT_INCOMPLETE") {
+    response.status(409).json({ code: error.message, details: error.pending ?? [] });
+    return true;
+  }
+  if ([
+    "BALLOT_NOT_FOUND",
+    "BALLOT_ACCESS_DENIED",
+    "BALLOT_ALREADY_SUBMITTED",
+    "BALLOT_NOT_SUBMITTED",
+    "BALLOT_MAX_REOPENS_REACHED",
+    "BALLOT_SCORE_IMMUTABLE",
+    "SCORE_NOT_FOUND",
+    "EVENT_NOT_OPEN",
+    "NIGHT_NOT_OPEN",
+    "VOTING_COMPETITION_ONLY",
+    "VOTING_CLOSE_INCOMPLETE_BALLOTS",
+    "VOTING_WINDOW_CLOSED",
+    "VOTING_WINDOW_NOT_OPEN",
+    "BALLOT_SUBSANATION_FINAL",
+    "BALLOT_SCORE_SUBSANATION_REQUIRES_OMISSION",
+    "BALLOT_SCORE_OMISSION_ALREADY_MARKED",
+  ].includes(error.message)) {
+    response.status(409).json({ code: error.message });
+    return true;
+  }
   if (error.message === "INVITATION_INVALID") {
     response.status(400).json({ code: "INVITATION_INVALID" });
     return true;

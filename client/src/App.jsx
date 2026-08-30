@@ -5,9 +5,11 @@ import { AppNavigation } from "./components/AppNavigation.jsx";
 import { AdminEventsPage } from "./pages/AdminEventsPage.jsx";
 import { AdminJudgesPage } from "./pages/AdminJudgesPage.jsx";
 import { AdminAssignmentsPage } from "./pages/AdminAssignmentsPage.jsx";
+import { AdminVotingPage } from "./pages/AdminVotingPage.jsx";
 import { AcceptedJudgeInvitationPage, AcceptJudgeInvitationPage } from "./pages/AcceptJudgeInvitationPage.jsx";
 import { HomePage } from "./pages/HomePage.jsx";
 import { JudgeHomePage } from "./pages/JudgeHomePage.jsx";
+import { JudgeBallotPage } from "./pages/JudgeBallotPage.jsx";
 import { LoginPage } from "./pages/LoginPage.jsx";
 import { useEffect, useState } from "react";
 
@@ -50,8 +52,14 @@ export default function App({ session: providedSession }) {
   if (route === "#/admin/assignments") {
     return <RoleArea session={session} admin><AdminAssignmentsPage /></RoleArea>;
   }
+  if (route === "#/admin/voting") {
+    return <RoleArea session={session} admin><AdminVotingPage /></RoleArea>;
+  }
   if (route === "#/judge") {
     return <RoleArea session={session} role="JUDGE"><JudgeHomePage session={session} /></RoleArea>;
+  }
+  if (route === "#/judge/ballot") {
+    return <RoleArea session={session} role="JUDGE"><JudgeBallotPage ballotId={new URLSearchParams(query).get("ballotId") ?? ""} /></RoleArea>;
   }
   if (route === "#/home") {
     if (session.status === "loading") return <p>Cargando sesión…</p>;

@@ -56,6 +56,21 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
     || filename === "028_judge_quotas_assignments.sql"
     || filename === "029_night_operational_status.sql"
     || filename === "030_harden_judge_quota_guard.sql"
+    || filename === "031_add_unique_constraints.sql"
+    || filename === "032_ballots.sql"
+    || filename === "033_ballot_scores.sql"
+    || filename === "034_ballot_audit.sql"
+     || filename === "035_ballot_triggers.sql"
+     || filename === "036_ballot_score_triggers.sql"
+     || filename === "037_allow_reopened_ballot_scores.sql"
+     || filename === "038_ballot_score_per_schedule.sql"
+      || filename === "039_add_veedor_role.sql"
+      || filename === "040_enforce_ballot_deletion_guards.sql"
+      || filename === "041_ballot_score_subsanations.sql"
+      || filename === "042_harden_ballot_score_subsanation_guard.sql"
+      || filename === "043_harden_ballot_integrity.sql"
+      || filename === "044_voting_windows.sql"
+      || filename === "045_enforce_ballot_score_rubric_integrity.sql"
   )));
 
   const status = await getMigrationStatus();
@@ -208,6 +223,81 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
     {
       filename: "030_harden_judge_quota_guard.sql",
       version: "030",
+      applied: true,
+    },
+    {
+      filename: "031_add_unique_constraints.sql",
+      version: "031",
+      applied: true,
+    },
+    {
+      filename: "032_ballots.sql",
+      version: "032",
+      applied: true,
+    },
+    {
+      filename: "033_ballot_scores.sql",
+      version: "033",
+      applied: true,
+    },
+    {
+      filename: "034_ballot_audit.sql",
+      version: "034",
+      applied: true,
+    },
+    {
+      filename: "035_ballot_triggers.sql",
+      version: "035",
+      applied: true,
+    },
+    {
+      filename: "036_ballot_score_triggers.sql",
+      version: "036",
+      applied: true,
+    },
+    {
+      filename: "037_allow_reopened_ballot_scores.sql",
+      version: "037",
+      applied: true,
+    },
+    {
+      filename: "038_ballot_score_per_schedule.sql",
+      version: "038",
+      applied: true,
+    },
+    {
+      filename: "039_add_veedor_role.sql",
+      version: "039",
+      applied: true,
+    },
+    {
+      filename: "040_enforce_ballot_deletion_guards.sql",
+      version: "040",
+      applied: true,
+    },
+    {
+      filename: "041_ballot_score_subsanations.sql",
+      version: "041",
+      applied: true,
+    },
+    {
+      filename: "042_harden_ballot_score_subsanation_guard.sql",
+      version: "042",
+      applied: true,
+    },
+    {
+      filename: "043_harden_ballot_integrity.sql",
+      version: "043",
+      applied: true,
+    },
+    {
+      filename: "044_voting_windows.sql",
+      version: "044",
+      applied: true,
+    },
+    {
+      filename: "045_enforce_ballot_score_rubric_integrity.sql",
+      version: "045",
       applied: true,
     },
   ]);

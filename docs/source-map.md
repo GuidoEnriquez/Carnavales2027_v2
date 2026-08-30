@@ -101,6 +101,13 @@ El vault contiene copias/síntesis utilizables para redactar la spec. Jira y Con
 - Los reemplazos revocan la asignación original, crean una nueva relacionada y exigen motivo; su efecto es futuro.
 - Impugnaciones, ventanas temporales, planillas, votación y offline/sync quedan fuera de I2-B.
 
+## Decisiones de producto I3 — 2026-08-30
+
+- Score `0` representa exclusivamente "no presentado / no evaluado" y nunca una omisión subsanable.
+- Una omisión conserva score `NULL`; solo el rol de aplicación `SCRUTINEER`, con 2FA, puede marcarla antes de confirmar la planilla.
+- Tras la confirmación, `SCRUTINEER` registra la subsanación reglamentaria de 5 puntos como entidad separada, auditable e inmutable, sin modificar ni reabrir el voto original.
+- `SCRUTINEER` no se autoasigna públicamente y no hereda permisos de ADMIN, JUDGE ni VEEDOR.
+
 ## Uso en SDD
 
 - La spec debe enlazar cada requisito a una fuente Jira/Confluence o a su copia identificada de Obsidian.

@@ -1,0 +1,36 @@
+CREATE TABLE voting_window (
+  night_id UUID PRIMARY KEY REFERENCES night(id) ON DELETE RESTRICT,
+  event_id UUID NOT NULL REFERENCES carnival_event(id) ON DELETE RESTRICT,
+  status TEXT NOT NULL CHECK (status IN ('OPEN', 'CLOSED')),
+  opened_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  closed_at TIMESTAMPTZ,
+  CHECK (
+    (status = 'OPEN' AND closed_at IS NULL)
+    OR (status = 'CLOSED' AND closed_at IS NOT NULL)
+  )
+);
+
+CREATE OR REPLACE FUNCTION protect_voting_window()
+RETURNS trigger AS $$
+BEGIN
+  IF NEW.night_id IS DISTINCT FROM OLD.night_id
+     OR NEW.event_id IS DISTINCT FROM OLD.event_id
+     OR NEW.opened_at IS DISTINCT FROM OLD.opened_at THEN
+    RAISE EXCEPTION 'VOTING_WINDOW_HISTORY_IMMUTABLE';
+  END IF;
+  IF OLD.status = 'CLOSED' THEN
+    RAISE EXCEPTION 'VOTING_WINDOW_CLOSED';
+  END IF;
+  IF OLD.status = 'OPEN' AND NEW.status <> 'CLOSED' THEN
+    RAISE EXCEPTION 'INVALID_VOTING_WINDOW_TRANSITION';
+  END IF;
+  IF NEW.status = 'CLOSED' THEN
+    NEW.closed_at = CURRENT_TIMESTAMP;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER voting_window_guard
+BEFORE UPDATE OR DELETE ON voting_window
+FOR EACH ROW EXECUTE FUNCTION protect_voting_window();

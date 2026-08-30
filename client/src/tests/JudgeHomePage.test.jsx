@@ -5,9 +5,9 @@ import { JudgeHomePage } from "../pages/JudgeHomePage.jsx";
 describe("JudgeHomePage", () => {
   afterEach(cleanup);
 
-  it("aclara que un jurado registrado todavía no puede votar", () => {
+  it("aclara que un jurado registrado todavía no tiene planillas habilitadas", () => {
     render(<JudgeHomePage session={{ judgeProfile: { registrationStatus: "REGISTERED" } }} />);
-    expect(screen.getByText(/no habilitan votación/)).toBeInTheDocument();
+    expect(screen.getByText(/no tenés planillas habilitadas/)).toBeInTheDocument();
     expect(screen.queryByText(/puntuar comparsa/i)).not.toBeInTheDocument();
   });
 
