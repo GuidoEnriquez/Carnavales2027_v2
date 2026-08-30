@@ -1,15 +1,62 @@
 import { RequireAdmin } from "./auth/RequireAdmin.jsx";
+import { RequireRole } from "./auth/RequireRole.jsx";
 import { useSession } from "./auth/session-context.jsx";
+import { AppNavigation } from "./components/AppNavigation.jsx";
 import { AdminEventsPage } from "./pages/AdminEventsPage.jsx";
+import { AdminJudgesPage } from "./pages/AdminJudgesPage.jsx";
+import { AdminAssignmentsPage } from "./pages/AdminAssignmentsPage.jsx";
+import { AcceptedJudgeInvitationPage, AcceptJudgeInvitationPage } from "./pages/AcceptJudgeInvitationPage.jsx";
+import { HomePage } from "./pages/HomePage.jsx";
+import { JudgeHomePage } from "./pages/JudgeHomePage.jsx";
 import { LoginPage } from "./pages/LoginPage.jsx";
+import { useEffect, useState } from "react";
+
+function ProtectedShell({ session, children }) {
+  return <><AppNavigation session={session} />{children}</>;
+}
+
+function RoleArea({ session, role, admin = false, children }) {
+  const content = admin
+    ? <RequireAdmin session={session}>{children}</RequireAdmin>
+    : <RequireRole session={session} role={role}>{children}</RequireRole>;
+  return session.status === "authenticated"
+    ? <ProtectedShell session={session}>{content}</ProtectedShell>
+    : content;
+}
 
 export default function App({ session: providedSession }) {
   const contextSession = useSession();
   const session = providedSession ?? contextSession;
-  const path = window.location.hash || "#/login";
-  if (path === "#/admin/events") {
-    // UX guard only; API remains the authorization boundary.
-    return <RequireAdmin session={session}><AdminEventsPage /></RequireAdmin>;
+  const [path, setPath] = useState(window.location.hash || "#/login");
+  useEffect(() => {
+    const updatePath = () => setPath(window.location.hash || "#/login");
+    window.addEventListener("hashchange", updatePath);
+    return () => window.removeEventListener("hashchange", updatePath);
+  }, []);
+  const [route, query = ""] = path.split("?");
+  if (route === "#/invitations/accept") {
+    const secret = new URLSearchParams(query).get("secret") ?? "";
+    return <AcceptJudgeInvitationPage key={secret} secret={secret} />;
   }
-  return <LoginPage />;
+  if (route === "#/invitations/accepted") return <AcceptedJudgeInvitationPage />;
+  if (route === "#/login" || route === "") return <LoginPage />;
+  if (route === "#/admin/events") {
+    // UX guard only; API remains the authorization boundary.
+    return <RoleArea session={session} admin><AdminEventsPage /></RoleArea>;
+  }
+  if (route === "#/admin/judges") {
+    return <RoleArea session={session} admin><AdminJudgesPage /></RoleArea>;
+  }
+  if (route === "#/admin/assignments") {
+    return <RoleArea session={session} admin><AdminAssignmentsPage /></RoleArea>;
+  }
+  if (route === "#/judge") {
+    return <RoleArea session={session} role="JUDGE"><JudgeHomePage session={session} /></RoleArea>;
+  }
+  if (route === "#/home") {
+    if (session.status === "loading") return <p>Cargando sesión…</p>;
+    if (session.status !== "authenticated") return <LoginPage />;
+    return <ProtectedShell session={session}><HomePage session={session} /></ProtectedShell>;
+  }
+  return <main className="container"><div className="card"><h1>Página no encontrada</h1><a href="#/home">Volver al inicio</a></div></main>;
 }

@@ -14,6 +14,7 @@
 |---|---|---|
 | T01–T24 | Completadas | Ver tareas individuales |
 | T25 | Completada | T10, T22, T24 |
+| T26–T30 | Completadas | Cierre I1-C validado |
 
 ---
 
@@ -305,3 +306,64 @@
 6. `test: validate event readiness and opening workflow`
 
 Cada commit se crea solamente después de verificar las tareas que contiene. No hacer push sin aprobación.
+
+---
+
+## Cierre I1-C
+
+### T26 — Completar modelo y bloqueo de configuración
+
+**RF:** RF-01l, RF-01x, RF-01y, RNF-03.
+**Dependencias:** T18, T20, T21.
+
+- Crear criterios descriptivos por rubro sin puntuación.
+- Bloquear criterios, nominaciones y programación cuando el evento esté `OPEN`.
+- Usar una migración incremental y no destructiva.
+
+**Hecho cuando:** pruebas DB demuestran separación criterio/ítem y rechazo de escrituras sobre todas las tablas de configuración abiertas.
+
+### T27 — Completar API administrativa y errores
+
+**RF:** RF-01w, RF-01z, RF-15.
+**Dependencias:** T26.
+
+- Completar listados y `PATCH` de categorías, comparsas, rubros, ítems y criterios.
+- Exponer listado de usuarios y promoción/revocación auditada de ADMIN existente.
+- Mantener soft-disable y auditoría transaccional.
+- Traducir validaciones y errores PostgreSQL a contratos HTTP estables.
+
+**Hecho cuando:** tests API cubren corrección, desactivación, duplicados, referencias inválidas, inexistencia y `EVENT_LOCKED`.
+
+### T28 — Completar panel administrativo
+
+**RF:** RF-01w, RF-01y, RF-01z.
+**Dependencias:** T27.
+
+- Cargar noches, comparsas e ítems existentes.
+- Permitir editar y desactivar todos los catálogos incluidos.
+- Mostrar errores estructurados y especialidades derivadas.
+- Confirmar apertura y bloquear doble envío.
+
+**Hecho cuando:** tests UI cubren revisión/corrección y apertura explícita; el build finaliza correctamente.
+
+### T29 — Revalidar migraciones y seeds
+
+**RF:** RNF-03, RNF-04.
+**Dependencias:** T26–T28.
+
+- Aplicar todas las migraciones dos veces y verificar estado.
+- Ejecutar seeds dos veces fuera de producción.
+- Ejecutar suites API, DB y cliente.
+
+**Hecho cuando:** todos los comandos reportan éxito real y no quedan migraciones pendientes.
+
+### T30 — Cerrar evidencia I1-C
+
+**RF:** RNF-04, RNF-05.
+**Dependencias:** T29.
+
+- Actualizar `validation.md` y el estado de los artefactos SDD.
+- Confirmar por revisión que los módulos diferidos siguen ausentes.
+- Registrar limitaciones que pasan a clarificación de I2.
+
+**Hecho cuando:** la matriz RF → evidencia refleja el árbol y resultados actuales.

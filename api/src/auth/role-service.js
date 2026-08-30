@@ -66,9 +66,11 @@ async function canRemoveAdminRole(client, userId) {
 }
 
 async function revokeRoleWithClient(client, { actorUserId, userId, roleCode }) {
+  const { rows: userRows } = await client.query('SELECT 1 FROM "user" WHERE id = $1', [requireText(userId, "userId")]);
+  if (userRows.length === 0) throw new Error("USER_NOT_FOUND");
   const { rows: roleRows } = await client.query(
     "SELECT role_code FROM user_role WHERE user_id = $1 AND role_code = $2",
-    [requireText(userId, "userId"), requireText(roleCode, "roleCode")],
+    [userId, requireText(roleCode, "roleCode")],
   );
   if (roleRows.length === 0) {
     return { removed: false };
@@ -105,6 +107,18 @@ export async function grantRole({ actorUserId = null, userId, roleCode, client =
     userId,
     roleCode,
   }));
+}
+
+export async function listUsers({ client = getPool() } = {}) {
+  const { rows } = await client.query(
+    `SELECT u.id, u.name, u.email,
+            COALESCE(array_agg(ur.role_code ORDER BY ur.role_code) FILTER (WHERE ur.role_code IS NOT NULL), '{}') AS roles
+       FROM "user" u
+       LEFT JOIN user_role ur ON ur.user_id = u.id
+      GROUP BY u.id, u.name, u.email
+      ORDER BY u.name, u.email`,
+  );
+  return rows;
 }
 
 export async function revokeRole({ actorUserId = null, userId, roleCode, client = null }) {

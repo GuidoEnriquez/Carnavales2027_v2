@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { fileURLToPath } from "node:url";
 import { grantRole } from "../auth/role-service.js";
+import { createCredentialUser } from "../auth/account-service.js";
 import { closePool, getPool } from "../db/pool.js";
 
 const bootstrapLockKey = "carnavales2027_v2_bootstrap_admin";
@@ -28,22 +29,9 @@ export function getBootstrapConfig(environment = process.env) {
   };
 }
 
-async function createUserWithBetterAuth({ email, name, password }) {
-  const { auth } = await import("../auth/auth.js");
-  const response = await auth.api.signUpEmail({
-    body: { email, name, password },
-  });
-
-  if (!response?.user?.id) {
-    throw new Error("BOOTSTRAP_USER_CREATION_FAILED");
-  }
-
-  return response.user;
-}
-
 export async function bootstrapFirstAdmin({
   config = getBootstrapConfig(),
-  createUser = createUserWithBetterAuth,
+  createUser = createCredentialUser,
 } = {}) {
   if (config.nodeEnv !== "production") {
     throw new Error("BOOTSTRAP_REQUIRES_NODE_ENV=production");

@@ -85,4 +85,40 @@ describe("EventConfigurationPage", () => {
       expect.objectContaining({ method: "PATCH", body: JSON.stringify({ name: "Danza", code: "DANZA", displayOrder: 4, active: false }) }),
     ));
   });
+
+  it("permite corregir comparsas, rubros, ítems y criterios existentes", async () => {
+    apiRequest
+      .mockResolvedValueOnce({ ready: false, missing: [], incompleteTroupes: [], incompleteRubrics: [] })
+      .mockResolvedValueOnce({ id: "t1", name: "Comparsa editada", categoryId: "cat-1", active: false })
+      .mockResolvedValueOnce({ ready: false, missing: [], incompleteTroupes: [], incompleteRubrics: [] });
+    render(
+      <EventConfigurationPage
+        event={{ id: "event-1", name: "Goya", status: "CONFIGURING" }}
+        categories={[{ id: "cat-1", name: "Primera", code: "PRIMERA", displayOrder: 1, active: true }]}
+        troupes={[{ id: "t1", name: "Comparsa", categoryId: "cat-1", active: true }]}
+        specialties={[{ id: "s1", name: "Baile", code: "BAILE", displayOrder: 1, active: true }]}
+        rubrics={[{
+          id: "r1",
+          name: "Coreografía",
+          code: "COREO",
+          evaluationTarget: "TROUPE",
+          active: true,
+          specialties: [{ id: "s1", name: "Baile", code: "BAILE" }],
+          items: [{ id: "i1", name: "Desarrollo", code: "DES", specialtyId: "s1", active: true }],
+          criteria: [{ id: "c1", description: "Descripción", displayOrder: 1, active: true }],
+        }]}
+      />,
+    );
+
+    expect(screen.getByText("Especialidades derivadas: Baile")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Descripción")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Editar nombre de Comparsa"), { target: { value: "Comparsa editada" } });
+    fireEvent.click(screen.getByLabelText("Comparsa activa"));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar Comparsa" }));
+
+    await waitFor(() => expect(apiRequest).toHaveBeenCalledWith(
+      "/api/v1/troupes/t1",
+      expect.objectContaining({ method: "PATCH", body: JSON.stringify({ name: "Comparsa editada", categoryId: "cat-1", active: false }) }),
+    ));
+  });
 });

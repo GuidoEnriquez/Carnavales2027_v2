@@ -1,5 +1,5 @@
 import { betterAuth } from "better-auth";
-import { createAuthMiddleware } from "better-auth/api";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import { twoFactor } from "better-auth/plugins";
 import { getPool } from "../db/pool.js";
 import { createOtpDelivery } from "./two-factor.js";
@@ -27,6 +27,19 @@ export function createAuth({ sendOtp = createOtpDelivery() } = {}) {
     emailAndPassword: {
       enabled: true,
       revokeSessionsOnPasswordReset: true,
+    },
+    databaseHooks: {
+      user: {
+        create: {
+          before: async (_user, context) => {
+            if (context?.path === "/sign-up/email") {
+              throw new APIError("FORBIDDEN", {
+                message: "El registro requiere una invitación administrativa.",
+              });
+            }
+          },
+        },
+      },
     },
     hooks: {
       after: createAuthMiddleware(async (context) => {

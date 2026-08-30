@@ -2,8 +2,8 @@
 
 ## Estado
 
-- **Fase SDD:** clarificación de I1 cerrada; implementación y validación final en curso.
-- **Código:** autorizado para el alcance I1 por el plan aprobado y `tasks.md`.
+- **Fase SDD:** I1-C implementado y validado.
+- **Código:** I1-C e I2-A cerrados; I2-B autorizado por sus clarificaciones y plan propios.
 - **Base revisada:** `spec.md`, `docs/source-map.md` y las notas de Obsidian referenciadas.
 
 ## Decisiones ya resueltas
@@ -27,6 +27,10 @@
 6. **Nominaciones/sujetos evaluados.** ✅ Resuelto: I1 prepara el modelo pero no administra nominaciones. Cada rubro define si evalúa directamente la comparsa o requiere nominación; para los segundos se configura tipo de sujeto esperado. La ausencia de nominaciones no bloquea abrir el evento y se valida antes de habilitar la votación correspondiente.
 7. **Bootstrap y administración de privilegios.** ✅ Resuelto: no hay autoasignación ADMIN pública; desarrollo/testing usa seeds controlados fuera de producción; producción crea el primer ADMIN con bootstrap seguro de una sola ejecución; la base es fuente de verdad de roles; altas/promociones se autorizan y auditan; no se puede eliminar ni degradar al último ADMIN activo. Para I1, ADMIN activo significa usuario existente con rol `ADMIN`; la habilitación/deshabilitación de cuentas y su impacto sobre sesiones quedan fuera de alcance.
 8. **2FA obligatorio.** ✅ Fuente recuperada: todos los roles requieren 2FA/OTP antes de rutas protegidas. OTP es numérico de 6 dígitos, expira en 5 minutos y se almacena cifrado; desarrollo puede usar consola y producción requiere proveedor de correo seguro. Tras verificar, se rota la sesión y se revocan sesiones previas. **Impacto:** T06 se reabre para activar y probar 2FA antes de T07.
+9. **Administración completa en I1-C.** ✅ Resuelto: administrar un catálogo implica listar, crear, editar y activar/desactivar antes de `OPEN`. No se agrega borrado físico.
+10. **Criterios descriptivos.** ✅ Resuelto para I1-C: pertenecen a un rubro, tienen descripción, orden y estado activo; son referencias independientes de los ítems y nunca reciben puntuación ni intervienen en readiness.
+11. **Bloqueo total tras apertura.** ✅ Resuelto: nominaciones y programación preparatorias también son configuración del evento y quedan bloqueadas en base de datos al pasar a `OPEN`.
+12. **README objetivo.** ✅ Resuelto: el README objetivo del producto es la fuente funcional completa de referencia, pero cada módulo posterior se especifica y clarifica antes de implementarse.
 
 ## Posibles contradicciones o riesgos
 
@@ -41,4 +45,4 @@
 
 ## Siguiente resolución prioritaria
 
-No quedan ambigüedades funcionales bloqueantes para planificar I1. El plan deberá proponer los estados técnicos mínimos, contratos API, esquema de datos, estrategia de autenticación, pruebas y seeds; cualquier decisión que no esté respaldada por las fuentes se marcará como propuesta para revisión antes de implementar.
+I2-A e I2-B están cerrados y validados. Impugnaciones, ventanas temporales y votación siguen diferidas y requieren una nueva spec antes de implementarse.

@@ -2,8 +2,8 @@
 
 ## Estado
 
-- **Fase SDD:** implementación de I1; validación final en curso.
-- **Implementación:** autorizada para I1 mediante el plan aprobado y `tasks.md`; el alcance posterior continúa sujeto a clarificación.
+- **Fase SDD:** I1-C implementado y validado; evolución posterior en clarificación.
+- **Implementación:** autorizada para I1 e I1-C mediante sus planes y `tasks.md`; el alcance posterior continúa sujeto a clarificación incremental.
 - **Fuentes:** `docs/source-map.md`, especialmente la copia de Confluence C2 en Obsidian.
 
 ## Contexto y objetivo
@@ -50,6 +50,24 @@ Debe permitir registrar, habilitar y asignar jurados; cargar y confirmar puntuac
 
 **Excluye por ahora:** invitaciones, asignaciones y reemplazos de jurados; carga de votos; sincronización offline; penalizaciones; escrutinio y actas. El modelo y contratos de I1 deben dejar preparada la evolución hacia esos módulos, sin implementarlos anticipadamente.
 
+## Incremento I1-C — Cierre de configuración operativa
+
+**Objetivo:** cerrar las brechas detectadas en la validación estática de I1 antes de ampliar el dominio competitivo.
+
+**Incluye:**
+
+- Listado, edición y soft-disable de categorías, participaciones, especialidades, rubros e ítems evaluables mientras el evento esté en `CONFIGURING`.
+- Criterios descriptivos ordenados por rubro, administrables por API y panel, sin valor de puntuación ni participación en readiness.
+- Bloqueo en base de datos de toda entidad de configuración, incluidas nominaciones preparatorias y programación por noche, cuando el evento esté `OPEN`.
+- Contratos de error HTTP consistentes para validaciones, inexistencia, duplicados, referencias inválidas y recursos bloqueados.
+- Listado de usuarios existentes y promoción/revocación auditada del rol `ADMIN`, sin registro público ni alta operativa de usuarios.
+- Panel que permita revisar y corregir la configuración existente, muestre especialidades derivadas y confirme explícitamente la apertura irreversible.
+- Revalidación completa de migraciones, seeds, API y cliente, incluida toda migración posterior a 017.
+
+**Continúa excluido:** gestión operativa de nominaciones y programación; usuarios/jurados operativos; invitaciones, asignaciones y reemplazos; votación; offline/sync; penalizaciones; escrutinio; resultados; actas y reportes.
+
+**Fuente de I1-C:** revisión de aceptación de I1 y decisión formal del responsable del producto del 2026-08-30, registrada en `docs/source-map.md`. I1-C corrige cobertura de requisitos existentes y no incorpora reglas reglamentarias nuevas.
+
 ## Requisitos funcionales confirmados
 
 ### Configuración y acceso
@@ -82,6 +100,10 @@ Debe permitir registrar, habilitar y asignar jurados; cargar y confirmar puntuac
 - **RF-01t.** EL SISTEMA DEBE exigir verificación en dos pasos para todos los roles antes de conceder acceso a rutas protegidas, incluido el panel administrativo. Una autenticación de email y contraseña sin OTP verificado NO DEBE considerarse sesión plenamente autorizada.
 - **RF-01u.** EL SISTEMA DEBE usar OTP numérico de seis dígitos, con expiración de cinco minutos y almacenamiento cifrado. En desarrollo el envío puede usar un adaptador de consola; en producción DEBE usar un proveedor de correo configurado y fallar de forma segura si no está disponible.
 - **RF-01v.** CUANDO un usuario complete correctamente la verificación 2FA, EL SISTEMA DEBE rotar su sesión y revocar las sesiones previas conforme a la política de autenticación.
+- **RF-01w.** MIENTRAS un evento esté en `CONFIGURING`, EL SISTEMA DEBE permitir listar y corregir sus categorías, participaciones, especialidades, rubros e ítems; la baja funcional de estos catálogos DEBE realizarse mediante `active=false`, sin eliminación física.
+- **RF-01x.** CUANDO un evento esté `OPEN`, EL SISTEMA DEBE impedir en la base de datos toda inserción, actualización, eliminación o reasignación de sus entidades de configuración, incluidas las nominaciones y programaciones preparatorias de I1.
+- **RF-01y.** EL SISTEMA DEBE administrar criterios descriptivos ordenados dentro de cada rubro como referencias sin puntuación independiente. Estos criterios NO DEBEN crear ítems ni bloquear la apertura del evento.
+- **RF-01z.** CUANDO la API rechace una operación administrativa, EL SISTEMA DEBE devolver un código estable y un estado HTTP acorde para que el cliente pueda informar validaciones, conflictos, inexistencia y bloqueo sin ocultar el motivo.
 - **RF-02.** EL SISTEMA DEBE distinguir jornadas de competencia de jornadas sin votación.
 - **RF-03.** CUANDO un usuario se registra o inicia sesión, EL SISTEMA NO DEBE habilitarlo a votar solo por tener correo válido.
 - **RF-04.** EL SISTEMA DEBE habilitar la votación únicamente si existe una asignación activa del jurado para el evento, la noche y la especialidad correspondiente.

@@ -29,10 +29,56 @@ test("API ADMIN administra categorías y participaciones sin texto libre", { ski
     const category = await categoryResponse.json();
     const troupeResponse = await fetch(`${baseUrl}/api/v1/events/${event.id}/troupes`, { method: "POST", headers, body: JSON.stringify({ name: "Comparsa API", categoryId: category.id }) });
     assert.equal(troupeResponse.status, 201);
+    const troupe = await troupeResponse.json();
+    const listedTroupes = await fetch(`${baseUrl}/api/v1/events/${event.id}/troupes`, { headers });
+    assert.equal(listedTroupes.status, 200);
+    assert.equal((await listedTroupes.json()).length, 1);
+    const updatedTroupe = await fetch(`${baseUrl}/api/v1/troupes/${troupe.id}`, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ name: "Comparsa editada", categoryId: category.id, active: false }),
+    });
+    assert.equal(updatedTroupe.status, 200);
+    assert.equal((await updatedTroupe.json()).active, false);
     const invalidTroupe = await fetch(`${baseUrl}/api/v1/events/${event.id}/troupes`, { method: "POST", headers, body: JSON.stringify({ name: "Texto libre", category: "Primera" }) });
     assert.equal(invalidTroupe.status, 400);
-    await fetch(`${baseUrl}/api/v1/categories/${category.id}`, { method: "PATCH", headers, body: JSON.stringify({ active: false }) });
+    const updatedCategory = await fetch(`${baseUrl}/api/v1/categories/${category.id}`, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ name: "Primera editada", code: "PRIMERA_EDITADA", displayOrder: 2, active: false }),
+    });
+    assert.equal(updatedCategory.status, 200);
+    assert.equal((await updatedCategory.json()).name, "Primera editada");
+    const deactivateWithInactiveCategory = await fetch(`${baseUrl}/api/v1/troupes/${troupe.id}`, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ active: false }),
+    });
+    assert.equal(deactivateWithInactiveCategory.status, 200);
+    const reactivateWithInactiveCategory = await fetch(`${baseUrl}/api/v1/troupes/${troupe.id}`, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ active: true }),
+    });
+    assert.equal(reactivateWithInactiveCategory.status, 409);
+    assert.deepEqual(await reactivateWithInactiveCategory.json(), { code: "CATEGORY_INACTIVE" });
     const eligible = await fetch(`${baseUrl}/api/v1/events/${event.id}/categories?eligible=true`, { headers });
     assert.deepEqual(await eligible.json(), []);
+
+    const duplicate = await fetch(`${baseUrl}/api/v1/events/${event.id}/categories`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ name: "Duplicada", code: "PRIMERA_EDITADA", displayOrder: 3 }),
+    });
+    assert.equal(duplicate.status, 409);
+    assert.equal((await duplicate.json()).code, "RESOURCE_CONFLICT");
+
+    const missingEvent = await fetch(`${baseUrl}/api/v1/events/${randomUUID()}/categories`, { headers });
+    assert.equal(missingEvent.status, 404);
+    assert.deepEqual(await missingEvent.json(), { code: "EVENT_NOT_FOUND" });
+
+    const malformed = await fetch(`${baseUrl}/api/v1/events`, { method: "POST", headers, body: "{" });
+    assert.equal(malformed.status, 400);
+    assert.deepEqual(await malformed.json(), { code: "VALIDATION_ERROR" });
   });
 });

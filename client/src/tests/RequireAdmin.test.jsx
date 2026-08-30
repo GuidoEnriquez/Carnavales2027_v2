@@ -7,7 +7,7 @@ const renderGuard = (session) => render(<RequireAdmin session={session}><p>Admin
 describe("RequireAdmin", () => {
   it("muestra login para anónimo y acceso denegado para no ADMIN", () => {
     const { rerender } = renderGuard({ status: "anonymous" });
-    expect(screen.getByText("Iniciá sesión para continuar")).toBeInTheDocument();
+    expect(screen.getByText(/Iniciá sesión para continuar/)).toBeInTheDocument();
     rerender(<RequireAdmin session={{ status: "authenticated", roles: [] }}><p>Admin content</p></RequireAdmin>);
     expect(screen.getByText("No tenés permisos de administración")).toBeInTheDocument();
   });

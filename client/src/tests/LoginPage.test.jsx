@@ -2,11 +2,12 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { apiRequest } from "../api/http.js";
 import { LoginPage } from "../pages/LoginPage.jsx";
+import { SessionProvider } from "../auth/session-context.jsx";
 
 vi.mock("../api/http.js", () => ({ apiRequest: vi.fn() }));
 
 describe("LoginPage", () => {
-  afterEach(() => { cleanup(); vi.clearAllMocks(); });
+  afterEach(() => { cleanup(); vi.clearAllMocks(); window.location.hash = ""; });
 
   it("inicia sesión, solicita OTP y verifica 2FA antes de entrar al panel", async () => {
     const onAuthenticated = vi.fn();
@@ -56,5 +57,52 @@ describe("LoginPage", () => {
       method: "POST",
       body: "{}",
     });
+  });
+
+  it("refresca la sesión y dirige al área JUDGE después del OTP", async () => {
+    let meCalls = 0;
+    apiRequest.mockImplementation((path) => {
+      if (path === "/api/v1/me") {
+        meCalls += 1;
+        return meCalls === 1
+          ? Promise.reject({ code: "UNAUTHENTICATED" })
+          : Promise.resolve({ user: { id: "u1", name: "Jurado" }, roles: ["JUDGE"], judgeProfile: { registrationStatus: "REGISTERED" } });
+      }
+      if (path === "/api/auth/sign-in/email") return Promise.resolve({});
+      return Promise.resolve({});
+    });
+    render(<SessionProvider><LoginPage /></SessionProvider>);
+
+    fireEvent.change(screen.getByLabelText("Correo"), { target: { value: "judge@example.test" } });
+    fireEvent.change(screen.getByLabelText("Contraseña"), { target: { value: "JudgePassword-2026!" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.change(await screen.findByLabelText("Código de verificación"), { target: { value: "123456" } });
+    fireEvent.click(screen.getByRole("button", { name: "Verificar código" }));
+
+    await waitFor(() => expect(window.location.hash).toBe("#/judge"));
+    expect(meCalls).toBe(2);
+  });
+
+  it("reintenta solo la carga del perfil cuando el OTP ya fue aceptado", async () => {
+    let meCalls = 0;
+    apiRequest.mockImplementation((path) => {
+      if (path === "/api/v1/me") {
+        meCalls += 1;
+        if (meCalls === 1) return Promise.reject({ code: "UNAUTHENTICATED" });
+        if (meCalls === 2) return Promise.reject({ code: "INTERNAL_ERROR" });
+        return Promise.resolve({ user: { id: "u2", name: "Jurado" }, roles: ["JUDGE"], judgeProfile: { registrationStatus: "REGISTERED" } });
+      }
+      return Promise.resolve({});
+    });
+    render(<SessionProvider><LoginPage /></SessionProvider>);
+    fireEvent.change(screen.getByLabelText("Correo"), { target: { value: "judge@example.test" } });
+    fireEvent.change(screen.getByLabelText("Contraseña"), { target: { value: "JudgePassword-2026!" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.change(await screen.findByLabelText("Código de verificación"), { target: { value: "123456" } });
+    fireEvent.click(screen.getByRole("button", { name: "Verificar código" }));
+
+    fireEvent.click(await screen.findByRole("button", { name: "Cargar mi perfil" }));
+    await waitFor(() => expect(window.location.hash).toBe("#/judge"));
+    expect(meCalls).toBe(3);
   });
 });

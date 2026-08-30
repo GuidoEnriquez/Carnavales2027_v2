@@ -56,5 +56,16 @@ test("monta la consulta de sesión de Better Auth sin exponer secretos", {
 
     assert.equal(response.status, 200);
     assert.doesNotMatch(body, /test-only-secret/);
+
+    const signup = await fetch(`${baseUrl}/api/auth/sign-up/email`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        name: "Registro público",
+        email: `public-${Date.now()}@example.test`,
+        password: "PublicPassword-2026!",
+      }),
+    });
+    assert.equal(signup.status, 403);
   });
 });

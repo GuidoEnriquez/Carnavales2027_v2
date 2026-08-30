@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { fileURLToPath } from "node:url";
 import { grantRole } from "../auth/role-service.js";
+import { createCredentialUser } from "../auth/account-service.js";
 import { closePool, getPool } from "./pool.js";
 
 function requireEnvironment(environment, name) {
@@ -29,22 +30,9 @@ export function getSeedAdminConfig(environment = process.env) {
   };
 }
 
-async function createUserWithBetterAuth({ email, name, password }) {
-  const { auth } = await import("../auth/auth.js");
-  const response = await auth.api.signUpEmail({
-    body: { email, name, password },
-  });
-
-  if (!response?.user?.id) {
-    throw new Error("SEED_ADMIN_USER_CREATION_FAILED");
-  }
-
-  return response.user;
-}
-
 export async function seedDevelopmentAdmin({
   config = getSeedAdminConfig(),
-  createUser = createUserWithBetterAuth,
+  createUser = createCredentialUser,
 } = {}) {
   if (config.nodeEnv !== "development" && config.nodeEnv !== "test") {
     throw new Error("SEED_ADMIN_FORBIDDEN_IN_PRODUCTION");

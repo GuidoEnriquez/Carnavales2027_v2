@@ -31,7 +31,7 @@ async function withServer(app, run) {
   }
 }
 
-test("GET /api/v1/me exige sesión 2FA y rol ADMIN", {
+test("GET /api/v1/me exige sesión 2FA y devuelve roles sin exigir ADMIN", {
   skip: !process.env.TEST_DATABASE_URL,
 }, async (context) => {
   context.after(async () => {
@@ -93,8 +93,16 @@ test("GET /api/v1/me exige sesión 2FA y rol ADMIN", {
     const missingRole = await fetch(`${baseUrl}/api/v1/me`, {
       headers: { "x-test-session": "userWithoutAdmin" },
     });
-    assert.equal(missingRole.status, 403);
-    assert.deepEqual(await missingRole.json(), { code: "ADMIN_REQUIRED" });
+    assert.equal(missingRole.status, 200);
+    assert.deepEqual(await missingRole.json(), {
+      user: {
+        id: userId,
+        email: `${userId}@example.test`,
+        name: "User without admin",
+      },
+      roles: [],
+      judgeProfile: null,
+    });
 
     const admin = await fetch(`${baseUrl}/api/v1/me`, {
       headers: { "x-test-session": "admin" },
@@ -107,6 +115,7 @@ test("GET /api/v1/me exige sesión 2FA y rol ADMIN", {
         name: "Administrator",
       },
       roles: ["ADMIN"],
+      judgeProfile: null,
     });
   });
 });

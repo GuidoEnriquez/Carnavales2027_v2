@@ -23,4 +23,18 @@ describe("AdminEventsPage", () => {
     pending.forEach((resolve) => resolve([]));
     expect(await screen.findByRole("heading", { name: "Jornadas" })).toBeInTheDocument();
   });
+
+  it("falla cerrado si una sección de configuración no puede cargarse", async () => {
+    apiRequest
+      .mockResolvedValueOnce([{ id: "e1", name: "Goya", status: "CONFIGURING" }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockRejectedValueOnce(new Error("network"))
+      .mockResolvedValue([]);
+
+    render(<AdminEventsPage />);
+    fireEvent.click(await screen.findByRole("button", { name: "Goya (CONFIGURING)" }));
+    expect(await screen.findByRole("heading", { name: "No se pudo cargar la configuración" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Nombre de categoría")).not.toBeInTheDocument();
+  });
 });

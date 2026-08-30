@@ -5,6 +5,9 @@ node_modules/
 .env
 .env.*
 !.env.example
+opencode.json
+skills-lock.json
+.agents/
 
 # Build and coverage
 coverage/

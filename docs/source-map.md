@@ -2,6 +2,13 @@
 
 > Estado: inventario inicial provisto por Guido. Pendiente: URLs o export/contenido verificable de Jira y Confluence antes de declarar requisitos como definitivos.
 
+## Visión funcional objetivo
+
+- `README.md` objetivo funcional proporcionado por el responsable del producto el 2026-08-30 como objetivo de evolución del sistema.
+- Decisión de producto del 2026-08-30 — cerrar I1 antes de ampliar alcance y corregir administración incompleta, criterios descriptivos, bloqueo tras `OPEN` y contratos de error. Fuente de RF-01w–RF-01z.
+- Este README orienta el backlog, pero sus reglas se incorporan a la implementación únicamente después de contrastarlas con Jira, Confluence o el reglamento y de completar el ciclo SDD.
+- Ante contradicciones de roles, estados, catálogo reglamentario, cálculos, seguridad u operación offline, la regla se registra como pendiente de clarificación y no autoriza código por sí sola.
+
 ## Jira — proyecto SVC2
 
 ### Base y alcance
@@ -65,18 +72,38 @@
 
 El vault contiene copias/síntesis utilizables para redactar la spec. Jira y Confluence siguen siendo la fuente canónica cuando exista un conflicto o haya información más reciente.
 
-- `20 - Proyectos/Carnavales 2027/Guia del equipo - Confluence.md`
+- `Guia del equipo - Confluence.md` (copia local de referencia, no distribuida en este repositorio)
   - Copia de la página de Confluence C2 `5013505`.
   - Define objetivo configurable y reutilizable, offline-first, secreto de voto, roles, jornadas, escala, omisiones, penalizaciones, desempate y escrutinio.
-- `20 - Proyectos/Carnavales 2027/Backlog SVC2 - Resumen.md`
+- `Backlog SVC2 - Resumen.md` (copia local de referencia, no distribuida en este repositorio)
   - Resumen de Jira SVC2 al `2026-08-27`; útil para épicas, prioridades y trazabilidad, pero no para inferir estados actuales.
-- `20 - Proyectos/Carnavales 2027/Areas/09 - Base de Datos - Modelo Completo.md`
+- `Base de Datos - Modelo Completo.md` (copia local de referencia, no distribuida en este repositorio)
   - Diseño de referencia para datos, concurrencia, idempotencia y cierres transaccionales.
-- `20 - Proyectos/Carnavales 2027/Areas/11 - Registro e Invitacion de Jurados (SVC2-9).md`
+- `Registro e Invitacion de Jurados (SVC2-9).md` (copia local de referencia, no distribuida en este repositorio)
   - Reglas y criterios de aceptación de padrón, invitaciones y habilitación de jurados.
+  - Contrastada el 2026-08-30 para I2-A. Se adoptan alta exclusiva por ADMIN, padrón sin cupo, invitación de uso único y separación entre registro y habilitación; la especialidad fija del diseño histórico se reemplaza por especialidad en cada asignación para respetar el catálogo scoped por evento de I1.
+
+## Decisiones de producto I2-A — 2026-08-30
+
+- Dividir Spec 002 en I2-A, padrón e invitaciones, e I2-B, cupos, asignaciones y reemplazos.
+- I2-A incorpora únicamente los roles `ADMIN` y `JUDGE`.
+- El alta de jurados es exclusiva por invitación de un ADMIN; no existe registro público autónomo.
+- El perfil exige nombre, correo y DNI, no guarda especialidad y conserva su historia sin borrado físico.
+- Las invitaciones vencen a las 72 horas por defecto, con duración configurable; una reemisión revoca la pendiente anterior.
+- Suspender un jurado conserva perfil y rol, bloquea sus capacidades y revoca sus sesiones activas.
+
+## Decisiones de producto I2-B — 2026-08-30
+
+- El cupo se configura por noche + especialidad y una reducción por debajo de las asignaciones activas se rechaza.
+- Un jurado solo puede tener una asignación activa por noche.
+- `PRIMARY` y `SUBSTITUTE` son tipos de asignación y ambos consumen cupo.
+- Las altas ocurren antes de `OPEN`; durante `OPEN` solo se permiten revocaciones y reemplazos; una noche `CLOSED` queda bloqueada.
+- Los reemplazos revocan la asignación original, crean una nueva relacionada y exigen motivo; su efecto es futuro.
+- Impugnaciones, ventanas temporales, planillas, votación y offline/sync quedan fuera de I2-B.
 
 ## Uso en SDD
 
 - La spec debe enlazar cada requisito a una fuente Jira/Confluence o a su copia identificada de Obsidian.
 - Los títulos de tickets no se interpretan como reglas completas.
 - Ante conflicto entre una copia de Obsidian y Jira/Confluence actual, se documenta como `[NECESITA ACLARACIÓN]` antes del plan o código.
+- La visión funcional objetivo se divide en incrementos verticales: cierre I1; usuarios y jurados; programación y nominaciones; votación; offline/sync; supervisión y penalizaciones; escrutinio/resultados; actas/reportes.

@@ -1,0 +1,64 @@
+CREATE OR REPLACE FUNCTION protect_judge_profile_history()
+RETURNS trigger AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'JUDGE_PROFILE_DELETE_FORBIDDEN';
+  END IF;
+
+  IF OLD.user_id IS NOT NULL AND NEW.user_id IS DISTINCT FROM OLD.user_id THEN
+    RAISE EXCEPTION 'JUDGE_IDENTITY_REASSIGNMENT_FORBIDDEN';
+  END IF;
+  IF NEW.created_by IS DISTINCT FROM OLD.created_by
+     OR NEW.created_at IS DISTINCT FROM OLD.created_at THEN
+    RAISE EXCEPTION 'JUDGE_PROFILE_HISTORY_IMMUTABLE';
+  END IF;
+
+  IF NEW.registration_status <> OLD.registration_status AND NOT (
+    (OLD.registration_status = 'INVITED' AND NEW.registration_status = 'REGISTERED')
+    OR (OLD.registration_status = 'REGISTERED' AND NEW.registration_status = 'SUSPENDED')
+    OR (OLD.registration_status = 'SUSPENDED' AND NEW.registration_status = 'REGISTERED')
+  ) THEN
+    RAISE EXCEPTION 'INVALID_JUDGE_STATUS';
+  END IF;
+
+  NEW.updated_at = CURRENT_TIMESTAMP;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION protect_judge_invitation_history()
+RETURNS trigger AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'JUDGE_INVITATION_DELETE_FORBIDDEN';
+  END IF;
+
+  IF NEW.judge_profile_id IS DISTINCT FROM OLD.judge_profile_id
+     OR NEW.secret_hash IS DISTINCT FROM OLD.secret_hash
+     OR NEW.expires_at IS DISTINCT FROM OLD.expires_at
+     OR NEW.created_by IS DISTINCT FROM OLD.created_by
+     OR NEW.created_at IS DISTINCT FROM OLD.created_at THEN
+    RAISE EXCEPTION 'JUDGE_INVITATION_HISTORY_IMMUTABLE';
+  END IF;
+
+  IF OLD.status <> 'PENDING' AND NEW IS DISTINCT FROM OLD THEN
+    RAISE EXCEPTION 'JUDGE_INVITATION_FINAL';
+  END IF;
+  IF OLD.status = 'PENDING' AND NEW.status NOT IN ('PENDING', 'USED', 'REVOKED') THEN
+    RAISE EXCEPTION 'INVALID_JUDGE_INVITATION_STATUS';
+  END IF;
+  IF NEW.status = 'USED' AND NEW.used_at IS NULL THEN
+    RAISE EXCEPTION 'INVALID_JUDGE_INVITATION_STATUS';
+  END IF;
+  IF NEW.status = 'REVOKED' AND (NEW.revoked_at IS NULL OR NEW.revoked_by IS NULL) THEN
+    RAISE EXCEPTION 'INVALID_JUDGE_INVITATION_STATUS';
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER judge_invitation_delete_guard ON judge_invitation;
+CREATE TRIGGER judge_invitation_history_guard
+BEFORE UPDATE OR DELETE ON judge_invitation
+FOR EACH ROW EXECUTE FUNCTION protect_judge_invitation_history();

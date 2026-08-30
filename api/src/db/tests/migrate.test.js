@@ -44,6 +44,18 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
     || filename === "016_forbid_event_reassignment.sql"
     || filename === "017_complete_event_immutability.sql"
     || filename === "018_require_audited_event_open.sql"
+    || filename === "019_configuration_closure.sql"
+    || filename === "020_allow_unchanged_inactive_references.sql"
+    || filename === "021_guard_inactive_reference_reactivation.sql"
+    || filename === "022_judge_roster.sql"
+    || filename === "023_judge_invitations.sql"
+    || filename === "024_judge_history_guards.sql"
+    || filename === "025_judge_transition_guards.sql"
+    || filename === "026_invitation_delivery_after_acceptance.sql"
+    || filename === "027_invitation_acceptance_claim.sql"
+    || filename === "028_judge_quotas_assignments.sql"
+    || filename === "029_night_operational_status.sql"
+    || filename === "030_harden_judge_quota_guard.sql"
   )));
 
   const status = await getMigrationStatus();
@@ -136,6 +148,66 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
     {
       filename: "018_require_audited_event_open.sql",
       version: "018",
+      applied: true,
+    },
+    {
+      filename: "019_configuration_closure.sql",
+      version: "019",
+      applied: true,
+    },
+    {
+      filename: "020_allow_unchanged_inactive_references.sql",
+      version: "020",
+      applied: true,
+    },
+    {
+      filename: "021_guard_inactive_reference_reactivation.sql",
+      version: "021",
+      applied: true,
+    },
+    {
+      filename: "022_judge_roster.sql",
+      version: "022",
+      applied: true,
+    },
+    {
+      filename: "023_judge_invitations.sql",
+      version: "023",
+      applied: true,
+    },
+    {
+      filename: "024_judge_history_guards.sql",
+      version: "024",
+      applied: true,
+    },
+    {
+      filename: "025_judge_transition_guards.sql",
+      version: "025",
+      applied: true,
+    },
+    {
+      filename: "026_invitation_delivery_after_acceptance.sql",
+      version: "026",
+      applied: true,
+    },
+    {
+      filename: "027_invitation_acceptance_claim.sql",
+      version: "027",
+      applied: true,
+    },
+    {
+      filename: "028_judge_quotas_assignments.sql",
+      version: "028",
+      applied: true,
+    },
+    {
+      filename: "029_night_operational_status.sql",
+      version: "029",
+      applied: true,
+    },
+    {
+      filename: "030_harden_judge_quota_guard.sql",
+      version: "030",
       applied: true,
     },
   ]);

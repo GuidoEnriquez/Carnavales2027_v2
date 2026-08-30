@@ -3,6 +3,7 @@ import test from "node:test";
 import { toNodeHandler } from "better-auth/node";
 import { createApp } from "../app.js";
 import { closePool, getPool } from "../db/pool.js";
+import { createCredentialUser } from "../auth/account-service.js";
 import { createOtpDelivery, requireTwoFactor } from "../auth/two-factor.js";
 
 const originalEnvironment = {
@@ -132,11 +133,17 @@ test("verifica OTP cifrado, habilita 2FA y rota la sesión", {
     },
   });
   const email = `otp-${Date.now()}@example.test`;
-  const signUpResponse = await auth.api.signUpEmail({
-    body: { name: "OTP Test", email, password: "TestPassword-2026!" },
+  await createCredentialUser({
+    authInstance: auth,
+    name: "OTP Test",
+    email,
+    password: "TestPassword-2026!",
+  });
+  const signInResponse = await auth.api.signInEmail({
+    body: { email, password: "TestPassword-2026!" },
     asResponse: true,
   });
-  const cookie = signUpResponse.headers.get("set-cookie").split(";")[0];
+  const cookie = signInResponse.headers.get("set-cookie").split(";")[0];
   const session = await auth.api.getSession({ headers: new Headers({ cookie }) });
 
   await auth.api.enableTwoFactor({
