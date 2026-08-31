@@ -33,20 +33,20 @@ export function JudgeBallotPage({ ballotId }) {
     void loadBallot();
   }, [ballotId]);
 
-  const saveScore = async (scoreId, value) => {
+  const saveDecision = async (scoreId, evaluationState, score) => {
     if (!ballot || busy) return;
     setBusy(scoreId);
     setMessage("");
     try {
       const saved = await apiRequest(`/api/v1/judge/ballots/${ballot.id}/scores/${scoreId}`, {
         method: "PUT",
-        body: JSON.stringify({ score: value === "" ? null : Number(value) }),
+        body: JSON.stringify({ evaluationState, ...(score === undefined ? {} : { score }) }),
       });
       setBallot((current) => ({
         ...current,
         scores: current.scores.map((score) => score.id === saved.id ? { ...score, ...saved } : score),
       }));
-      setMessage("Puntuación guardada.");
+      setMessage("Decisión guardada.");
     } catch (error) {
       const messages = {
         BALLOT_ALREADY_SUBMITTED: "La planilla ya fue confirmada.",
@@ -104,14 +104,14 @@ export function JudgeBallotPage({ ballotId }) {
         <header><p className="eyebrow">Salida {group.presentationOrder}</p><h2>{group.troupeName}</h2></header>
         {Object.values(group.rubrics).map((rubric) => <section className="ballot-rubric" key={rubric.rubricId}>
           <h3>{rubric.rubricName}</h3>
-          {rubric.scores.map((score) => <label className="score-row" key={score.id}>
-            <span>{score.itemName}</span>
-            <select value={score.score ?? ""} disabled={readonly || score.status === "LOCKED" || Boolean(busy)} onChange={(event) => void saveScore(score.id, event.target.value)} aria-label={`${group.troupeName}: ${score.itemName}`}>
-              <option value="">Pendiente</option>
-              <option value="0">0 · No presentado</option>
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => <option key={value} value={value}>{value}</option>)}
-            </select>
-          </label>)}
+          {rubric.scores.map((score) => <div className="score-row" key={score.id}>
+            <div><span>{score.itemName}</span><small>{score.evaluationState === "NOT_PRESENTED" ? "No se presentó" : score.evaluationState === "SCORED" ? `Puntuado: ${score.score}` : "Pendiente"}</small></div>
+            <div className="score-actions" role="group" aria-label={`${group.troupeName}: ${score.itemName}`}>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => <button key={value} type="button" className={score.evaluationState === "SCORED" && score.score === value ? "is-selected" : ""} disabled={readonly || score.status === "LOCKED" || Boolean(busy)} onClick={() => void saveDecision(score.id, "SCORED", value)}>{value}</button>)}
+              <button type="button" className={score.evaluationState === "NOT_PRESENTED" ? "is-selected" : ""} disabled={readonly || score.status === "LOCKED" || Boolean(busy)} onClick={() => void saveDecision(score.id, "NOT_PRESENTED")}>No se presentó</button>
+              {score.evaluationState !== "PENDING" && <button type="button" className="score-clear" disabled={readonly || score.status === "LOCKED" || Boolean(busy)} onClick={() => void saveDecision(score.id, "PENDING")}>Quitar decisión</button>}
+            </div>
+          </div>)}
         </section>)}
       </article>)}
     </section>

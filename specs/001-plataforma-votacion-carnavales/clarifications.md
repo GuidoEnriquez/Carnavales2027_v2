@@ -2,8 +2,8 @@
 
 ## Estado
 
-- **Fase SDD:** I1-C implementado y validado.
-- **Código:** I1-C e I2-A cerrados; I2-B autorizado por sus clarificaciones y plan propios.
+- **Fase SDD:** I1-C, I2-A, I2-B e I3 implementados; Spec 004 validada.
+- **Código:** la evolución de planillas vigente se documenta en Spec 004; offline/sync, penalizaciones, escrutinio, resultados y actas continúan diferidos.
 - **Base revisada:** `spec.md`, `docs/source-map.md` y las notas de Obsidian referenciadas.
 
 ## Decisiones ya resueltas
@@ -45,4 +45,4 @@
 
 ## Siguiente resolución prioritaria
 
-I2-A e I2-B están cerrados y validados. Impugnaciones, ventanas temporales y votación siguen diferidas y requieren una nueva spec antes de implementarse.
+I2-A, I2-B, I3 y Spec 004 están cerrados y validados. Impugnaciones, offline/sync, penalizaciones, escrutinio, resultados y actas requieren sus propios incrementos antes de implementarse.

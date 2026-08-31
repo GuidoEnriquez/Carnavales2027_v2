@@ -3,7 +3,6 @@ import { requireTwoFactor } from "../auth/two-factor.js";
 import { requireAdmin } from "../auth/require-admin.js";
 import { requireJudge } from "../auth/require-judge.js";
 import { requireVotingObserver } from "../auth/require-voting-observer.js";
-import { requireScrutineer } from "../auth/require-scrutineer.js";
 import {
   openVoting,
   closeVoting,
@@ -14,8 +13,6 @@ import {
   submitBallot,
   reopenBallot,
   listNightBallots,
-  markScoreOmission,
-  recordScoreSubsanation,
 } from "../modules/ballots/ballot-service.js";
 import { sendKnownError } from "./http-errors.js";
 
@@ -24,44 +21,6 @@ export function createVotingRouter({ requireSession }) {
   const admin = [requireSession, requireTwoFactor, requireAdmin];
   const judge = [requireSession, requireTwoFactor, requireJudge];
   const observer = [requireSession, requireTwoFactor, requireVotingObserver];
-  const scrutineer = [requireSession, requireTwoFactor, requireScrutineer];
-
-  router.post(
-    "/scrutiny/ballots/:ballotId/scores/:scoreId/omissions",
-    ...scrutineer,
-    async (request, response) => {
-      try {
-        response.status(200).json(await markScoreOmission({
-          actorUserId: request.user.id,
-          ballotId: request.params.ballotId,
-          scoreId: request.params.scoreId,
-          reason: request.body?.reason,
-        }));
-      } catch (error) {
-        if (sendKnownError(response, error)) return;
-        throw error;
-      }
-    },
-  );
-
-  router.post(
-    "/scrutiny/ballots/:ballotId/scores/:scoreId/subsanations",
-    ...scrutineer,
-    async (request, response) => {
-      try {
-        response.status(201).json(await recordScoreSubsanation({
-          actorUserId: request.user.id,
-          ballotId: request.params.ballotId,
-          scoreId: request.params.scoreId,
-          reason: request.body?.reason,
-        }));
-      } catch (error) {
-        if (sendKnownError(response, error)) return;
-        throw error;
-      }
-    },
-  );
-
   router.post(
     "/events/:eventId/nights/:nightId/voting/open",
     ...admin,
@@ -190,6 +149,7 @@ export function createVotingRouter({ requireSession }) {
           actorUserId: request.user.id,
           ballotId: request.params.ballotId,
           scoreId: request.params.scoreId,
+          evaluationState: request.body?.evaluationState,
           score: request.body?.score,
         });
         response.json(result);

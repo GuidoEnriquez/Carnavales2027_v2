@@ -96,10 +96,11 @@ describe("ballots DB", () => {
     assert.equal(ballot.status, "OPEN");
 
     const { rows: [score] } = await client.query(
-      "INSERT INTO ballot_score(ballot_id, event_id, evaluation_item_id, rubric_id, night_schedule_id) VALUES($1,$2,$3,$4,$5) RETURNING id",
+      "INSERT INTO ballot_score(ballot_id, event_id, evaluation_item_id, rubric_id, night_schedule_id) VALUES($1,$2,$3,$4,$5) RETURNING id, evaluation_state",
       [ballot.id, data.event.id, data.item.id, data.rubric.id, data.schedule.id],
     );
     assert.ok(score.id);
+    assert.equal(score.evaluation_state, "PENDING");
 
     const { rows: scores } = await client.query(
       "SELECT * FROM ballot_score WHERE ballot_id = $1",
@@ -182,9 +183,9 @@ describe("ballots DB", () => {
       [data.event.id, data.night.id, data.assignment.id, data.judgeProfile.id, data.specialty.id],
     );
     const { rows: [score] } = await client.query(
-      `INSERT INTO ballot_score(ballot_id, event_id, evaluation_item_id, rubric_id, night_schedule_id, score)
-       VALUES($1,$2,$3,$4,$5,$6) RETURNING id`,
-      [ballot.id, data.event.id, data.item.id, data.rubric.id, data.schedule.id, 8],
+      `INSERT INTO ballot_score(ballot_id, event_id, evaluation_item_id, rubric_id, night_schedule_id, score, evaluation_state)
+        VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
+      [ballot.id, data.event.id, data.item.id, data.rubric.id, data.schedule.id, 8, "SCORED"],
     );
     await client.query(
       "UPDATE ballot SET status = 'SUBMITTED', submitted_at = clock_timestamp() WHERE id = $1",
@@ -211,7 +212,7 @@ describe("ballots DB", () => {
     assert.equal(updatedScore.locked_at, null);
   });
 
-  it("score 0 is allowed", async () => {
+  it("distingue pendientes, puntuaciones y no presentados", async () => {
     const data = await setupTestData();
     const { rows: [ballot] } = await client.query(
       `INSERT INTO ballot(event_id, night_id, judge_assignment_id, judge_profile_id, specialty_id)
@@ -222,61 +223,30 @@ describe("ballots DB", () => {
       "INSERT INTO ballot_score(ballot_id, event_id, evaluation_item_id, rubric_id, night_schedule_id) VALUES($1,$2,$3,$4,$5) RETURNING id",
       [ballot.id, data.event.id, data.item.id, data.rubric.id, data.schedule.id],
     );
-    await client.query("UPDATE ballot_score SET score = 0 WHERE id = $1", [score.id]);
-    const { rows: [updated] } = await client.query("SELECT score FROM ballot_score WHERE id = $1", [score.id]);
+    await client.query("UPDATE ballot_score SET score = 7, evaluation_state = 'SCORED' WHERE id = $1", [score.id]);
+    const { rows: [scored] } = await client.query("SELECT score, evaluation_state FROM ballot_score WHERE id = $1", [score.id]);
+    assert.equal(scored.score, 7);
+    assert.equal(scored.evaluation_state, "SCORED");
+    await client.query("UPDATE ballot_score SET score = 0, evaluation_state = 'NOT_PRESENTED' WHERE id = $1", [score.id]);
+    const { rows: [updated] } = await client.query("SELECT score, evaluation_state FROM ballot_score WHERE id = $1", [score.id]);
     assert.equal(updated.score, 0);
+    assert.equal(updated.evaluation_state, "NOT_PRESENTED");
   });
 
-  it("marca una omisión NULL sin alterar el voto original", async () => {
+  it("rechaza combinaciones inválidas de estado y puntuación", async () => {
     const data = await setupTestData();
     const { rows: [ballot] } = await client.query(
       `INSERT INTO ballot(event_id, night_id, judge_assignment_id, judge_profile_id, specialty_id)
        VALUES($1,$2,$3,$4,$5) RETURNING id`,
       [data.event.id, data.night.id, data.assignment.id, data.judgeProfile.id, data.specialty.id],
     );
-    const { rows: [score] } = await client.query(
-      `INSERT INTO ballot_score(ballot_id, event_id, evaluation_item_id, rubric_id, night_schedule_id, requires_subsanation)
-       VALUES($1,$2,$3,$4,$5,true) RETURNING id, score, requires_subsanation, subsidized_score`,
-      [ballot.id, data.event.id, data.item.id, data.rubric.id, data.schedule.id],
-    );
-    assert.equal(score.score, null);
-    assert.equal(score.requires_subsanation, true);
-    assert.equal(score.subsidized_score, null);
     await assert.rejects(
-      () => client.query("UPDATE ballot_score SET score = 7 WHERE id = $1", [score.id]),
-      /BALLOT_SCORE_SUBSANATION_REQUIRES_OMISSION/,
-    );
-  });
-
-  it("registra una subsanación separada e inmutable solo para una omisión confirmada", async () => {
-    const data = await setupTestData();
-    const { rows: [ballot] } = await client.query(
-      `INSERT INTO ballot(event_id, night_id, judge_assignment_id, judge_profile_id, specialty_id)
-       VALUES($1,$2,$3,$4,$5) RETURNING id`,
-      [data.event.id, data.night.id, data.assignment.id, data.judgeProfile.id, data.specialty.id],
-    );
-    const { rows: [score] } = await client.query(
-      `INSERT INTO ballot_score(ballot_id, event_id, evaluation_item_id, rubric_id, night_schedule_id, requires_subsanation)
-       VALUES($1,$2,$3,$4,$5,true) RETURNING id`,
-      [ballot.id, data.event.id, data.item.id, data.rubric.id, data.schedule.id],
-    );
-    await client.query("UPDATE ballot SET status = 'SUBMITTED', submitted_at = clock_timestamp() WHERE id = $1", [ballot.id]);
-    await client.query("UPDATE ballot_score SET status = 'LOCKED' WHERE id = $1", [score.id]);
-    const { rows: [subsanation] } = await client.query(
-      `INSERT INTO ballot_score_subsanation (ballot_score_id, ballot_id, event_id, recorded_by, reason)
-       VALUES($1,$2,$3,$4,$5) RETURNING id, score`,
-      [score.id, ballot.id, data.event.id, "scrutineer-user-id", "Omisión validada"],
-    );
-    assert.equal(subsanation.score, 5);
-    const { rows: [original] } = await client.query(
-      "SELECT score, requires_subsanation FROM ballot_score WHERE id = $1",
-      [score.id],
-    );
-    assert.equal(original.score, null);
-    assert.equal(original.requires_subsanation, true);
-    await assert.rejects(
-      () => client.query("UPDATE ballot_score_subsanation SET reason = 'Cambio' WHERE id = $1", [subsanation.id]),
-      /BALLOT_SCORE_SUBSANATION_IMMUTABLE/,
+      () => client.query(
+        `INSERT INTO ballot_score(ballot_id, event_id, evaluation_item_id, rubric_id, night_schedule_id, score, evaluation_state)
+         VALUES($1,$2,$3,$4,$5,$6,$7)`,
+        [ballot.id, data.event.id, data.item.id, data.rubric.id, data.schedule.id, 0, "SCORED"],
+      ),
+      /ballot_score_evaluation_state_ck/,
     );
   });
 

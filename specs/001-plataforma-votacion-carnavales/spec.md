@@ -2,8 +2,8 @@
 
 ## Estado
 
-- **Fase SDD:** I1-C implementado y validado; evolución posterior en clarificación.
-- **Implementación:** autorizada para I1 e I1-C mediante sus planes y `tasks.md`; el alcance posterior continúa sujeto a clarificación incremental.
+- **Fase SDD:** I1-C, I2-A, I2-B e I3 implementados; la completitud semántica de planillas se valida en Spec 004.
+- **Implementación:** los incrementos posteriores a I1 se rigen por sus propias specs, clarificaciones, planes y tareas; el alcance futuro continúa sujeto a clarificación incremental.
 - **Fuentes:** `docs/source-map.md`, especialmente la copia de Confluence C2 en Obsidian.
 
 ## Contexto y objetivo
@@ -113,9 +113,9 @@ Debe permitir registrar, habilitar y asignar jurados; cargar y confirmar puntuac
 ### Carga y confirmación de votos
 
 - **RF-07.** CUANDO un jurado habilitado evalúa una comparsa, EL SISTEMA DEBE mostrar únicamente los ítems autorizados para su especialidad y planilla.
-- **RF-08.** EL SISTEMA DEBE permitir puntuar en escala de 0 a 10, con el valor 0 reservado para un rubro o figura no presentada y fuera del selector normal de puntuación.
-- **RF-09.** SI una figura o rubro se presentó y falta su puntuación, ENTONCES EL SISTEMA DEBE registrar una subsanación de 5 puntos por equidad junto con su circunstancia y trazabilidad.
-- **RF-10.** CUANDO una planilla tenga ítems obligatorios sin resolver, EL SISTEMA DEBE impedir su cierre e informar los ítems pendientes.
+- **RF-08.** EL SISTEMA DEBE permitir puntuaciones ordinarias de 1 a 10. El valor 0 DEBE reservarse exclusivamente para un rubro o figura no presentada y DEBE registrarse mediante una acción independiente, nunca como pendiente ni parte de la escala ordinaria.
+- **RF-09.** SI una figura o rubro se presentó y falta su puntuación, el procedimiento de subsanación reglamentaria DEBE conservar su circunstancia y trazabilidad. El flujo operativo de esa subsanación requiere su propio incremento de escrutinio; las nuevas planillas no pueden confirmarse con ítems pendientes.
+- **RF-10.** CUANDO una planilla tenga ítems obligatorios en estado pendiente, EL SISTEMA DEBE impedir su confirmación o cierre e informar los ítems pendientes.
 - **RF-11.** CUANDO un jurado confirma una planilla, EL SISTEMA DEBE volverla inmutable para ese jurado.
 - **RF-12.** MIENTRAS se realiza la competencia, EL SISTEMA NO DEBE mostrar puntajes de otros jurados, totales, rankings, resultados preliminares ni información que permita inferirlos.
 
@@ -164,5 +164,5 @@ Debe permitir registrar, habilitar y asignar jurados; cargar y confirmar puntuac
 
 - `[NECESITA ACLARACIÓN]` Datos definitivos de los ítems/rubros nominativos, aleatorios y derivados.
 - `[NECESITA ACLARACIÓN]` Regla autorizada para corregir una planilla o un voto confirmado: quién puede hacerlo, en qué ventana, y qué evidencia exige.
-- `[NECESITA ACLARACIÓN]` Semántica exacta de una puntuación 0: qué entidad se marca como no presentada y quién tiene facultad para declararlo.
+- `[RESUELTO EN SPEC 004]` Semántica exacta de una puntuación 0: el jurado registra `NOT_PRESENTED` mediante una acción explícita sobre el ítem de su propia planilla.
 - `[NECESITA ACLARACIÓN]` Medio, formato y procedimiento de contingencia de las actas oficiales.

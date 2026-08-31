@@ -33,10 +33,9 @@ test("API votación: ciclo completo de planilla", {
   const adminId = randomUUID();
   const judgeUserId = randomUUID();
   const otherJudgeUserId = randomUUID();
-  const scrutineerId = randomUUID();
   await pool.query(
     `INSERT INTO "user"(id, name, email, "emailVerified")
-     VALUES ($1, 'Admin voting', $2, true), ($3, 'Judge voting', $4, true), ($5, 'Other judge', $6, true), ($7, 'Scrutineer', $8, true)`,
+     VALUES ($1, 'Admin voting', $2, true), ($3, 'Judge voting', $4, true), ($5, 'Other judge', $6, true)`,
     [
       adminId,
       `${adminId}@example.test`,
@@ -44,14 +43,11 @@ test("API votación: ciclo completo de planilla", {
       `${judgeUserId}@example.test`,
       otherJudgeUserId,
       `${otherJudgeUserId}@example.test`,
-      scrutineerId,
-      `${scrutineerId}@example.test`,
     ],
   );
   await pool.query("INSERT INTO user_role (user_id, role_code) VALUES ($1, 'ADMIN')", [adminId]);
   await pool.query("INSERT INTO user_role (user_id, role_code) VALUES ($1, 'JUDGE')", [judgeUserId]);
   await pool.query("INSERT INTO user_role (user_id, role_code) VALUES ($1, 'JUDGE')", [otherJudgeUserId]);
-  await pool.query("INSERT INTO user_role (user_id, role_code) VALUES ($1, 'SCRUTINEER')", [scrutineerId]);
 
   const { rows: [event] } = await pool.query(
     "INSERT INTO carnival_event(name) VALUES($1) RETURNING id", ["Voting API Event"],
@@ -139,7 +135,6 @@ test("API votación: ciclo completo de planilla", {
       if (role === "admin") return { user: { id: adminId, twoFactorEnabled: true } };
        if (role === "judge") return { user: { id: judgeUserId, twoFactorEnabled: true } };
        if (role === "other-judge") return { user: { id: otherJudgeUserId, twoFactorEnabled: true } };
-       if (role === "scrutineer") return { user: { id: scrutineerId, twoFactorEnabled: true } };
       return null;
     },
   });
@@ -148,7 +143,6 @@ test("API votación: ciclo completo de planilla", {
     const adminHeaders = { "content-type": "application/json", "x-test-session": "admin" };
     const judgeHeaders = { "content-type": "application/json", "x-test-session": "judge" };
     const otherJudgeHeaders = { "content-type": "application/json", "x-test-session": "other-judge" };
-    const scrutineerHeaders = { "content-type": "application/json", "x-test-session": "scrutineer" };
 
     // 1. Unauthenticated → 401
     const unauth = await fetch(`${baseUrl}/api/v1/events/${event.id}/nights/${night.id}/voting/open`, { method: "POST" });
@@ -196,7 +190,7 @@ test("API votación: ciclo completo de planilla", {
     // 6. A different judge cannot edit the ballot.
     const forbiddenSave = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/scores/${firstScore.id}`, {
       method: "PUT", headers: otherJudgeHeaders,
-      body: JSON.stringify({ score: 8 }),
+      body: JSON.stringify({ evaluationState: "SCORED", score: 8 }),
     });
     assert.equal(forbiddenSave.status, 409);
     assert.equal((await forbiddenSave.json()).code, "BALLOT_ACCESS_DENIED");
@@ -212,35 +206,46 @@ test("API votación: ciclo completo de planilla", {
       method: "POST", headers: adminHeaders,
     });
     assert.equal(incompleteClose.status, 409);
-    assert.equal((await incompleteClose.json()).code, "VOTING_CLOSE_INCOMPLETE_BALLOTS");
+    const incompleteCloseBody = await incompleteClose.json();
+    assert.equal(incompleteCloseBody.code, "VOTING_CLOSE_INCOMPLETE_BALLOTS");
+    assert.equal(incompleteCloseBody.details.length, 2);
+    assert.deepEqual(incompleteCloseBody.details.map((item) => item.name), ["Presencia", "Presencia"]);
+    assert.deepEqual(incompleteCloseBody.details.map((item) => item.judgeName), ["Judge Voting", "Judge Voting"]);
+    assert.deepEqual(incompleteCloseBody.details.map((item) => item.troupeName), ["Comparsa 1", "Comparsa 2"]);
 
-    // 8. Only SCRUTINEER may mark an unresolved item as an omission.
-    const forbiddenOmission = await fetch(`${baseUrl}/api/v1/scrutiny/ballots/${ballotId}/scores/${secondScore.id}/omissions`, {
-      method: "POST", headers: adminHeaders, body: JSON.stringify({ reason: "Ausencia constatada" }),
+    const invalidOrdinaryScore = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/scores/${firstScore.id}`, {
+      method: "PUT", headers: judgeHeaders,
+      body: JSON.stringify({ evaluationState: "SCORED", score: 0 }),
     });
-    assert.equal(forbiddenOmission.status, 403);
-    assert.equal((await forbiddenOmission.json()).code, "SCRUTINEER_REQUIRED");
-    const omissionRes = await fetch(`${baseUrl}/api/v1/scrutiny/ballots/${ballotId}/scores/${secondScore.id}/omissions`, {
-      method: "POST", headers: scrutineerHeaders, body: JSON.stringify({ reason: "Ausencia constatada" }),
-    });
-    assert.equal(omissionRes.status, 200);
-    assert.deepEqual(await omissionRes.json(), { id: secondScore.id, requiresSubsanation: true });
+    assert.equal(invalidOrdinaryScore.status, 400);
 
-    // 9. Save the remaining score → 200.
+    // 8. The judge records one ordinary score and one independent non-presentation.
     const saveRes = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/scores/${firstScore.id}`, {
       method: "PUT", headers: judgeHeaders,
-      body: JSON.stringify({ score: 8 }),
+      body: JSON.stringify({ evaluationState: "SCORED", score: 8 }),
     });
     assert.equal(saveRes.status, 200, JSON.stringify(await saveRes.clone().json()));
     const saveData = await saveRes.json();
     assert.equal(saveData.score, 8);
+    assert.equal(saveData.evaluationState, "SCORED");
+    const notPresented = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/scores/${secondScore.id}`, {
+      method: "PUT", headers: judgeHeaders,
+      body: JSON.stringify({ evaluationState: "NOT_PRESENTED" }),
+    });
+    assert.equal(notPresented.status, 200);
+    assert.deepEqual(await notPresented.json(), {
+      id: secondScore.id,
+      score: 0,
+      evaluationState: "NOT_PRESENTED",
+      status: "DRAFT",
+    });
     const { rows: [scoreAudit] } = await pool.query(
-      "SELECT details FROM ballot_audit_log WHERE ballot_id = $1 AND action = 'SCORE_SAVED' ORDER BY created_at DESC LIMIT 1",
+      "SELECT details FROM ballot_audit_log WHERE ballot_id = $1 AND action = 'SCORE_DECISION_SAVED' ORDER BY created_at DESC LIMIT 1",
       [ballotId],
     );
-    assert.deepEqual(scoreAudit.details, { scoreId: firstScore.id });
+    assert.deepEqual(scoreAudit.details, { scoreId: secondScore.id });
 
-    // 10. Submit ballot with a marked NULL omission → 200.
+    // 9. Submit a complete ballot → 200.
     const submitRes = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/submit`, {
       method: "POST", headers: judgeHeaders,
     });
@@ -248,12 +253,38 @@ test("API votación: ciclo completo de planilla", {
     const submitData = await submitRes.json();
     assert.equal(submitData.status, "SUBMITTED");
 
-    // 11. Judge cannot resubmit → 409.
+    // 10. Judge cannot resubmit → 409.
     const resubmitRes = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/submit`, {
       method: "POST", headers: judgeHeaders,
     });
     assert.equal(resubmitRes.status, 409);
     assert.equal((await resubmitRes.json()).code, "BALLOT_ALREADY_SUBMITTED");
+
+    // 11. Historical subsanation markers prevent reopening even without a detail row.
+    await pool.query("ALTER TABLE ballot_score DISABLE TRIGGER USER");
+    try {
+      await pool.query(
+        "UPDATE ballot_score SET score = NULL, evaluation_state = 'PENDING', requires_subsanation = true, subsidized_score = NULL WHERE id = $1",
+        [firstScore.id],
+      );
+    } finally {
+      await pool.query("ALTER TABLE ballot_score ENABLE TRIGGER USER");
+    }
+    const historicalReopen = await fetch(`${baseUrl}/api/v1/events/${event.id}/ballots/${ballotId}/reopen`, {
+      method: "POST", headers: adminHeaders,
+      body: JSON.stringify({ reason: "Corrección solicitada" }),
+    });
+    assert.equal(historicalReopen.status, 409);
+    assert.equal((await historicalReopen.json()).code, "BALLOT_SUBSANATION_FINAL");
+    await pool.query("ALTER TABLE ballot_score DISABLE TRIGGER USER");
+    try {
+      await pool.query(
+        "UPDATE ballot_score SET score = 8, evaluation_state = 'SCORED', requires_subsanation = false, subsidized_score = NULL WHERE id = $1",
+        [firstScore.id],
+      );
+    } finally {
+      await pool.query("ALTER TABLE ballot_score ENABLE TRIGGER USER");
+    }
 
     // 12. Reopen ballot → 200.
     const reopenRes = await fetch(`${baseUrl}/api/v1/events/${event.id}/ballots/${ballotId}/reopen`, {
@@ -277,31 +308,17 @@ test("API votación: ciclo completo de planilla", {
     });
     assert.equal(resubmitReopened.status, 200);
 
-    // 14. SCRUTINEER records the separate, immutable 5-point subsanation.
-    const subsanationRes = await fetch(`${baseUrl}/api/v1/scrutiny/ballots/${ballotId}/scores/${secondScore.id}/subsanations`, {
-      method: "POST", headers: scrutineerHeaders, body: JSON.stringify({ reason: "Subsanación reglamentaria" }),
+    // 13. Obsolete pre-confirmation omission routes are unavailable.
+    const retiredOmission = await fetch(`${baseUrl}/api/v1/scrutiny/ballots/${ballotId}/scores/${secondScore.id}/omissions`, {
+      method: "POST", headers: adminHeaders,
     });
-    assert.equal(subsanationRes.status, 201);
-    const subsanation = await subsanationRes.json();
-    assert.equal(subsanation.score, 5);
-    const duplicateSubsanation = await fetch(`${baseUrl}/api/v1/scrutiny/ballots/${ballotId}/scores/${secondScore.id}/subsanations`, {
-      method: "POST", headers: scrutineerHeaders, body: JSON.stringify({ reason: "Duplicada" }),
+    assert.equal(retiredOmission.status, 404);
+    const retiredSubsanation = await fetch(`${baseUrl}/api/v1/scrutiny/ballots/${ballotId}/scores/${secondScore.id}/subsanations`, {
+      method: "POST", headers: adminHeaders,
     });
-    assert.equal(duplicateSubsanation.status, 409);
-    assert.equal((await duplicateSubsanation.json()).code, "RESOURCE_CONFLICT");
-    const { rows: [originalScore] } = await pool.query(
-      "SELECT score, requires_subsanation FROM ballot_score WHERE id = $1",
-      [secondScore.id],
-    );
-    assert.equal(originalScore.score, null);
-    assert.equal(originalScore.requires_subsanation, true);
-    const blockedReopen = await fetch(`${baseUrl}/api/v1/events/${event.id}/ballots/${ballotId}/reopen`, {
-      method: "POST", headers: adminHeaders, body: JSON.stringify({ reason: "No debe reabrirse" }),
-    });
-    assert.equal(blockedReopen.status, 409);
-    assert.equal((await blockedReopen.json()).code, "BALLOT_SUBSANATION_FINAL");
+    assert.equal(retiredSubsanation.status, 404);
 
-    // 15. Close voting persists the closed window.
+    // 14. Close voting persists the closed window.
     const closeRes = await fetch(`${baseUrl}/api/v1/events/${event.id}/nights/${night.id}/voting/close`, {
       method: "POST", headers: adminHeaders,
     });
@@ -309,7 +326,7 @@ test("API votación: ciclo completo de planilla", {
     const closeData = await closeRes.json();
     assert.ok(closeData.autoSubmitted >= 0);
 
-    // 16. Final status check.
+    // 15. Final status check.
     const finalStatus = await fetch(`${baseUrl}/api/v1/events/${event.id}/nights/${night.id}/voting/status`, { headers: adminHeaders });
     assert.equal(finalStatus.status, 200);
     const finalData = await finalStatus.json();

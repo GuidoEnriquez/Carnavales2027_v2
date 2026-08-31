@@ -1,5 +1,7 @@
 # Tasks — Spec 003: Incremento I3 · Votación — Planillas y puntuaciones
 
+> Registro histórico de tareas de I3. Las tareas sobre omisión y subsanación pre-confirmación fueron evolucionadas por Spec 004 y no describen el comportamiento vigente.
+
 ## Reglas de ejecución
 
 - Implementar **una sola tarea por vez** y no iniciar la siguiente sin verificar la actual.
@@ -12,7 +14,7 @@
 
 | ID | Estado | Dependencias |
 |---|---|---|
-| T01–T10 | En validación final | — |
+| T01–T10 | Completadas históricamente; evolución de completitud en Spec 004 | — |
 
 ---
 

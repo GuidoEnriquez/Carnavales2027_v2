@@ -9,7 +9,7 @@ Implementado y validado:
 - **I1/I1-C:** eventos, noches, categorías, comparsas, especialidades, rubros, ítems, criterios descriptivos, readiness, apertura transaccional y administración de privilegios.
 - **I2-A:** padrón de jurados, invitaciones seguras, aceptación, 2FA, suspensión/reactivación y rol `JUDGE`.
 - **I2-B:** cupos por noche/especialidad, asignaciones `PRIMARY`/`SUBSTITUTE`, revocaciones, reemplazos auditados y cierre operativo de noches.
-- **I3:** apertura y cierre de votación, planillas por jurado, puntuaciones por comparsa, confirmación inmutable, reapertura única, secreto de puntajes, supervisión por `VEEDOR` y subsanaciones reglamentarias auditadas por `SCRUTINEER`.
+- **I3/Spec 004:** apertura y cierre de votación, planillas por jurado, puntuaciones por comparsa, confirmación inmutable, reapertura única, secreto de puntajes, supervisión por `VEEDOR` y completitud obligatoria por ítem.
 
 Todavía fuera de alcance: operación offline/sync, penalizaciones, consolidación de resultados, rankings, escrutinio de resultados y actas.
 
@@ -75,7 +75,7 @@ Abrir `http://localhost:5173/#/login`. En desarrollo, Vite redirige `/api` a `ht
 - `#/judge/ballot?ballotId=:ballotId`: carga y confirmación de una planilla propia.
 - `#/invitations/accept`: aceptación de invitaciones.
 
-Las rutas protegidas requieren 2FA verificado. `ADMIN` administra el sistema; `JUDGE` solo accede a sus asignaciones activas y planillas propias; `VEEDOR` ve conteos operativos sin puntajes; `SCRUTINEER` registra omisiones y subsanaciones reglamentarias sin modificar votos confirmados.
+Las rutas protegidas requieren 2FA verificado. `ADMIN` administra el sistema; `JUDGE` solo accede a sus asignaciones activas y planillas propias; `VEEDOR` ve conteos operativos sin puntajes.
 
 ## API principal
 
@@ -101,10 +101,8 @@ La API expone, entre otros, estos contratos bajo `/api/v1`:
 - `GET /events/:eventId/nights/:nightId/voting/status`
 - `GET /events/:eventId/nights/:nightId/voting/ballots`
 - `POST /events/:eventId/ballots/:ballotId/reopen`
-- `POST /scrutiny/ballots/:ballotId/scores/:scoreId/omissions`
-- `POST /scrutiny/ballots/:ballotId/scores/:scoreId/subsanations`
 
-Una omisión se conserva como score `NULL` y solo `SCRUTINEER` puede marcarla antes de confirmar la planilla. Para una omisión confirmada, `SCRUTINEER` registra por separado una subsanación inmutable de 5 puntos; el voto original no se reabre ni modifica.
+Cada ítem de planilla permanece en `PENDING`, recibe un puntaje ordinario `SCORED` de 1 a 10, o se marca mediante la acción independiente `NOT_PRESENTED` con valor efectivo 0. Los pendientes bloquean confirmar y cerrar la votación; el rechazo de cierre identifica ítem, jurado y comparsa pendientes. Las subsanaciones históricas se conservan; su operación pertenece al futuro incremento de escrutinio.
 
 ## Producción
 
@@ -157,5 +155,10 @@ Las pruebas PostgreSQL requieren que `TEST_DATABASE_URL` apunte a una base aisla
 - [Tareas I3](specs/003-votacion-planillas/tasks.md)
 - [Validación I3](specs/003-votacion-planillas/validation.md)
 - [Plan I3](.hermes/plans/2026-08-30_i3-votacion-planillas.md)
+- [Spec 004](specs/004-completitud-planillas/spec.md)
+- [Clarificaciones Spec 004](specs/004-completitud-planillas/clarifications.md)
+- [Tareas Spec 004](specs/004-completitud-planillas/tasks.md)
+- [Plan Spec 004](.hermes/plans/2026-08-30_completitud-planillas.md)
+- [Validación Spec 004](specs/004-completitud-planillas/validation.md)
 
 No commitear `.env`, contraseñas, tokens ni secretos. No existe autoasignación pública de `ADMIN`. La seguridad del sistema se aplica del lado del servidor.

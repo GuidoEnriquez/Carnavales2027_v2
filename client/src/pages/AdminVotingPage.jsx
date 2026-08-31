@@ -56,6 +56,16 @@ export function AdminVotingPage() {
       setMessage(success(result));
       await refreshNight();
     } catch (error) {
+      if (error.code === "VOTING_CLOSE_INCOMPLETE_BALLOTS") {
+        const pendingItems = (error.details ?? []).map((item) => {
+          const itemName = item.name ?? item.code;
+          return itemName && `${item.judgeName ?? "Jurado"}: ${item.troupeName ?? "comparsa"} - ${itemName}`;
+        }).filter(Boolean);
+        setMessage(pendingItems.length > 0
+          ? `No se puede cerrar: faltan decisiones en ${pendingItems.join(", ")}.`
+          : "No se puede cerrar: faltan decisiones en planillas abiertas.");
+        return;
+      }
       const messages = {
         EVENT_NOT_OPEN: "El evento debe estar abierto para habilitar la votación.",
         NIGHT_NOT_OPEN: "La noche no está disponible para votar.",

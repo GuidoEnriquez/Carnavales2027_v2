@@ -1,5 +1,7 @@
 # Plan: I3 — Votación: Planillas y carga de puntuaciones
 
+> Histórico: las decisiones de omisión y subsanación de este plan fueron reemplazadas por la Spec 004. El modelo vigente exige una decisión completa por ítem antes de confirmar; el contenido siguiente preserva el plan original y no describe rutas operativas vigentes.
+
 ## Objetivo
 
 Un jurado habilitado puede cargar y confirmar puntuaciones por comparsa e ítem dentro de su planilla, manteniendo secreto de puntajes durante la competencia y conservando la inmutabilidad tras la confirmación.

@@ -44,4 +44,19 @@ describe("AdminVotingPage", () => {
       { method: "POST", body: JSON.stringify({ reason: "Corrección" }) },
     ));
   });
+
+  it("identifica los ítems pendientes cuando el cierre es rechazado", async () => {
+    apiRequest.mockImplementation((path) => {
+      if (path === "/api/v1/events") return Promise.resolve([{ id: "event-1", name: "Carnaval", status: "OPEN" }]);
+      if (path === "/api/v1/events/event-1/nights") return Promise.resolve([{ id: "night-1", name: "Noche 1", kind: "COMPETITION", status: "OPEN" }]);
+      if (path.endsWith("/voting/status")) return Promise.resolve({ nightId: "night-1", nightStatus: "OPEN", counts: { OPEN: 1, SUBMITTED: 0, REOPENED: 0 }, total: 1 });
+      if (path.endsWith("/voting/ballots")) return Promise.resolve([]);
+      if (path.endsWith("/voting/close")) return Promise.reject({ code: "VOTING_CLOSE_INCOMPLETE_BALLOTS", details: [{ name: "Presencia", code: "PRESENCIA", judgeName: "Jurado Uno", troupeName: "Comparsa Azul" }] });
+      return Promise.resolve({});
+    });
+    render(<AdminVotingPage />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Cerrar votación" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("faltan decisiones en Jurado Uno: Comparsa Azul - Presencia");
+  });
 });

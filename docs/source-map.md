@@ -103,10 +103,20 @@ El vault contiene copias/síntesis utilizables para redactar la spec. Jira y Con
 
 ## Decisiones de producto I3 — 2026-08-30
 
+> Histórico: estas decisiones de omisión/subsanación fueron reemplazadas para nuevas planillas por Spec 004.
+
 - Score `0` representa exclusivamente "no presentado / no evaluado" y nunca una omisión subsanable.
 - Una omisión conserva score `NULL`; solo el rol de aplicación `SCRUTINEER`, con 2FA, puede marcarla antes de confirmar la planilla.
 - Tras la confirmación, `SCRUTINEER` registra la subsanación reglamentaria de 5 puntos como entidad separada, auditable e inmutable, sin modificar ni reabrir el voto original.
 - `SCRUTINEER` no se autoasigna públicamente y no hereda permisos de ADMIN, JUDGE ni VEEDOR.
+
+## Decisiones de producto Spec 004 — 2026-08-30
+
+- El reglamento citado para esta decisión no está distribuido en el repositorio; la regla debe contrastarse cuando se incorpore su fuente local o verificable.
+- Las nuevas planillas distinguen `PENDING`, `SCORED` y `NOT_PRESENTED`; `PENDING` no puede confirmarse ni cerrarse.
+- La escala ordinaria es 1-10. El 0 se registra solo mediante una acción independiente de rubro o figura no presentada.
+- El rechazo de cierre identifica el ítem pendiente y su contexto de jurado y comparsa.
+- Las subsanaciones previas se preservan como historia; su operación futura pertenece al incremento de escrutinio y no autoriza omisiones nuevas antes de confirmar.
 
 ## Uso en SDD
 

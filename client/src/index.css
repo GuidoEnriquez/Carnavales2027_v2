@@ -584,13 +584,43 @@ form {
 
 .score-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(8.5rem, 11rem);
+  grid-template-columns: minmax(0, 1fr) minmax(17rem, 30rem);
   align-items: center;
   gap: 1rem;
   border-block-end: 1px solid #e6eaf0;
   padding-block: 0.75rem;
   color: var(--text-color);
   font-size: 1rem;
+}
+
+.score-row small {
+  color: var(--muted);
+  display: block;
+  margin-block-start: 0.2rem;
+}
+
+.score-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+
+.score-actions button {
+  min-block-size: 2.75rem;
+  min-inline-size: 2.75rem;
+  padding: 0.4rem 0.6rem;
+}
+
+.score-actions button.is-selected {
+  background: var(--accent-color);
+  color: var(--card-bg);
+}
+
+.score-actions .score-clear {
+  background: transparent;
+  border: 1px solid var(--line-color);
+  color: inherit;
 }
 
 .score-row:last-child {

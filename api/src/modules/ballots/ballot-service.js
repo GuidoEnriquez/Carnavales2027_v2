@@ -6,11 +6,27 @@ function requireText(value, name) {
   return value.trim();
 }
 
-function requireInteger(value, name, { min = 0, max = 10 } = {}) {
-  if (value === null || value === undefined) return null;
+function requireInteger(value, name, { min, max } = {}) {
   const n = Number(value);
   if (!Number.isInteger(n) || n < min || n > max) throw new TypeError(`${name} debe ser un entero entre ${min} y ${max}.`);
   return n;
+}
+
+function requireEvaluationDecision(evaluationState, score) {
+  if (!["PENDING", "SCORED", "NOT_PRESENTED"].includes(evaluationState)) {
+    throw new TypeError("evaluationState debe ser PENDING, SCORED o NOT_PRESENTED.");
+  }
+  if (evaluationState === "PENDING") {
+    if (score !== undefined && score !== null) throw new TypeError("PENDING no admite score.");
+    return { evaluationState, score: null };
+  }
+  if (evaluationState === "SCORED") {
+    return { evaluationState, score: requireInteger(score, "score", { min: 1, max: 10 }) };
+  }
+  if (score !== undefined && score !== null && Number(score) !== 0) {
+    throw new TypeError("NOT_PRESENTED solo admite score 0.");
+  }
+  return { evaluationState, score: 0 };
 }
 
 async function inTransaction(operation) {
@@ -169,25 +185,42 @@ export async function closeVoting({ actorUserId, eventId, nightId }) {
       [nights[0].id, eventId],
     );
     await client.query(
-      `SELECT bs.id
+      `SELECT bs.id, ei.name AS "itemName", ei.code AS "itemCode"
          FROM ballot_score bs
          JOIN ballot b ON b.id = bs.ballot_id
+         JOIN evaluation_item ei ON ei.id = bs.evaluation_item_id
         WHERE b.night_id = $1 AND b.event_id = $2 AND b.status IN ('OPEN', 'REOPENED')
         FOR UPDATE OF bs`,
       [nights[0].id, eventId],
     );
 
     const { rows: pending } = await client.query(
-      `SELECT bs.id
+      `SELECT bs.id, b.id AS "ballotId", ei.name AS "itemName", ei.code AS "itemCode",
+              jp.name AS "judgeName", et.name AS "troupeName"
          FROM ballot_score bs
          JOIN ballot b ON b.id = bs.ballot_id
-        WHERE b.night_id = $1 AND b.event_id = $2
-          AND b.status IN ('OPEN', 'REOPENED')
-          AND bs.score IS NULL AND bs.requires_subsanation = false
-        LIMIT 1`,
+         JOIN evaluation_item ei ON ei.id = bs.evaluation_item_id
+         JOIN judge_profile jp ON jp.id = b.judge_profile_id
+         JOIN night_troupe_schedule nts ON nts.id = bs.night_schedule_id
+         JOIN event_troupe et ON et.id = nts.event_troupe_id
+         WHERE b.night_id = $1 AND b.event_id = $2
+           AND b.status IN ('OPEN', 'REOPENED')
+            AND bs.evaluation_state = 'PENDING'
+         ORDER BY jp.name, et.name, ei.name, bs.id`,
       [nights[0].id, eventId],
     );
-    if (pending.length > 0) throw new Error("VOTING_CLOSE_INCOMPLETE_BALLOTS");
+    if (pending.length > 0) {
+      const error = new Error("VOTING_CLOSE_INCOMPLETE_BALLOTS");
+      error.pending = pending.map((item) => ({
+        id: item.id,
+        ballotId: item.ballotId,
+        name: item.itemName,
+        code: item.itemCode,
+        judgeName: item.judgeName,
+        troupeName: item.troupeName,
+      }));
+      throw error;
+    }
 
     const { rows: openBallots } = await client.query(
       `UPDATE ballot SET status = 'SUBMITTED', submitted_at = clock_timestamp(), updated_at = clock_timestamp()
@@ -299,8 +332,7 @@ export async function getBallot({ ballotId, userId }) {
              bs.rubric_id AS "rubricId", bs.night_schedule_id AS "nightScheduleId",
              nts.presentation_order AS "presentationOrder",
              et.name AS "troupeName",
-            bs.score, bs.requires_subsanation AS "requiresSubsanation",
-            bs.subsidized_score AS "subsidizedScore",
+             bs.score, bs.evaluation_state AS "evaluationState",
             bs.status, bs.locked_at AS "lockedAt"
        FROM ballot_score bs
        JOIN evaluation_item ei ON ei.id = bs.evaluation_item_id
@@ -338,20 +370,19 @@ export async function getBallot({ ballotId, userId }) {
       rubricId: s.rubricId,
        nightScheduleId: s.nightScheduleId,
        presentationOrder: s.presentationOrder,
-       troupeName: s.troupeName,
-       score: s.score,
-      requiresSubsanation: s.requiresSubsanation,
-      subsidizedScore: s.subsidizedScore,
+        troupeName: s.troupeName,
+        score: s.score,
+       evaluationState: s.evaluationState,
       status: s.status,
       lockedAt: s.lockedAt,
     })),
   };
 }
 
-export async function saveScore({ actorUserId, ballotId, scoreId, score }) {
+export async function saveScore({ actorUserId, ballotId, scoreId, evaluationState, score }) {
   const bid = requireText(ballotId, "ballotId");
   const sid = requireText(scoreId, "scoreId");
-  const validatedScore = requireInteger(score, "score", { min: 0, max: 10 });
+  const decision = requireEvaluationDecision(evaluationState, score);
 
   return inTransaction(async (client) => {
     const { rows: ballots } = await client.query(
@@ -379,19 +410,17 @@ export async function saveScore({ actorUserId, ballotId, scoreId, score }) {
     const { rows } = await client.query(
       `UPDATE ballot_score
           SET score = $3,
-              requires_subsanation = CASE WHEN $3::INTEGER IS NULL THEN requires_subsanation ELSE false END,
-              subsidized_score = NULL,
+              evaluation_state = $4,
               updated_at = clock_timestamp()
         WHERE id = $1 AND ballot_id = $2
-        RETURNING id, score, requires_subsanation AS "requiresSubsanation",
-                  subsidized_score AS "subsidizedScore", status`,
-      [sid, bid, validatedScore],
+        RETURNING id, score, evaluation_state AS "evaluationState", status`,
+      [sid, bid, decision.score, decision.evaluationState],
     );
 
     await auditBallot(client, {
       ballotId: bid,
       eventId: ballots[0].eventId,
-      action: "SCORE_SAVED",
+      action: "SCORE_DECISION_SAVED",
       actorUserId,
       details: { scoreId: sid },
     });
@@ -420,8 +449,7 @@ export async function submitBallot({ actorUserId, ballotId }) {
       `SELECT bs.id, ei.name AS "itemName", ei.code AS "itemCode"
          FROM ballot_score bs
          JOIN evaluation_item ei ON ei.id = bs.evaluation_item_id
-         WHERE bs.ballot_id = $1 AND bs.score IS NULL
-           AND bs.requires_subsanation = false AND bs.status = 'DRAFT'`,
+         WHERE bs.ballot_id = $1 AND bs.evaluation_state = 'PENDING' AND bs.status = 'DRAFT'`,
       [bid],
     );
     if (pending.length > 0) {
@@ -471,7 +499,14 @@ export async function reopenBallot({ actorUserId, eventId, ballotId, reason }) {
     if (!ballots[0]) throw new Error("BALLOT_NOT_FOUND");
     if (ballots[0].status !== "SUBMITTED") throw new Error("BALLOT_NOT_SUBMITTED");
     const { rows: subsanations } = await client.query(
-      "SELECT id FROM ballot_score_subsanation WHERE ballot_id = $1 LIMIT 1",
+      `SELECT 1
+         FROM ballot_score
+        WHERE ballot_id = $1 AND requires_subsanation
+        UNION ALL
+       SELECT 1
+         FROM ballot_score_subsanation
+        WHERE ballot_id = $1
+        LIMIT 1`,
       [bid],
     );
     if (subsanations.length > 0) throw new Error("BALLOT_SUBSANATION_FINAL");
@@ -492,7 +527,8 @@ export async function reopenBallot({ actorUserId, eventId, ballotId, reason }) {
     );
 
     await client.query(
-      `UPDATE ballot_score SET status = 'DRAFT', locked_at = NULL, updated_at = clock_timestamp()
+      `UPDATE ballot_score
+          SET status = 'DRAFT', locked_at = NULL, updated_at = clock_timestamp()
         WHERE ballot_id = $1 AND status = 'LOCKED'`,
       [bid],
     );
@@ -506,86 +542,6 @@ export async function reopenBallot({ actorUserId, eventId, ballotId, reason }) {
       details: { judgeProfileId: ballots[0].judgeProfileId, reopenCount: rows[0].reopenCount },
     });
     return rows[0];
-  });
-}
-
-export async function markScoreOmission({ actorUserId, ballotId, scoreId, reason }) {
-  const bid = requireText(ballotId, "ballotId");
-  const sid = requireText(scoreId, "scoreId");
-  const actionReason = requireText(reason, "reason");
-
-  return inTransaction(async (client) => {
-    const { rows } = await client.query(
-      `SELECT b.id AS "ballotId", b.event_id AS "eventId", b.status AS "ballotStatus",
-              bs.id AS "scoreId", bs.score, bs.status AS "scoreStatus", bs.requires_subsanation AS "requiresSubsanation"
-         FROM ballot b
-         JOIN ballot_score bs ON bs.ballot_id = b.id
-        WHERE b.id = $1 AND bs.id = $2
-        FOR UPDATE OF b, bs`,
-      [bid, sid],
-    );
-    if (!rows[0]) throw new Error("SCORE_NOT_FOUND");
-    const score = rows[0];
-    if (score.ballotStatus === "SUBMITTED") throw new Error("BALLOT_ALREADY_SUBMITTED");
-    if (score.scoreStatus === "LOCKED") throw new Error("BALLOT_SCORE_IMMUTABLE");
-    if (score.score !== null) throw new Error("BALLOT_SCORE_SUBSANATION_REQUIRES_OMISSION");
-    if (score.requiresSubsanation) throw new Error("BALLOT_SCORE_OMISSION_ALREADY_MARKED");
-
-    await client.query(
-      `UPDATE ballot_score
-          SET requires_subsanation = true, subsidized_score = NULL, updated_at = clock_timestamp()
-        WHERE id = $1`,
-      [sid],
-    );
-    await auditBallot(client, {
-      ballotId: bid,
-      eventId: score.eventId,
-      action: "SCORE_OMISSION_MARKED",
-      actorUserId,
-      reason: actionReason,
-      details: { scoreId: sid },
-    });
-    return { id: sid, requiresSubsanation: true };
-  });
-}
-
-export async function recordScoreSubsanation({ actorUserId, ballotId, scoreId, reason }) {
-  const bid = requireText(ballotId, "ballotId");
-  const sid = requireText(scoreId, "scoreId");
-  const actionReason = requireText(reason, "reason");
-
-  return inTransaction(async (client) => {
-    const { rows } = await client.query(
-      `SELECT b.id AS "ballotId", b.event_id AS "eventId", b.status AS "ballotStatus",
-              bs.id AS "scoreId", bs.score, bs.requires_subsanation AS "requiresSubsanation"
-         FROM ballot b
-         JOIN ballot_score bs ON bs.ballot_id = b.id
-        WHERE b.id = $1 AND bs.id = $2
-        FOR UPDATE OF b, bs`,
-      [bid, sid],
-    );
-    if (!rows[0]) throw new Error("SCORE_NOT_FOUND");
-    const score = rows[0];
-    if (score.ballotStatus !== "SUBMITTED") throw new Error("BALLOT_NOT_SUBMITTED");
-    if (score.score !== null || !score.requiresSubsanation) {
-      throw new Error("BALLOT_SCORE_SUBSANATION_REQUIRES_OMISSION");
-    }
-
-    const { rows: subsanations } = await client.query(
-      `INSERT INTO ballot_score_subsanation (ballot_score_id, ballot_id, event_id, recorded_by, reason)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, score, created_at AS "createdAt"`,
-      [sid, bid, score.eventId, actorUserId, actionReason],
-    );
-    await auditBallot(client, {
-      ballotId: bid,
-      eventId: score.eventId,
-      action: "SCORE_SUBSANATION_RECORDED",
-      actorUserId,
-      reason: actionReason,
-      details: { scoreId: sid, subsanationId: subsanations[0].id },
-    });
-    return subsanations[0];
   });
 }
 

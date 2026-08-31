@@ -1,5 +1,7 @@
 # Validación — Spec 003 · I3: Planillas y puntuaciones
 
+> Evidencia histórica de I3. La semántica de puntajes, pendientes y subsanación fue reemplazada por Spec 004; sus validaciones vigentes se registran allí.
+
 ## Estado
 
 - **I3 validado:** 2026-08-30.
@@ -22,16 +24,16 @@
 |---|---|
 | RF-44, RF-45 | `voting-api.test.js`, `ballots.test.js`, migraciones 032 y 035; apertura crea una planilla `OPEN` por asignación activa. |
 | RF-46 | `voting-api.test.js`, `ballots.test.js`, `JudgeBallotPage.test.jsx`; la planilla incluye solo ítems de la especialidad del jurado, agrupados por comparsa programada. Migración 038 garantiza una puntuación por planilla, ítem y comparsa. |
-| RF-47 | `ballots.test.js`, `JudgeBallotPage.test.jsx`; 0 es válido y se ofrece explícitamente como “No presentado”. |
-| RF-48 | `voting-api.test.js`, `ballots.test.js`, migraciones 041–042; solo SCRUTINEER marca una omisión NULL editable; score 0 no se subsana. |
-| RF-49 | `voting-api.test.js`, `JudgeBallotPage.test.jsx`, `http-errors.js`; confirmación incompleta devuelve `409 BALLOT_INCOMPLETE` con sus ítems pendientes y el cierre administrativo rechaza planillas incompletas. |
+| RF-47 | Evolucionado por RF-57 a RF-60 de Spec 004. |
+| RF-48 | Evolucionado por RF-65 de Spec 004; no hay marcado operativo de omisión pre-confirmación. |
+| RF-49 | Evolucionado por RF-61 de Spec 004; la confirmación y el cierre rechazan pendientes e identifican ítem, jurado y comparsa. |
 | RF-50 | `ballots.test.js`, `voting-api.test.js`; confirmar bloquea puntuaciones y la planilla no vuelve a `OPEN`. |
 | RF-51 | `voting.routes.js`, `listNightBallots`, `AdminVotingPage.test.jsx`; ADMIN y VEEDOR reciben solo estado, identidad de jurado y especialidad; ningún endpoint administrativo devuelve puntuaciones. |
 | RF-52 | `voting-api.test.js`, `ballots.test.js`, migración 037; ADMIN con 2FA debe aportar motivo, puede reabrir una vez y el desbloqueo conserva el valor previo de cada puntuación. |
 | RF-53 | `ballot-service.js`, `voting-api.test.js`, `ballot_audit_log`; se auditan apertura, guardado, confirmación y reapertura sin guardar el valor de la puntuación. |
 | RF-54 | `require-voting-observer.js`, migración 039 y `voting-api.test.js`; VEEDOR con 2FA consulta conteos sin puntajes. |
 | RF-55 | Revisión de rutas, módulos y cliente; no se agregaron offline/sync, penalizaciones, consolidación de resultados ni actas. |
-| RF-56 | `require-scrutineer.js`, `voting-api.test.js`, `ballots.test.js`, migraciones 041–043; SCRUTINEER con 2FA registra 5 puntos en una entidad separada, auditable e inmutable sobre una omisión de una planilla confirmada. |
+| RF-56 | Diferido al incremento de escrutinio. La entidad histórica permanece protegida y no tiene rutas operativas vigentes. |
 
 ## Revisión Final
 
