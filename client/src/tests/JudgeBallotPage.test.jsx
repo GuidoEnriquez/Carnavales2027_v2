@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError, apiRequest } from "../api/http.js";
 import { JudgeBallotPage } from "../pages/JudgeBallotPage.jsx";
@@ -72,9 +72,47 @@ describe("JudgeBallotPage", () => {
     ));
   });
 
-  it("informa los ítems pendientes al rechazar la confirmación", async () => {
+  it("muestra todos los pendientes en un diálogo y no envía una confirmación incompleta", async () => {
     apiRequest.mockImplementation((path, options) => {
       if (!options) return Promise.resolve(ballot);
+      return Promise.resolve({});
+    });
+    render(<JudgeBallotPage ballotId="ballot-1" />);
+
+    await screen.findByText("Comparsa Uno");
+    const submitButton = screen.getByRole("button", { name: "Confirmar planilla" });
+    fireEvent.click(submitButton);
+
+    const dialog = await screen.findByRole("dialog", { name: "Faltan decisiones por resolver" });
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(dialog).toHaveAttribute("aria-describedby", "pending-dialog-description");
+    expect(within(dialog).getByText("Asigná una puntuación de 1 a 10 o marcá No se presentó en cada ítem antes de confirmar.")).toBeInTheDocument();
+    expect(within(dialog).getAllByRole("listitem")).toHaveLength(2);
+    expect(within(dialog).getByText("Comparsa Uno")).toBeInTheDocument();
+    expect(within(dialog).getByText("Comparsa Dos")).toBeInTheDocument();
+    expect(within(dialog).getAllByText("Reina")).toHaveLength(2);
+    expect(within(dialog).getAllByText("Presencia")).toHaveLength(2);
+    expect(apiRequest).not.toHaveBeenCalledWith(
+      "/api/v1/judge/ballots/ballot-1/submit",
+      { method: "POST" },
+    );
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Volver a la planilla" }));
+    await waitFor(() => expect(submitButton).toHaveFocus());
+
+    fireEvent.click(submitButton);
+    const reopenedDialog = await screen.findByRole("dialog", { name: "Faltan decisiones por resolver" });
+    fireEvent(reopenedDialog, new Event("cancel", { cancelable: true }));
+    await waitFor(() => expect(submitButton).toHaveFocus());
+  });
+
+  it("muestra el mismo diálogo si el servidor rechaza una planilla desactualizada", async () => {
+    const completeBallot = {
+      ...ballot,
+      scores: ballot.scores.map((score) => ({ ...score, score: 8, evaluationState: "SCORED" })),
+    };
+    apiRequest.mockImplementation((path, options) => {
+      if (!options) return Promise.resolve(completeBallot);
       if (path.endsWith("/submit")) return Promise.reject(new ApiError({
         code: "BALLOT_INCOMPLETE",
         details: [{ id: "score-1", name: "Presencia", code: "PRESENCIA" }],
@@ -85,6 +123,10 @@ describe("JudgeBallotPage", () => {
 
     await screen.findByText("Comparsa Uno");
     fireEvent.click(screen.getByRole("button", { name: "Confirmar planilla" }));
-    expect(await screen.findByText(/faltan puntuaciones.*presencia/i)).toBeInTheDocument();
+
+    const dialog = await screen.findByRole("dialog", { name: "Faltan decisiones por resolver" });
+    expect(within(dialog).getByText("Comparsa Uno")).toBeInTheDocument();
+    expect(within(dialog).getByText("Reina")).toBeInTheDocument();
+    expect(within(dialog).getByText("Presencia")).toBeInTheDocument();
   });
 });

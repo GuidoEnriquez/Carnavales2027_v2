@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { apiRequest } from "../api/http.js";
 
 function groupScores(scores) {
@@ -11,10 +11,56 @@ function groupScores(scores) {
   }, {});
 }
 
+function getPendingItems(scores, details) {
+  const scoresById = new Map(scores.map((score) => [score.id, score]));
+  const source = details?.length > 0
+    ? details
+    : scores.filter((score) => score.evaluationState === "PENDING");
+
+  return source.map((item, index) => {
+    const score = scoresById.get(item.id) ?? item;
+    return {
+      id: item.id ?? score.id ?? `pending-${index}`,
+      troupeName: score.troupeName ?? item.troupeName ?? "Comparsa sin identificar",
+      rubricName: score.rubricName ?? item.rubricName ?? "Rubro sin identificar",
+      itemName: score.itemName ?? item.name ?? item.itemName ?? item.code ?? "Ítem pendiente",
+    };
+  });
+}
+
 export function JudgeBallotPage({ ballotId }) {
   const [ballot, setBallot] = useState(null);
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
+  const [pendingDialog, setPendingDialog] = useState(null);
+  const pendingDialogRef = useRef(null);
+  const submitButtonRef = useRef(null);
+
+  useEffect(() => {
+    const dialog = pendingDialogRef.current;
+    if (!dialog) return;
+
+    if (pendingDialog?.length > 0 && !dialog.open) {
+      dialog.showModal();
+      dialog.querySelector("[data-pending-dialog-close]")?.focus();
+    } else if (!pendingDialog && dialog.open) {
+      dialog.close();
+    }
+  }, [pendingDialog]);
+
+  const closePendingDialog = () => {
+    const dialog = pendingDialogRef.current;
+    if (dialog?.open) dialog.close();
+    else {
+      setPendingDialog(null);
+      submitButtonRef.current?.focus();
+    }
+  };
+
+  const handlePendingDialogClose = () => {
+    setPendingDialog(null);
+    submitButtonRef.current?.focus();
+  };
 
   const loadBallot = async () => {
     if (!ballotId) return;
@@ -60,8 +106,13 @@ export function JudgeBallotPage({ ballotId }) {
 
   const submit = async () => {
     if (!ballot || busy) return;
-    setBusy("submit");
     setMessage("");
+    const pendingItems = getPendingItems(ballot.scores);
+    if (pendingItems.length > 0) {
+      setPendingDialog(pendingItems);
+      return;
+    }
+    setBusy("submit");
     try {
       const submitted = await apiRequest(`/api/v1/judge/ballots/${ballot.id}/submit`, { method: "POST" });
       setBallot((current) => ({
@@ -72,8 +123,7 @@ export function JudgeBallotPage({ ballotId }) {
       setMessage("Planilla confirmada. Sus puntuaciones quedaron resguardadas.");
     } catch (error) {
       if (error.code === "BALLOT_INCOMPLETE") {
-        const pending = error.details?.map((item) => item.name).join(", ");
-        setMessage(`Faltan puntuaciones por resolver${pending ? `: ${pending}.` : "."}`);
+        setPendingDialog(getPendingItems(ballot.scores, error.details));
       } else {
         setMessage("No se pudo confirmar la planilla.");
       }
@@ -117,7 +167,30 @@ export function JudgeBallotPage({ ballotId }) {
     </section>
     <footer className="ballot-footer">
       <a className="secondary button-link" href="#/judge">Volver al panel</a>
-      {!readonly && <button type="button" disabled={Boolean(busy)} onClick={() => void submit()}>{busy === "submit" ? "Confirmando…" : "Confirmar planilla"}</button>}
+      {!readonly && <button ref={submitButtonRef} type="button" disabled={Boolean(busy)} onClick={() => void submit()}>{busy === "submit" ? "Confirmando…" : "Confirmar planilla"}</button>}
     </footer>
+    <dialog
+      ref={pendingDialogRef}
+      className="pending-dialog"
+      aria-modal="true"
+      aria-labelledby="pending-dialog-title"
+      aria-describedby="pending-dialog-description"
+      onCancel={(event) => { event.preventDefault(); closePendingDialog(); }}
+      onClose={handlePendingDialogClose}
+    >
+      {pendingDialog && <div className="pending-dialog-content">
+        <p className="eyebrow">Planilla incompleta</p>
+        <h2 id="pending-dialog-title">Faltan decisiones por resolver</h2>
+        <p id="pending-dialog-description">Asigná una puntuación de 1 a 10 o marcá No se presentó en cada ítem antes de confirmar.</p>
+        <ul className="pending-dialog-list" aria-label="Ítems pendientes">
+          {pendingDialog.map((item) => <li key={item.id}>
+            <span>{item.troupeName}</span>
+            <span>{item.rubricName}</span>
+            <strong>{item.itemName}</strong>
+          </li>)}
+        </ul>
+        <div className="pending-dialog-actions"><button data-pending-dialog-close type="button" onClick={closePendingDialog}>Volver a la planilla</button></div>
+      </div>}
+    </dialog>
   </main>;
 }

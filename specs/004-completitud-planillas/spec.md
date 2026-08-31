@@ -2,7 +2,7 @@
 
 ## Estado
 
-- **Fase SDD:** implementado y validado.
+- **Fase SDD:** implementado, validado y aceptado el 2026-08-31.
 - **Fuentes:** decisión de producto del 2026-08-30 registrada en `docs/source-map.md`; RF-07 a RF-11 y RF-15 de Spec 001.
 - **Nota de trazabilidad:** el reglamento citado por producto no está distribuido en este repositorio. Esta spec formaliza la decisión recibida y debe contrastarse con el reglamento al incorporarlo al árbol.
 
@@ -56,6 +56,7 @@ Los registros bloqueados de subsanación (`requires_subsanation` y `ballot_score
 - **RF-63.** CUANDO un score cambie entre `PENDING`, `SCORED` y `NOT_PRESENTED`, EL SISTEMA DEBE auditar la acción, actor y score afectado sin almacenar el valor de la puntuación en la auditoría.
 - **RF-64.** UNA planilla confirmada o score `LOCKED` DEBE conservar su estado y score semánticamente consistentes e inmutables, salvo la reapertura existente autorizada antes del cierre de ventana.
 - **RF-65.** EL SISTEMA DEBE conservar los registros históricos de subsanación sin permitir que una nueva planilla use la marca de omisión pre-confirmación.
+- **RF-66.** CUANDO un jurado pulse `Confirmar planilla` y su planilla cargada contenga scores `PENDING`, LA interfaz DEBE abrir un diálogo modal bloqueante que enumere cada pendiente con comparsa, rubro e ítem, sin enviar la confirmación. El diálogo DEBE tener título y descripción accesibles, foco inicial dentro del diálogo, cierre explícito y con `Escape`, y devolver el foco al botón disparador. DEBE permanecer operativo en móvil, tablet y desktop, con lista desplazable cuando sea necesario.
 
 ## Contrato HTTP
 
@@ -70,6 +71,7 @@ Los registros bloqueados de subsanación (`requires_subsanation` y `ballot_score
 - Un jurado puede guardar 1 a 10 como `SCORED` y marcar independientemente `NOT_PRESENTED`.
 - La UI no muestra 0 dentro de la escala ordinaria.
 - Todo `PENDING` bloquea confirmación y cierre, con los ítems identificados.
+- El intento del jurado de confirmar con pendientes abre un diálogo modal accesible que lista todos los pendientes; no envía la confirmación hasta que el jurado los resuelva.
 - PostgreSQL rechaza combinaciones estado/score inválidas y mutaciones de scores bloqueados.
 - Los registros de subsanación ya existentes permanecen intactos y no hay ruta nueva que cree omisiones pre-confirmación.
 - Las pruebas DB, API y cliente cubren los tres estados y regresiones de confirmación, cierre, auditoría e inmutabilidad.

@@ -10,7 +10,7 @@
 | I2-A | Padrón de jurados, invitaciones, aceptación, 2FA y suspensión. | `specs/002-jurados-asignaciones/validation.md` |
 | I2-B | Cupos, asignaciones, reemplazos y concurrencia. | `specs/002-jurados-asignaciones/validation.md` |
 | I3 | Planillas, puntajes, secreto, confirmación, reapertura controlada y VEEDOR sin puntajes. | `specs/003-votacion-planillas/validation.md` |
-| Spec 004 | Estados `PENDING`/`SCORED`/`NOT_PRESENTED` y completitud obligatoria. | `specs/004-completitud-planillas/validation.md` |
+| Spec 004 | Estados `PENDING`/`SCORED`/`NOT_PRESENTED`, completitud obligatoria y diálogo modal de pendientes para el jurado. Aceptado. | `specs/004-completitud-planillas/validation.md` |
 
 ## Diferido explícitamente
 
@@ -22,7 +22,11 @@
 
 ## Próxima puerta SDD
 
-No iniciar un nuevo módulo directamente. Primero se debe contrastar y resolver con fuente reglamentaria el tratamiento del `5 por equidad` cuando existe una omisión de puntuación. Luego se crea el siguiente incremento con:
+La regla de prevención de omisiones queda confirmada: toda planilla debe resolver cada ítem como `SCORED` (1 a 10) o `NOT_PRESENTED` (0 mediante acción explícita) antes de confirmar o cerrar. Este comportamiento ya está cubierto por Spec 004.
+
+El `5 por equidad` queda diferido sin código como contingencia reglamentaria excepcional fuera del flujo del jurado. No autoriza rutas, datos, UI ni cálculos de escrutinio hasta contar con una regla canónica que defina su condición de aplicación, autoridad, evidencia, aprobación e impacto en la consolidación. No iniciar un nuevo módulo directamente; la próxima spec debe resolver esas definiciones antes de implementar.
+
+Una vez definida la contingencia o descartada reglamentariamente, se crea el siguiente incremento con:
 
 ```text
 spec → clarificaciones → plan → tareas → implementación → validación
@@ -38,5 +42,5 @@ Al 2026-08-31, las suites actuales reportaron:
 
 - DB: 26 passed.
 - API: 57 passed.
-- Cliente: 45 passed.
+- Cliente: 46 passed.
 - Build de cliente: exitoso.

@@ -8,7 +8,7 @@
 - I2-A/I2-B: padrón, invitaciones, cupos, asignaciones y reemplazos, validados.
 - I3 + Spec 004: planillas, puntuaciones, secreto, inmutabilidad y completitud, validados.
 - Diferido: offline/sync, penalizaciones, resultados, escrutinio y actas.
-- Antes del próximo incremento: aclarar contra la fuente reglamentaria el tratamiento de una omisión y el `5 por equidad`.
+- Decisión de producto del 2026-08-31: las nuevas planillas previenen omisiones al exigir que cada ítem sea `SCORED` (1 a 10) o `NOT_PRESENTED` (0 por acción explícita) antes de confirmar o cerrar; este comportamiento está implementado en Spec 004. El `5 por equidad` se difiere sin código como contingencia excepcional fuera del flujo del jurado hasta contrastar su procedimiento reglamentario completo.
 
 ## Visión funcional objetivo
 
@@ -125,6 +125,15 @@ El vault contiene copias/síntesis utilizables para redactar la spec. Jira y Con
 - La escala ordinaria es 1-10. El 0 se registra solo mediante una acción independiente de rubro o figura no presentada.
 - El rechazo de cierre identifica el ítem pendiente y su contexto de jurado y comparsa.
 - Las subsanaciones previas se preservan como historia; su operación futura pertenece al incremento de escrutinio y no autoriza omisiones nuevas antes de confirmar.
+
+## Decisión de producto — 2026-08-31: prevención de omisiones y contingencia
+
+- La planilla no permite confirmar ni cerrar si conserva secciones, rubros o ítems en `PENDING`; el rechazo identifica los pendientes para que el jurado los resuelva.
+- Cada ítem se resuelve únicamente con una puntuación ordinaria de 1 a 10 o con la acción `No se presentó`, que registra `NOT_PRESENTED` y score efectivo 0.
+- El jurado no puede seleccionar manualmente la nota 0.
+- El `5 por equidad` no participa del flujo normal de votación ni está disponible para el jurado. Se mantiene diferido, sin implementación, como contingencia reglamentaria excepcional.
+- Una futura spec de escrutinio solo puede operacionalizar esa contingencia después de definir en fuente canónica el supuesto habilitante, actor autorizado, evidencia, aprobación, inmutabilidad y efecto sobre la consolidación.
+- Decisión de producto del 2026-08-31: al intentar confirmar una planilla con pendientes, el jurado recibe un diálogo modal bloqueante que enumera los votos faltantes. La confirmación no se envía hasta resolverlos; el diálogo debe ser accesible y operativo en móvil, tablet y desktop.
 
 ## Uso en SDD
 

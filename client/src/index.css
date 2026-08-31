@@ -631,6 +631,68 @@ form {
   margin-block: 1.5rem;
 }
 
+.pending-dialog {
+  inline-size: min(calc(100vi - 2rem), 42rem);
+  max-inline-size: calc(100vi - 2rem);
+  max-block-size: calc(100dvb - 2rem);
+  border: 1px solid var(--primary-dark);
+  border-radius: 0.75rem;
+  padding: 0;
+  color: var(--text-color);
+  background: var(--card-bg);
+  box-shadow: 0 1.5rem 4rem rgba(24, 58, 120, 0.3);
+}
+
+.pending-dialog::backdrop {
+  background: rgba(22, 35, 58, 0.64);
+}
+
+.pending-dialog-content {
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1rem, 4vi, 2rem);
+}
+
+.pending-dialog-content > * {
+  margin: 0;
+}
+
+.pending-dialog-content h2 {
+  color: var(--primary-dark);
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.pending-dialog-list {
+  display: grid;
+  gap: 0.5rem;
+  max-block-size: min(18rem, 38dvb);
+  margin: 0;
+  overflow: auto;
+  padding-inline-start: 1.4rem;
+}
+
+.pending-dialog-list li {
+  display: grid;
+  gap: 0.15rem;
+  border-inline-start: 3px solid var(--accent-color);
+  padding: 0.55rem 0.75rem;
+  background: #fff7ed;
+}
+
+.pending-dialog-list span {
+  color: var(--muted-color);
+  font-size: 0.875rem;
+}
+
+.pending-dialog-list strong {
+  color: var(--text-color);
+}
+
+.pending-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .voting-page {
   container-type: inline-size;
 }
@@ -757,5 +819,16 @@ form {
   .score-row {
     grid-template-columns: 1fr;
     gap: 0.5rem;
+  }
+
+  .pending-dialog {
+    inline-size: calc(100vi - 1rem);
+    max-inline-size: calc(100vi - 1rem);
+    max-block-size: calc(100dvb - 1rem);
+  }
+
+  .pending-dialog-actions,
+  .pending-dialog-actions button {
+    inline-size: 100%;
   }
 }

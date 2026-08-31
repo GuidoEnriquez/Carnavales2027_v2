@@ -13,6 +13,8 @@ Hacer explícita la decisión de cada ítem de planilla y bloquear toda confirma
 5. Cambiar la UI a botones de 1-10, acción separada de no presentación y acción explícita para quitar una decisión.
 6. Actualizar confirmación/cierre para consultar `evaluation_state = 'PENDING'`.
 7. Cubrir migración, base de datos, API, UI y regresiones; documentar resultados reales.
+8. En la planilla del jurado, interceptar localmente la confirmación con pendientes y mostrar un diálogo modal accesible con comparsa, rubro e ítem. Mantener la respuesta `BALLOT_INCOMPLETE` del servidor como defensa ante estado desactualizado.
+9. Validar foco, cierre explícito y con `Escape`, retorno al disparador, lista extensa y viewports móvil, tablet y desktop.
 
 ## Riesgos controlados
 

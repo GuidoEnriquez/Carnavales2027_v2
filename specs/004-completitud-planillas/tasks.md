@@ -5,6 +5,7 @@
 | ID | Estado | Dependencias |
 |---|---|---|
 | T01-T06 | Completadas | Spec y clarificaciones aprobadas |
+| T07-T08 | Completadas | RF-66 aprobado |
 
 ## T01 - Migrar estado semántico de score
 
@@ -62,3 +63,24 @@
 - Revisar que no se incorporen offline/sync ni escrutinio operativo.
 
 **Hecho cuando:** toda la matriz RF tiene evidencia real y no hay errores en el diff.
+
+## T07 - Mostrar pendientes en diálogo modal del jurado
+
+**RF:** RF-61, RF-66.
+
+- Interceptar `Confirmar planilla` cuando la planilla cargada conserve `PENDING`, sin enviar la confirmación.
+- Mostrar un diálogo modal con comparsa, rubro e ítem de cada pendiente; no exponer puntajes.
+- Garantizar título y descripción accesibles, foco inicial, cierre explícito, `Escape`, retorno de foco y lista desplazable en móvil, tablet y desktop.
+- Mantener `BALLOT_INCOMPLETE` como defensa del servidor y mostrar el mismo diálogo si ocurre.
+
+**Hecho cuando:** pruebas de cliente comprueban el listado completo, la ausencia de envío local, los controles de teclado y la confirmación posterior a resolver todos los ítems.
+
+## T08 - Validación de extensión de interfaz
+
+**Dependencias:** T07.
+
+- Ejecutar las suites de cliente, API y DB, build del cliente y estado de migraciones.
+- Comprobar el diálogo en 320 px, 768 px y escritorio, con navegación por teclado y una lista extensa.
+- Actualizar `validation.md`, `docs/sdd-status.md`, mapa de fuentes y README con evidencia real.
+
+**Hecho cuando:** RF-66 tiene evidencia automatizada y de viewport, y no se agregan rutas, migraciones ni flujos de escrutinio.
