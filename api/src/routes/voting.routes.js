@@ -11,7 +11,7 @@ import {
   getBallot,
   saveScore,
   submitBallot,
-  reopenBallot,
+  syncBallot,
   listNightBallots,
 } from "../modules/ballots/ballot-service.js";
 import { sendKnownError } from "./http-errors.js";
@@ -91,25 +91,6 @@ export function createVotingRouter({ requireSession }) {
     },
   );
 
-  router.post(
-    "/events/:eventId/ballots/:ballotId/reopen",
-    ...admin,
-    async (request, response) => {
-      try {
-        const result = await reopenBallot({
-          actorUserId: request.user.id,
-          eventId: request.params.eventId,
-          ballotId: request.params.ballotId,
-          reason: request.body?.reason,
-        });
-        response.status(200).json(result);
-      } catch (error) {
-        if (sendKnownError(response, error)) return;
-        throw error;
-      }
-    },
-  );
-
   router.get(
     "/judge/ballots",
     ...judge,
@@ -154,6 +135,31 @@ export function createVotingRouter({ requireSession }) {
         });
         response.json(result);
       } catch (error) {
+        if (sendKnownError(response, error)) return;
+        throw error;
+      }
+    },
+  );
+
+  router.post(
+    "/judge/ballots/:ballotId/sync",
+    ...judge,
+    async (request, response) => {
+      try {
+        const result = await syncBallot({
+          actorUserId: request.user.id,
+          ballotId: request.params.ballotId,
+          baseRevision: request.body?.baseRevision,
+          operations: request.body?.operations,
+        });
+        response.json(result);
+      } catch (error) {
+        if (error.message === "BALLOT_REVISION_CONFLICT") {
+          error.details = {
+            ...error.details,
+            ballot: await getBallot({ ballotId: request.params.ballotId, userId: request.user.id }),
+          };
+        }
         if (sendKnownError(response, error)) return;
         throw error;
       }

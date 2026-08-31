@@ -9,13 +9,15 @@ Implementado y validado:
 - **I1/I1-C:** eventos, noches, categorías, comparsas, especialidades, rubros, ítems, criterios descriptivos, readiness, apertura transaccional y administración de privilegios.
 - **I2-A:** padrón de jurados, invitaciones seguras, aceptación, 2FA, suspensión/reactivación y rol `JUDGE`.
 - **I2-B:** cupos por noche/especialidad, asignaciones `PRIMARY`/`SUBSTITUTE`, revocaciones, reemplazos auditados y cierre operativo de noches.
-- **I3/Spec 004:** apertura y cierre de votación, planillas por jurado, puntuaciones por comparsa, confirmación inmutable, reapertura única, secreto de puntajes, supervisión por `VEEDOR` y completitud obligatoria por ítem con modal de pendientes para el jurado.
+- **I3/Spec 004/Spec 006:** apertura y cierre de votación, planillas por jurado, puntuaciones por comparsa, confirmación inmutable sin nuevas reaperturas, secreto de puntajes, supervisión por `VEEDOR` y completitud obligatoria por ítem. El cierre con pendientes abre un modal administrativo con jurado, comparsa, rubro e ítem.
 
-Todavía fuera de alcance: operación offline/sync, penalizaciones, consolidación de resultados, rankings, escrutinio de resultados y actas.
+Todavía fuera de alcance: penalizaciones, consolidación de resultados, rankings, escrutinio de resultados y actas. I4-A Offline-First está implementado; resta su comprobación manual de PWA, sesión/2FA, teclado/tacto y viewports operativos.
 
 ## Próxima puerta SDD
 
-La prevención de omisiones ya está implementada: cada ítem debe resolverse con 1 a 10 o `No se presentó` (0) antes de confirmar o cerrar una planilla. El `5 por equidad` queda diferido, sin código, como contingencia reglamentaria excepcional fuera del flujo del jurado. No se debe iniciar otro módulo hasta que una fuente canónica defina su procedimiento, autoridad y efecto; esa decisión debe convertirse en una nueva spec, clarificaciones, plan y tareas antes de código. Ver [`docs/sdd-status.md`](docs/sdd-status.md).
+Spec 004 mantiene activa la prevención de omisiones: cada ítem debe resolverse con 1 a 10 o `No se presentó` (0) antes de confirmar o cerrar una planilla; `PENDING` bloquea ambas operaciones. El `5 por equidad` no está implementado. El reglamento vigente todavía lo contempla y cualquier cambio a esa regla requiere una resolución formal de la COC con identificador o número, fecha, autoridad aprobatoria, texto o regla aprobada y referencia al acta o documento de respaldo.
+
+I4-A Offline-First está separado de esa decisión normativa: sincroniza de forma idempotente las decisiones vigentes de una planilla y su confirmación, sin subsanaciones ni escrutinio. Persiste localmente una outbox cifrada por usuario, detecta conflictos de revisión y cachea solo recursos estáticos mediante PWA; no cachea API. Sus artefactos y evidencia están en [`specs/005-offline-first/`](specs/005-offline-first/). La validación manual de PWA, sesión/2FA, teclado/tacto y viewports sigue pendiente. Ver [`docs/sdd-status.md`](docs/sdd-status.md).
 
 ## Arquitectura
 
@@ -30,7 +32,7 @@ La autorización real se verifica en la API: sesión, 2FA, rol y estado del perf
 
 ## Estructura de base de datos
 
-La persistencia usa PostgreSQL y está definida por las migraciones incrementales `001` a `047` en `api/src/db/migrations/`. Los estados se implementan con columnas `TEXT` y restricciones `CHECK`; no se usan tipos `ENUM` nativos. La tabla `"user"` pertenece a Better Auth y el modelo de dominio solo la referencia.
+La persistencia usa PostgreSQL y está definida por las migraciones incrementales `001` a `049` en `api/src/db/migrations/`. Los estados se implementan con columnas `TEXT` y restricciones `CHECK`; no se usan tipos `ENUM` nativos. La tabla `"user"` pertenece a Better Auth y el modelo de dominio solo la referencia.
 
 ### Relaciones principales
 
@@ -72,7 +74,7 @@ erDiagram
 | Evaluación | `rubric`, `evaluation_item`, `rubric_criterion`, `troupe_nomination` | Una rúbrica pertenece a un evento y tiene ítems y criterios. Cada ítem referencia una rúbrica y una especialidad del mismo evento. Las nominaciones vinculan comparsa y rúbrica del mismo evento. |
 | Programación | `night_troupe_schedule`, `configuration_seed` | `night_troupe_schedule` relaciona jornada y comparsa, con orden de presentación único por jornada. `configuration_seed` registra la semilla inicial aplicada a un evento. |
 | Jurados | `judge_profile`, `judge_invitation`, `judge_quota`, `judge_assignment` | El perfil de jurado referencia opcionalmente al usuario autenticado. Las invitaciones preservan su historial. Las cuotas son por jornada y especialidad; las asignaciones relacionan jurado, evento, jornada y especialidad. |
-| Votación | `ballot`, `ballot_score`, `voting_window`, `ballot_audit_log` | Una planilla corresponde a una asignación de jurado. Cada score relaciona planilla, ítem evaluable y comparsa programada. La ventana controla la votación de una jornada. La auditoría de planilla es append-only. |
+| Votación | `ballot`, `ballot_score`, `voting_window`, `ballot_audit_log`, `ballot_sync_operation` | Una planilla corresponde a una asignación de jurado. Cada score relaciona planilla, ítem evaluable y comparsa programada. La ventana controla la votación de una jornada. La auditoría y el ledger de sincronización son append-only. |
 | Histórico | `ballot_score_subsanation` | Conserva subsanaciones históricas de 5 puntos; no existe flujo operativo vigente que cree nuevas subsanaciones. |
 
 ### Estados y restricciones
@@ -84,7 +86,7 @@ erDiagram
 | `judge_profile` | `INVITED`, `REGISTERED`, `SUSPENDED` |
 | `judge_invitation` | Estado `PENDING`, `USED`, `REVOKED`; entrega `PENDING`, `SENT`, `FAILED` |
 | `judge_assignment` | Estado `ACTIVE`, `REVOKED`; tipo `PRIMARY`, `SUBSTITUTE` |
-| `ballot` | `OPEN`, `SUBMITTED`, `REOPENED` |
+| `ballot` | `OPEN`, `SUBMITTED`; `REOPENED` solo para finalización de registros históricos |
 | `ballot_score.status` | `DRAFT`, `LOCKED` |
 | `ballot_score.evaluation_state` | `PENDING` con score `NULL`; `SCORED` con 1 a 10; `NOT_PRESENTED` con 0 |
 | `voting_window` | `OPEN`, `CLOSED` |
@@ -97,12 +99,12 @@ erDiagram
 - Un jurado solo puede tener una asignación activa por jornada, y las asignaciones activas no pueden exceder el cupo de jornada y especialidad.
 - Una planilla debe coincidir con una asignación activa en jurado, evento, jornada y especialidad.
 - Un score es único por planilla, ítem evaluable y comparsa programada; el ítem, rúbrica, especialidad y jornada deben pertenecer al mismo contexto de evento.
-- Las planillas confirmadas y scores `LOCKED` son inmutables, salvo la reapertura autorizada existente.
+- Las planillas confirmadas y scores `LOCKED` son inmutables; no existen nuevas reaperturas. Una planilla histórica ya `REOPENED` solo puede finalizar en `SUBMITTED`.
 - Los scores `PENDING` bloquean confirmar la planilla y cerrar la votación; la combinación de estado semántico y score se valida en PostgreSQL.
 - La auditoría, perfiles, invitaciones, asignaciones, planillas y scores conservan historia y no admiten borrado físico operativo.
 - No se puede eliminar ni degradar al último `ADMIN` activo.
 
-No existen aún tablas operativas para offline/sync, penalizaciones, consolidación de resultados, rankings, desempate, escrutinio ni actas. Estos módulos continúan fuera de alcance hasta contar con su incremento SDD correspondiente.
+Offline/sync cuenta con la revisión de planilla y el ledger `ballot_sync_operation` de I4-A. Penalizaciones, consolidación de resultados, rankings, desempate, escrutinio y actas continúan fuera de alcance hasta contar con su incremento SDD correspondiente.
 
 ## Requisitos
 
@@ -150,7 +152,7 @@ Abrir `http://localhost:5173/#/login`. En desarrollo, Vite redirige `/api` a `ht
 - `#/admin/events`: configuración y apertura de eventos.
 - `#/admin/judges`: padrón e invitaciones de jurados.
 - `#/admin/assignments`: cupos, asignaciones y reemplazos.
-- `#/admin/voting`: apertura, cierre, estado y reapertura de planillas.
+- `#/admin/voting`: apertura, cierre y estado de planillas; un cierre bloqueado lista los votos pendientes en un modal.
 - `#/judge`: consulta de asignaciones y planillas propias.
 - `#/judge/ballot?ballotId=:ballotId`: carga y confirmación de una planilla propia.
 - `#/invitations/accept`: aceptación de invitaciones.
@@ -176,13 +178,13 @@ La API expone, entre otros, estos contratos bajo `/api/v1`:
 - `GET /judge/ballots/:ballotId`
 - `PUT /judge/ballots/:ballotId/scores/:scoreId`
 - `POST /judge/ballots/:ballotId/submit`
+- `POST /judge/ballots/:ballotId/sync`
 - `POST /events/:eventId/nights/:nightId/voting/open`
 - `POST /events/:eventId/nights/:nightId/voting/close`
 - `GET /events/:eventId/nights/:nightId/voting/status`
 - `GET /events/:eventId/nights/:nightId/voting/ballots`
-- `POST /events/:eventId/ballots/:ballotId/reopen`
 
-Cada ítem de planilla permanece en `PENDING`, recibe un puntaje ordinario `SCORED` de 1 a 10, o se marca mediante la acción independiente `NOT_PRESENTED` con valor efectivo 0. Si el jurado intenta confirmar con pendientes, recibe un modal bloqueante que los identifica por comparsa, rubro e ítem; los pendientes también bloquean el cierre administrativo de votación. Las subsanaciones históricas se conservan; su operación pertenece al futuro incremento de escrutinio.
+Cada ítem de planilla permanece en `PENDING`, recibe un puntaje ordinario `SCORED` de 1 a 10, o se marca mediante la acción independiente `NOT_PRESENTED` con valor efectivo 0. Si el jurado intenta confirmar con pendientes, recibe un modal bloqueante que los identifica por comparsa, rubro e ítem. Los pendientes también bloquean el cierre administrativo y abren un modal con jurado, comparsa, rubro e ítem faltante. Una planilla confirmada no se puede reabrir. Las subsanaciones históricas se conservan; su operación pertenece al futuro incremento de escrutinio.
 
 ## Producción
 
@@ -218,7 +220,7 @@ npm run build
 npm audit
 ```
 
-Las pruebas PostgreSQL requieren que `TEST_DATABASE_URL` apunte a una base aislada. La evidencia detallada está en [`specs/002-jurados-asignaciones/validation.md`](specs/002-jurados-asignaciones/validation.md) y [`specs/003-votacion-planillas/validation.md`](specs/003-votacion-planillas/validation.md).
+Las pruebas PostgreSQL requieren que `TEST_DATABASE_URL` apunte a una base aislada. La evidencia detallada está en [`specs/002-jurados-asignaciones/validation.md`](specs/002-jurados-asignaciones/validation.md), [`specs/004-completitud-planillas/validation.md`](specs/004-completitud-planillas/validation.md), [`specs/005-offline-first/validation.md`](specs/005-offline-first/validation.md) y [`specs/006-cierre-sin-reapertura/validation.md`](specs/006-cierre-sin-reapertura/validation.md).
 
 ## SDD y seguridad
 
@@ -240,5 +242,15 @@ Las pruebas PostgreSQL requieren que `TEST_DATABASE_URL` apunte a una base aisla
 - [Tareas Spec 004](specs/004-completitud-planillas/tasks.md)
 - [Plan Spec 004](.hermes/plans/2026-08-30_completitud-planillas.md)
 - [Validación Spec 004](specs/004-completitud-planillas/validation.md)
+- [Spec 005 - Offline-First](specs/005-offline-first/spec.md)
+- [Clarificaciones Spec 005](specs/005-offline-first/clarifications.md)
+- [Tareas Spec 005](specs/005-offline-first/tasks.md)
+- [Plan Spec 005](.hermes/plans/2026-08-31_i4-a-offline-first.md)
+- [Validación Spec 005](specs/005-offline-first/validation.md)
+- [Spec 006 - Cierre sin reapertura](specs/006-cierre-sin-reapertura/spec.md)
+- [Clarificaciones Spec 006](specs/006-cierre-sin-reapertura/clarifications.md)
+- [Tareas Spec 006](specs/006-cierre-sin-reapertura/tasks.md)
+- [Plan Spec 006](.hermes/plans/2026-08-31_cierre-sin-reapertura.md)
+- [Validación Spec 006](specs/006-cierre-sin-reapertura/validation.md)
 
 No commitear `.env`, contraseñas, tokens ni secretos. No existe autoasignación pública de `ADMIN`. La seguridad del sistema se aplica del lado del servidor.

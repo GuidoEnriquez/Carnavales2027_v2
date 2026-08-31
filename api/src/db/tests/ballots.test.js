@@ -175,41 +175,43 @@ describe("ballots DB", () => {
     );
   });
 
-  it("reapertura desbloquea scores sin alterar su valor", async () => {
+  it("bloquea nuevas reaperturas y permite finalizar una reapertura histórica", async () => {
     const data = await setupTestData();
     const { rows: [ballot] } = await client.query(
       `INSERT INTO ballot(event_id, night_id, judge_assignment_id, judge_profile_id, specialty_id)
        VALUES($1,$2,$3,$4,$5) RETURNING id`,
       [data.event.id, data.night.id, data.assignment.id, data.judgeProfile.id, data.specialty.id],
     );
-    const { rows: [score] } = await client.query(
-      `INSERT INTO ballot_score(ballot_id, event_id, evaluation_item_id, rubric_id, night_schedule_id, score, evaluation_state)
-        VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
-      [ballot.id, data.event.id, data.item.id, data.rubric.id, data.schedule.id, 8, "SCORED"],
-    );
     await client.query(
       "UPDATE ballot SET status = 'SUBMITTED', submitted_at = clock_timestamp() WHERE id = $1",
       [ballot.id],
     );
-    await client.query("UPDATE ballot_score SET status = 'LOCKED' WHERE id = $1", [score.id]);
+    await client.query("SAVEPOINT attempted_reopen");
+    await assert.rejects(
+      () => client.query("UPDATE ballot SET status = 'REOPENED', reopened_at = clock_timestamp() WHERE id = $1", [ballot.id]),
+      /BALLOT_REOPEN_DISABLED/,
+    );
+    await client.query("ROLLBACK TO SAVEPOINT attempted_reopen");
+    await client.query("ALTER TABLE ballot DISABLE TRIGGER USER");
+    try {
+      await client.query(
+        "UPDATE ballot SET status = 'REOPENED', reopened_at = clock_timestamp(), reopen_count = 1 WHERE id = $1",
+        [ballot.id],
+      );
+    } finally {
+      await client.query("ALTER TABLE ballot ENABLE TRIGGER USER");
+    }
     await client.query(
-      "UPDATE ballot SET status = 'REOPENED', reopened_at = clock_timestamp(), reopen_count = 1 WHERE id = $1",
+      "UPDATE ballot SET status = 'SUBMITTED' WHERE id = $1",
       [ballot.id],
     );
-    await client.query("UPDATE ballot_score SET status = 'DRAFT', locked_at = NULL WHERE id = $1", [score.id]);
     const { rows: [updated] } = await client.query(
-      "SELECT status, reopen_count FROM ballot WHERE id = $1",
+      "SELECT status, reopen_count, submitted_at FROM ballot WHERE id = $1",
       [ballot.id],
     );
-    const { rows: [updatedScore] } = await client.query(
-      "SELECT score, status, locked_at FROM ballot_score WHERE id = $1",
-      [score.id],
-    );
-    assert.equal(updated.status, "REOPENED");
+    assert.equal(updated.status, "SUBMITTED");
     assert.equal(updated.reopen_count, 1);
-    assert.equal(updatedScore.score, 8);
-    assert.equal(updatedScore.status, "DRAFT");
-    assert.equal(updatedScore.locked_at, null);
+    assert.ok(updated.submitted_at);
   });
 
   it("distingue pendientes, puntuaciones y no presentados", async () => {
@@ -271,6 +273,36 @@ describe("ballots DB", () => {
       () => client.query("UPDATE ballot_audit_log SET reason = 'Cambio' WHERE ballot_id = $1", [ballot.id]),
       /BALLOT_AUDIT_IMMUTABLE/,
     );
+  });
+
+  it("mantiene revisiones y ledger offline inmutables", async () => {
+    const data = await setupTestData();
+    const actorUserId = randomUUID();
+    const { rows: [ballot] } = await client.query(
+      `INSERT INTO ballot(event_id, night_id, judge_assignment_id, judge_profile_id, specialty_id)
+       VALUES($1,$2,$3,$4,$5) RETURNING id, revision`,
+      [data.event.id, data.night.id, data.assignment.id, data.judgeProfile.id, data.specialty.id],
+    );
+    assert.equal(Number(ballot.revision), 0);
+    const operationId = randomUUID();
+    await client.query(
+      `INSERT INTO ballot_sync_operation
+        (actor_user_id, ballot_id, operation_id, operation_type, content_hash, applied_revision)
+       VALUES($1,$2,$3,'SAVE_SCORE',$4,1)`,
+      [actorUserId, ballot.id, operationId, "a".repeat(64)],
+    );
+    await client.query("SAVEPOINT sync_operation_update");
+    await assert.rejects(
+      () => client.query("UPDATE ballot_sync_operation SET applied_revision = 2 WHERE ballot_id = $1", [ballot.id]),
+      /BALLOT_SYNC_OPERATION_IMMUTABLE/,
+    );
+    await client.query("ROLLBACK TO SAVEPOINT sync_operation_update");
+    await client.query("SAVEPOINT sync_operation_delete");
+    await assert.rejects(
+      () => client.query("DELETE FROM ballot_sync_operation WHERE ballot_id = $1", [ballot.id]),
+      /BALLOT_SYNC_OPERATION_IMMUTABLE/,
+    );
+    await client.query("ROLLBACK TO SAVEPOINT sync_operation_delete");
   });
 
   it("exige que la planilla coincida con su asignación activa", async () => {

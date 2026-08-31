@@ -1,5 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { apiRequest } from "../api/http.js";
+import {
+  cacheBallot,
+  clearBallotOperations,
+  enqueueOperation,
+  getBallotOperations,
+  getCachedBallot,
+  isOperationExpired,
+  removeOperations,
+} from "../offline/ballot-store.js";
 
 function groupScores(scores) {
   return scores.reduce((groups, score) => {
@@ -28,13 +37,29 @@ function getPendingItems(scores, details) {
   });
 }
 
-export function JudgeBallotPage({ ballotId }) {
+function operationId() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("")
+    .replace(/(.{8})(.{4})(.{4})(.{4})/, "$1-$2-$3-$4-");
+}
+
+export function JudgeBallotPage({ ballotId, userId }) {
   const [ballot, setBallot] = useState(null);
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
+  const [remoteRevision, setRemoteRevision] = useState(0);
+  const [syncStatus, setSyncStatus] = useState("idle");
+  const [pendingCount, setPendingCount] = useState(0);
+  const [pendingSubmit, setPendingSubmit] = useState(false);
+  const [expiredPending, setExpiredPending] = useState(false);
+  const [online, setOnline] = useState(() => navigator.onLine);
   const [pendingDialog, setPendingDialog] = useState(null);
   const pendingDialogRef = useRef(null);
   const submitButtonRef = useRef(null);
+  const syncInFlightRef = useRef(false);
 
   useEffect(() => {
     const dialog = pendingDialogRef.current;
@@ -62,11 +87,38 @@ export function JudgeBallotPage({ ballotId }) {
     submitButtonRef.current?.focus();
   };
 
+  const offlineUserId = userId || "local-judge";
+
+  const refreshPending = async () => {
+    const operations = await getBallotOperations(offlineUserId, ballotId);
+    setPendingCount(operations.length);
+    setPendingSubmit(operations.some((operation) => operation.type === "SUBMIT_BALLOT"));
+    setExpiredPending(operations.some(isOperationExpired));
+    return operations;
+  };
+
   const loadBallot = async () => {
     if (!ballotId) return;
     try {
-      setBallot(await apiRequest(`/api/v1/judge/ballots/${ballotId}`));
+      const loaded = await apiRequest(`/api/v1/judge/ballots/${ballotId}`);
+      setBallot(loaded);
+      setRemoteRevision(loaded.revision ?? 0);
+      await cacheBallot(offlineUserId, loaded);
+      const pending = await refreshPending();
+      setSyncStatus("idle");
+      if (pending.length > 0 && navigator.onLine) void syncPending();
     } catch (error) {
+      if (error.code === "NETWORK_ERROR") {
+        const cached = await getCachedBallot(offlineUserId, ballotId);
+        if (cached) {
+          setBallot(cached);
+          const operations = await refreshPending();
+          setRemoteRevision(operations[0]?.baseRevision ?? cached.revision ?? 0);
+          setSyncStatus("offline");
+          setMessage("Sin conexión: se muestra la última copia disponible en este dispositivo.");
+          return;
+        }
+      }
       const messages = {
         BALLOT_ACCESS_DENIED: "No tenés acceso a esta planilla.",
         BALLOT_NOT_FOUND: "La planilla no existe.",
@@ -79,26 +131,127 @@ export function JudgeBallotPage({ ballotId }) {
     void loadBallot();
   }, [ballotId]);
 
+  const syncPending = async () => {
+    if (!ballotId || syncStatus === "conflict" || syncStatus === "blocked" || syncInFlightRef.current) return;
+    const operations = await refreshPending();
+    if (operations.length === 0) return;
+    if (!navigator.onLine) {
+      setSyncStatus("offline");
+      return;
+    }
+    syncInFlightRef.current = true;
+    let resync = false;
+    setSyncStatus("syncing");
+    try {
+      const result = await apiRequest(`/api/v1/judge/ballots/${ballotId}/sync`, {
+        method: "POST",
+        body: JSON.stringify({
+          baseRevision: operations[0].baseRevision,
+          operations: operations.map(({ operationId: id, type, scoreId, evaluationState, score }) => ({
+            operationId: id,
+            type,
+            ...(scoreId ? { scoreId, evaluationState, ...(score === undefined ? {} : { score }) } : {}),
+          })),
+        }),
+      });
+      await removeOperations(offlineUserId, operations.map((operation) => operation.operationId));
+      setRemoteRevision(result.revision);
+      setBallot((current) => {
+        if (!current) return current;
+        const next = {
+          ...current,
+          revision: result.revision,
+          status: operations.some((operation) => operation.type === "SUBMIT_BALLOT") ? "SUBMITTED" : current.status,
+          scores: operations.some((operation) => operation.type === "SUBMIT_BALLOT")
+            ? current.scores.map((score) => ({ ...score, status: "LOCKED" }))
+            : current.scores,
+        };
+        void cacheBallot(offlineUserId, next);
+        return next;
+      });
+      const remaining = await refreshPending();
+      resync = remaining.length > 0;
+      setSyncStatus("idle");
+      setMessage(operations.some((operation) => operation.type === "SUBMIT_BALLOT")
+        ? "Planilla confirmada. Sus puntuaciones quedaron resguardadas."
+        : "Cambios sincronizados.");
+    } catch (error) {
+      if (error.code === "NETWORK_ERROR") {
+        setSyncStatus("offline");
+        setMessage("Cambios guardados en este dispositivo. Se sincronizarán al recuperar conexión.");
+        return;
+      }
+      if (error.code === "BALLOT_REVISION_CONFLICT") {
+        setSyncStatus("conflict");
+        setMessage("La planilla cambió en otro dispositivo. Recargá el estado antes de continuar.");
+        return;
+      }
+      if (error.code === "BALLOT_INCOMPLETE") {
+        const submitOperations = operations.filter((operation) => operation.type === "SUBMIT_BALLOT");
+        await removeOperations(offlineUserId, submitOperations.map((operation) => operation.operationId));
+        await refreshPending();
+        setPendingDialog(getPendingItems(ballot?.scores ?? [], error.details));
+        setSyncStatus("idle");
+        return;
+      }
+      setSyncStatus("blocked");
+      setMessage("La sincronización fue rechazada. Revisá la planilla o descartá los cambios locales.");
+    } finally {
+      syncInFlightRef.current = false;
+      if (resync) void syncPending();
+    }
+  };
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setOnline(true);
+      void syncPending();
+    };
+    const handleOffline = () => {
+      setOnline(false);
+      setSyncStatus("offline");
+    };
+    const handleFocus = () => {
+      if (navigator.onLine) void syncPending();
+    };
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [ballotId, remoteRevision, syncStatus]);
+
   const saveDecision = async (scoreId, evaluationState, score) => {
-    if (!ballot || busy) return;
+    if (!ballot || busy || pendingSubmit) return;
     setBusy(scoreId);
     setMessage("");
     try {
-      const saved = await apiRequest(`/api/v1/judge/ballots/${ballot.id}/scores/${scoreId}`, {
-        method: "PUT",
-        body: JSON.stringify({ evaluationState, ...(score === undefined ? {} : { score }) }),
-      });
-      setBallot((current) => ({
-        ...current,
-        scores: current.scores.map((score) => score.id === saved.id ? { ...score, ...saved } : score),
-      }));
-      setMessage("Decisión guardada.");
-    } catch (error) {
-      const messages = {
-        BALLOT_ALREADY_SUBMITTED: "La planilla ya fue confirmada.",
-        BALLOT_SCORE_IMMUTABLE: "Esta puntuación ya no admite cambios.",
+      const next = {
+        ...ballot,
+        revision: (ballot.revision ?? remoteRevision) + 1,
+        scores: ballot.scores.map((item) => item.id === scoreId
+          ? { ...item, evaluationState, score: evaluationState === "PENDING" ? null : evaluationState === "NOT_PRESENTED" ? 0 : score }
+          : item),
       };
-      setMessage(messages[error.code] ?? "No se pudo guardar la puntuación.");
+      await enqueueOperation(offlineUserId, {
+        operationId: operationId(),
+        ballotId: ballot.id,
+        baseRevision: remoteRevision,
+        type: "SAVE_SCORE",
+        scoreId,
+        evaluationState,
+        ...(score === undefined ? {} : { score }),
+      });
+      setBallot(next);
+      await cacheBallot(offlineUserId, next);
+      await refreshPending();
+      setMessage("Decisión pendiente de sincronización.");
+      void syncPending();
+    } catch (error) {
+      setMessage("No se pudo guardar la decisión en este dispositivo.");
     } finally {
       setBusy("");
     }
@@ -114,13 +267,15 @@ export function JudgeBallotPage({ ballotId }) {
     }
     setBusy("submit");
     try {
-      const submitted = await apiRequest(`/api/v1/judge/ballots/${ballot.id}/submit`, { method: "POST" });
-      setBallot((current) => ({
-        ...current,
-        ...submitted,
-        scores: current.scores.map((score) => ({ ...score, status: "LOCKED" })),
-      }));
-      setMessage("Planilla confirmada. Sus puntuaciones quedaron resguardadas.");
+      await enqueueOperation(offlineUserId, {
+        operationId: operationId(),
+        ballotId: ballot.id,
+        baseRevision: remoteRevision,
+        type: "SUBMIT_BALLOT",
+      });
+      await refreshPending();
+      setMessage("Confirmación pendiente de sincronización.");
+      void syncPending();
     } catch (error) {
       if (error.code === "BALLOT_INCOMPLETE") {
         setPendingDialog(getPendingItems(ballot.scores, error.details));
@@ -140,7 +295,7 @@ export function JudgeBallotPage({ ballotId }) {
     return <main className="container"><div className="card"><h1>Planilla de evaluación</h1><p role="status">{message || "Cargando planilla…"}</p></div></main>;
   }
 
-  const readonly = ballot.status === "SUBMITTED";
+  const readonly = ballot.status === "SUBMITTED" || pendingSubmit;
   const groups = Object.values(groupScores(ballot.scores)).sort((left, right) => left.presentationOrder - right.presentationOrder);
 
   return <main className="judge-ballot-page">
@@ -149,6 +304,14 @@ export function JudgeBallotPage({ ballotId }) {
       <span className={`status-pill ballot-status-${ballot.status.toLowerCase()}`}>{ballot.status === "SUBMITTED" ? "Confirmada" : ballot.status === "REOPENED" ? "Reabierta" : "En carga"}</span>
     </header>
     <p className="feedback" role="status" aria-live="polite">{message}</p>
+    <section className="sync-panel" aria-label="Estado de sincronización">
+      <strong>{online ? "Con conexión" : "Sin conexión"}</strong>
+      <span>{pendingCount === 0 ? "Sin cambios pendientes" : `${pendingCount} cambio${pendingCount === 1 ? "" : "s"} pendiente${pendingCount === 1 ? "" : "s"}`}</span>
+      {expiredPending && <span className="sync-warning">Hay cambios pendientes hace más de 12 horas.</span>}
+      {syncStatus === "conflict" && <button type="button" className="secondary" onClick={() => void loadBallot()}>Recargar estado canónico</button>}
+      {pendingCount > 0 && syncStatus !== "blocked" && <button type="button" className="secondary" disabled={syncStatus === "syncing"} onClick={() => void syncPending()}>Reintentar sincronización</button>}
+      {(syncStatus === "conflict" || syncStatus === "blocked") && <button type="button" className="secondary" onClick={() => void clearBallotOperations(offlineUserId, ballot.id).then(() => { void refreshPending(); setSyncStatus("idle"); setMessage("Cambios locales descartados."); })}>Descartar cambios locales</button>}
+    </section>
     <section className="ballot-list" aria-label="Puntuaciones por comparsa">
       {groups.map((group) => <article className="ballot-troupe" key={group.nightScheduleId}>
         <header><p className="eyebrow">Salida {group.presentationOrder}</p><h2>{group.troupeName}</h2></header>

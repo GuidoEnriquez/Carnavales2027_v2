@@ -25,13 +25,13 @@
 | RF-61 | `voting-api.test.js` comprueba que la confirmación y el cierre rechazan ítems pendientes y devuelven ítem, jurado y comparsa; `AdminVotingPage.test.jsx` verifica que ADMIN recibe ese detalle. |
 | RF-62 | `JudgeBallotPage.test.jsx` verifica la acción explícita `Quitar decisión`, que vuelve el score a `PENDING`. |
 | RF-63 | `ballot-service.js` registra `SCORE_DECISION_SAVED` con actor y `scoreId`, sin el valor del score. |
-| RF-64 | Migraciones 035-046 y pruebas DB/API preservan inmutabilidad y reapertura controlada; una marca histórica de subsanación impide reabrir aunque no tenga fila de detalle. |
+| RF-64 | Migraciones 035-046 y Spec 006 preservan inmutabilidad; `049_disable_ballot_reopen.sql` impide nuevas reaperturas y permite finalizar solo registros históricos `REOPENED`. |
 | RF-65 | Las dos rutas de omisión/subsanación ya no están montadas; migración 047 normaliza borradores heredados y permite resolverlos sin modificar la historia bloqueada. |
 | RF-66 | `JudgeBallotPage.test.jsx` verifica que el diálogo enumera todos los pendientes con comparsa, rubro e ítem, evita el envío local, cierra por evento `cancel` y devuelve el foco al disparador. El error `BALLOT_INCOMPLETE` del servidor abre el mismo diálogo. Los estilos limitan ancho y alto con unidades fluidas, ofrecen scroll para listas extensas y ajustan el diálogo a pantallas de hasta 36rem. |
 
 ## Notas
 
 - La migración 046 desactiva triggers de usuario únicamente durante su backfill transaccional y los reactiva antes de aplicar la constraint y el guard final. La 047 normaliza solo omisiones heredadas que aún estaban en `DRAFT`; los registros bloqueados permanecen históricos.
-- El reglamento de Carnavales 2027 no está distribuido en este repositorio. La decisión de producto se registra en `docs/source-map.md` y debe contrastarse cuando se incorpore la fuente reglamentaria.
+- El reglamento de Carnavales 2027 y la resolución COC sobre el `5 por equidad` no están distribuidos en el repositorio. No se declara eliminada esa regla para nuevas planillas digitales ni se implementa ninguna contingencia mientras falte la fuente canónica.
 - Offline/sync, resultados, penalizaciones, escrutinio operativo y actas continúan fuera de alcance.
-- No se agregaron migraciones, rutas ni cálculos para el `5 por equidad`; permanece diferido como contingencia excepcional fuera del flujo del jurado.
+- No se agregaron migraciones, rutas ni cálculos para el `5 por equidad`; permanece no implementado y fuera del flujo del jurado.

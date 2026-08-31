@@ -17,6 +17,7 @@ export async function apiRequest(path, options = {}) {
     response = await fetch(`${apiBaseUrl}${path}`, {
       ...requestOptions,
       credentials: "include",
+      cache: "no-store",
       headers: { "content-type": "application/json", ...headers },
     });
   } catch (error) {

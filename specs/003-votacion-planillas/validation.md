@@ -1,6 +1,6 @@
 # Validación — Spec 003 · I3: Planillas y puntuaciones
 
-> Evidencia histórica de I3. La semántica de puntajes, pendientes y subsanación fue reemplazada por Spec 004; sus validaciones vigentes se registran allí.
+> Evidencia histórica de I3. La semántica de puntajes, pendientes y subsanación fue reemplazada por Spec 004; la reapertura fue retirada por Spec 006. Sus validaciones vigentes se registran en esos incrementos.
 
 ## Estado
 
@@ -29,8 +29,8 @@
 | RF-49 | Evolucionado por RF-61 de Spec 004; la confirmación y el cierre rechazan pendientes e identifican ítem, jurado y comparsa. |
 | RF-50 | `ballots.test.js`, `voting-api.test.js`; confirmar bloquea puntuaciones y la planilla no vuelve a `OPEN`. |
 | RF-51 | `voting.routes.js`, `listNightBallots`, `AdminVotingPage.test.jsx`; ADMIN y VEEDOR reciben solo estado, identidad de jurado y especialidad; ningún endpoint administrativo devuelve puntuaciones. |
-| RF-52 | `voting-api.test.js`, `ballots.test.js`, migración 037; ADMIN con 2FA debe aportar motivo, puede reabrir una vez y el desbloqueo conserva el valor previo de cada puntuación. |
-| RF-53 | `ballot-service.js`, `voting-api.test.js`, `ballot_audit_log`; se auditan apertura, guardado, confirmación y reapertura sin guardar el valor de la puntuación. |
+| RF-52 | Histórico; reemplazado por RF-67 y RF-68 de Spec 006. |
+| RF-53 | Histórico; la reapertura fue retirada por Spec 006. Se mantienen auditorías históricas sin valores de puntuación. |
 | RF-54 | `require-voting-observer.js`, migración 039 y `voting-api.test.js`; VEEDOR con 2FA consulta conteos sin puntajes. |
 | RF-55 | Revisión de rutas, módulos y cliente; no se agregaron offline/sync, penalizaciones, consolidación de resultados ni actas. |
 | RF-56 | Diferido al incremento de escrutinio. La entidad histórica permanece protegida y no tiene rutas operativas vigentes. |
@@ -41,5 +41,5 @@
 - El acceso a planillas se verifica por usuario titular y asignación activa en lectura, guardado y confirmación.
 - No se exponen puntajes de otros jurados ni valores de puntaje en auditoría.
 - Los triggers impiden borrar o modificar planillas, puntajes, subsanaciones y auditoría; una subsanación no puede asociarse a otro voto ni modificar el valor original.
-- Una subsanación bloquea futuras reaperturas; el cierre bloquea planillas incompletas y persiste una ventana de votación cerrada.
+- Una subsanación histórica permanece protegida; Spec 006 impide cualquier nueva reapertura. El cierre bloquea planillas incompletas y persiste una ventana de votación cerrada.
 - Las migraciones 031–045 son incrementales y no destructivas.

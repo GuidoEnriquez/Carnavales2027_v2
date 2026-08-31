@@ -30,6 +30,10 @@ export function createApp({
   }
 
   app.use("/api/v1", requireTrustedOrigin);
+  app.use("/api/v1", (_request, response, next) => {
+    response.set("Cache-Control", "no-store, private");
+    next();
+  });
   app.use("/api/v1", createJudgeInvitationsRouter({ createUser }));
 
   if (getSession) {

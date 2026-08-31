@@ -59,7 +59,7 @@ export default function App({ session: providedSession }) {
     return <RoleArea session={session} role="JUDGE"><JudgeHomePage session={session} /></RoleArea>;
   }
   if (route === "#/judge/ballot") {
-    return <RoleArea session={session} role="JUDGE"><JudgeBallotPage ballotId={new URLSearchParams(query).get("ballotId") ?? ""} /></RoleArea>;
+    return <RoleArea session={session} role="JUDGE"><JudgeBallotPage ballotId={new URLSearchParams(query).get("ballotId") ?? ""} userId={session.user?.id ?? ""} /></RoleArea>;
   }
   if (route === "#/home") {
     if (session.status === "loading") return <p>Cargando sesión…</p>;

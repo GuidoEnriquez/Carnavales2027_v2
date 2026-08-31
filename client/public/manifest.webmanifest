@@ -1,0 +1,8 @@
+{
+  "name": "Carnavales 2027 - Jurados",
+  "short_name": "Carnavales 2027",
+  "start_url": "/#/login",
+  "display": "standalone",
+  "background_color": "#fffaf1",
+  "theme_color": "#8f2e22"
+}

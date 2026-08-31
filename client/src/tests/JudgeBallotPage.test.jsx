@@ -16,6 +16,7 @@ const ballot = {
   nightName: "Noche 1",
   specialtyName: "Baile",
   status: "OPEN",
+  revision: 0,
   scores: [
     { id: "score-1", nightScheduleId: "schedule-1", presentationOrder: 1, troupeName: "Comparsa Uno", rubricId: "rubric-1", rubricName: "Reina", itemName: "Presencia", score: null, evaluationState: "PENDING", status: "DRAFT" },
     { id: "score-2", nightScheduleId: "schedule-2", presentationOrder: 2, troupeName: "Comparsa Dos", rubricId: "rubric-1", rubricName: "Reina", itemName: "Presencia", score: null, evaluationState: "PENDING", status: "DRAFT" },
@@ -28,9 +29,10 @@ describe("JudgeBallotPage", () => {
   it("carga comparsas, separa no presentado de la escala y confirma la planilla", async () => {
     apiRequest.mockImplementation((path, options) => {
       if (path === "/api/v1/judge/ballots/ballot-1" && !options) return Promise.resolve(ballot);
-      if (path.endsWith("/scores/score-1")) return Promise.resolve({ id: "score-1", score: 0, evaluationState: "NOT_PRESENTED", status: "DRAFT" });
-      if (path.endsWith("/scores/score-2")) return Promise.resolve({ id: "score-2", score: 8, evaluationState: "SCORED", status: "DRAFT" });
-      if (path.endsWith("/submit")) return Promise.resolve({ id: "ballot-1", status: "SUBMITTED" });
+      if (path.endsWith("/sync")) {
+        const request = JSON.parse(options.body);
+        return Promise.resolve({ revision: request.baseRevision + request.operations.length, operations: request.operations });
+      }
       return Promise.resolve({});
     });
     render(<JudgeBallotPage ballotId="ballot-1" />);
@@ -40,26 +42,20 @@ describe("JudgeBallotPage", () => {
     expect(screen.queryByRole("button", { name: "0" })).not.toBeInTheDocument();
     fireEvent.click(screen.getAllByRole("button", { name: "No se presentó" })[0]);
     await waitFor(() => expect(apiRequest).toHaveBeenCalledWith(
-      "/api/v1/judge/ballots/ballot-1/scores/score-1",
-      { method: "PUT", body: JSON.stringify({ evaluationState: "NOT_PRESENTED" }) },
+      "/api/v1/judge/ballots/ballot-1/sync",
+      expect.objectContaining({ method: "POST" }),
     ));
     fireEvent.click(screen.getAllByRole("button", { name: "8" })[1]);
-    await waitFor(() => expect(apiRequest).toHaveBeenCalledWith(
-      "/api/v1/judge/ballots/ballot-1/scores/score-2",
-      { method: "PUT", body: JSON.stringify({ evaluationState: "SCORED", score: 8 }) },
-    ));
+    await waitFor(() => expect(apiRequest).toHaveBeenCalledTimes(3));
     fireEvent.click(screen.getByRole("button", { name: "Confirmar planilla" }));
-    await waitFor(() => expect(apiRequest).toHaveBeenCalledWith(
-      "/api/v1/judge/ballots/ballot-1/submit",
-      { method: "POST" },
-    ));
+    await waitFor(() => expect(apiRequest).toHaveBeenCalledTimes(4));
     expect(await screen.findByText(/planilla confirmada/i)).toBeInTheDocument();
   });
 
   it("permite quitar una decisión antes de confirmar", async () => {
     apiRequest.mockImplementation((path, options) => {
       if (!options) return Promise.resolve({ ...ballot, scores: [{ ...ballot.scores[0], score: 4, evaluationState: "SCORED" }] });
-      if (path.endsWith("/scores/score-1")) return Promise.resolve({ id: "score-1", score: null, evaluationState: "PENDING", status: "DRAFT" });
+      if (path.endsWith("/sync")) return Promise.resolve({ revision: 1, operations: [] });
       return Promise.resolve({});
     });
     render(<JudgeBallotPage ballotId="ballot-1" />);
@@ -67,8 +63,8 @@ describe("JudgeBallotPage", () => {
     await screen.findByText("Comparsa Uno");
     fireEvent.click(screen.getByRole("button", { name: "Quitar decisión" }));
     await waitFor(() => expect(apiRequest).toHaveBeenCalledWith(
-      "/api/v1/judge/ballots/ballot-1/scores/score-1",
-      { method: "PUT", body: JSON.stringify({ evaluationState: "PENDING" }) },
+      "/api/v1/judge/ballots/ballot-1/sync",
+      expect.objectContaining({ method: "POST" }),
     ));
   });
 
@@ -113,7 +109,7 @@ describe("JudgeBallotPage", () => {
     };
     apiRequest.mockImplementation((path, options) => {
       if (!options) return Promise.resolve(completeBallot);
-      if (path.endsWith("/submit")) return Promise.reject(new ApiError({
+      if (path.endsWith("/sync") && JSON.parse(options.body).operations.some((operation) => operation.type === "SUBMIT_BALLOT")) return Promise.reject(new ApiError({
         code: "BALLOT_INCOMPLETE",
         details: [{ id: "score-1", name: "Presencia", code: "PRESENCIA" }],
       }));
@@ -128,5 +124,21 @@ describe("JudgeBallotPage", () => {
     expect(within(dialog).getByText("Comparsa Uno")).toBeInTheDocument();
     expect(within(dialog).getByText("Reina")).toBeInTheDocument();
     expect(within(dialog).getByText("Presencia")).toBeInTheDocument();
+  });
+
+  it("detiene la cola ante un conflicto de revisión sin sobrescribir la planilla", async () => {
+    apiRequest.mockImplementation((path, options) => {
+      if (!options) return Promise.resolve(ballot);
+      if (path.endsWith("/sync")) return Promise.reject(new ApiError({ code: "BALLOT_REVISION_CONFLICT" }));
+      return Promise.resolve({});
+    });
+    render(<JudgeBallotPage ballotId="ballot-1" />);
+
+    await screen.findByText("Comparsa Uno");
+    fireEvent.click(screen.getAllByRole("button", { name: "No se presentó" })[0]);
+
+    expect(await screen.findByText(/cambió en otro dispositivo/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Recargar estado canónico" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Descartar cambios locales" })).toBeInTheDocument();
   });
 });

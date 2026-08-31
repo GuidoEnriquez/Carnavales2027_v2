@@ -240,6 +240,23 @@ form {
   font-weight: 700;
 }
 
+.sync-panel {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  margin: 0.75rem 0 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  font-size: 0.9rem;
+}
+
+.sync-panel strong { color: var(--accent); }
+.sync-warning { color: #8a4c00; font-weight: 700; }
+.sync-panel .secondary { min-height: 2.5rem; }
+
 .config-section {
   margin-block: 1.25rem;
   border: 1px solid var(--line-color);

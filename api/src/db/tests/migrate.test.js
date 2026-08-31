@@ -72,7 +72,9 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
       || filename === "044_voting_windows.sql"
        || filename === "045_enforce_ballot_score_rubric_integrity.sql"
        || filename === "046_ballot_score_evaluation_state.sql"
-       || filename === "047_normalize_legacy_editable_omissions.sql"
+         || filename === "047_normalize_legacy_editable_omissions.sql"
+         || filename === "048_ballot_offline_sync.sql"
+         || filename === "049_disable_ballot_reopen.sql"
   )));
 
   const status = await getMigrationStatus();
@@ -310,6 +312,16 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
     {
       filename: "047_normalize_legacy_editable_omissions.sql",
       version: "047",
+      applied: true,
+    },
+    {
+      filename: "048_ballot_offline_sync.sql",
+      version: "048",
+      applied: true,
+    },
+    {
+      filename: "049_disable_ballot_reopen.sql",
+      version: "049",
       applied: true,
     },
   ]);

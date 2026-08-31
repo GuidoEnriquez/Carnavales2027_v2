@@ -3,7 +3,7 @@
 ## Estado
 
 - **Fase SDD:** I1-C, I2-A, I2-B e I3 implementados; Spec 004 validada.
-- **Código:** la evolución de planillas vigente se documenta en Spec 004; offline/sync, penalizaciones, escrutinio, resultados y actas continúan diferidos.
+- **Código:** la evolución de planillas vigente se documenta en Specs 004 y 006; Offline-First se implementa exclusivamente en Spec 005. Penalizaciones, escrutinio, resultados y actas continúan diferidos.
 - **Base revisada:** `spec.md`, `docs/source-map.md` y las notas de Obsidian referenciadas.
 
 ## Decisiones ya resueltas

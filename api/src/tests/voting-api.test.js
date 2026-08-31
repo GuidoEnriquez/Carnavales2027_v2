@@ -182,6 +182,7 @@ test("API votación: ciclo completo de planilla", {
     const ballotRes = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}`, { headers: judgeHeaders });
     const ballotBody = await ballotRes.json();
     assert.equal(ballotRes.status, 200, JSON.stringify(ballotBody));
+    assert.equal(ballotRes.headers.get("cache-control"), "no-store, private");
     const ballotData = ballotBody;
     assert.equal(ballotData.status, "OPEN");
     assert.equal(ballotData.scores.length, 2);
@@ -192,10 +193,56 @@ test("API votación: ciclo completo de planilla", {
       method: "PUT", headers: otherJudgeHeaders,
       body: JSON.stringify({ evaluationState: "SCORED", score: 8 }),
     });
-    assert.equal(forbiddenSave.status, 409);
+    assert.equal(forbiddenSave.status, 409, JSON.stringify(await forbiddenSave.clone().json()));
     assert.equal((await forbiddenSave.json()).code, "BALLOT_ACCESS_DENIED");
 
-    // 7. Submit rejects unresolved items with their stable error code.
+    // 7. Offline sync applies once, detects identifier reuse and rejects stale revisions.
+    assert.equal(ballotData.revision, 0);
+    const offlineOperationId = randomUUID();
+    const syncPayload = {
+      baseRevision: ballotData.revision,
+      operations: [{ operationId: offlineOperationId, type: "SAVE_SCORE", scoreId: firstScore.id, evaluationState: "SCORED", score: 7 }],
+    };
+    const syncRes = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/sync`, {
+      method: "POST", headers: judgeHeaders, body: JSON.stringify(syncPayload),
+    });
+    assert.equal(syncRes.status, 200);
+    assert.deepEqual(await syncRes.json(), {
+      ballotId,
+      revision: 1,
+      operations: [{ operationId: offlineOperationId, status: "ACCEPTED", revision: 1 }],
+    });
+    const duplicateSync = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/sync`, {
+      method: "POST", headers: judgeHeaders, body: JSON.stringify(syncPayload),
+    });
+    assert.equal(duplicateSync.status, 200);
+    assert.equal((await duplicateSync.json()).operations[0].revision, 1);
+    const { rows: [syncAuditCount] } = await pool.query(
+      "SELECT count(*)::INTEGER AS count FROM ballot_audit_log WHERE ballot_id = $1 AND action = 'SCORE_DECISION_SAVED'",
+      [ballotId],
+    );
+    assert.equal(syncAuditCount.count, 1);
+    const reusedOperation = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/sync`, {
+      method: "POST", headers: judgeHeaders,
+      body: JSON.stringify({ ...syncPayload, operations: [{ ...syncPayload.operations[0], score: 9 }] }),
+    });
+    assert.equal(reusedOperation.status, 409);
+    assert.equal((await reusedOperation.json()).code, "SYNC_OPERATION_MISMATCH");
+    const staleSync = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/sync`, {
+      method: "POST", headers: judgeHeaders,
+      body: JSON.stringify({
+        baseRevision: 0,
+        operations: [{ operationId: randomUUID(), type: "SAVE_SCORE", scoreId: firstScore.id, evaluationState: "SCORED", score: 9 }],
+      }),
+    });
+    assert.equal(staleSync.status, 409);
+    const staleBody = await staleSync.json();
+    assert.equal(staleBody.code, "BALLOT_REVISION_CONFLICT");
+    assert.equal(staleBody.details.revision, 1);
+    assert.equal(staleBody.details.ballot.id, ballotId);
+    assert.equal(staleBody.details.ballot.revision, 1);
+
+    // 8. Submit rejects unresolved items with their stable error code.
     const incompleteSubmit = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/submit`, {
       method: "POST", headers: judgeHeaders,
     });
@@ -208,10 +255,10 @@ test("API votación: ciclo completo de planilla", {
     assert.equal(incompleteClose.status, 409);
     const incompleteCloseBody = await incompleteClose.json();
     assert.equal(incompleteCloseBody.code, "VOTING_CLOSE_INCOMPLETE_BALLOTS");
-    assert.equal(incompleteCloseBody.details.length, 2);
-    assert.deepEqual(incompleteCloseBody.details.map((item) => item.name), ["Presencia", "Presencia"]);
-    assert.deepEqual(incompleteCloseBody.details.map((item) => item.judgeName), ["Judge Voting", "Judge Voting"]);
-    assert.deepEqual(incompleteCloseBody.details.map((item) => item.troupeName), ["Comparsa 1", "Comparsa 2"]);
+    assert.equal(incompleteCloseBody.details.length, 1);
+    assert.deepEqual(incompleteCloseBody.details.map((item) => item.name), ["Presencia"]);
+    assert.deepEqual(incompleteCloseBody.details.map((item) => item.judgeName), ["Judge Voting"]);
+    assert.deepEqual(incompleteCloseBody.details.map((item) => item.troupeName), ["Comparsa 2"]);
 
     const invalidOrdinaryScore = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/scores/${firstScore.id}`, {
       method: "PUT", headers: judgeHeaders,
@@ -219,7 +266,7 @@ test("API votación: ciclo completo de planilla", {
     });
     assert.equal(invalidOrdinaryScore.status, 400);
 
-    // 8. The judge records one ordinary score and one independent non-presentation.
+    // 9. The judge records one ordinary score and one independent non-presentation.
     const saveRes = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/scores/${firstScore.id}`, {
       method: "PUT", headers: judgeHeaders,
       body: JSON.stringify({ evaluationState: "SCORED", score: 8 }),
@@ -245,68 +292,43 @@ test("API votación: ciclo completo de planilla", {
     );
     assert.deepEqual(scoreAudit.details, { scoreId: secondScore.id });
 
-    // 9. Submit a complete ballot → 200.
-    const submitRes = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/submit`, {
-      method: "POST", headers: judgeHeaders,
+    // 10. A complete ballot can be confirmed through the idempotent sync contract.
+    const currentBallotRes = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}`, { headers: judgeHeaders });
+    const currentBallot = await currentBallotRes.json();
+    const submitOperationId = randomUUID();
+    const submitPayload = {
+      baseRevision: currentBallot.revision,
+      operations: [{ operationId: submitOperationId, type: "SUBMIT_BALLOT" }],
+    };
+    const submitRes = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/sync`, {
+      method: "POST", headers: judgeHeaders, body: JSON.stringify(submitPayload),
     });
     assert.equal(submitRes.status, 200);
     const submitData = await submitRes.json();
-    assert.equal(submitData.status, "SUBMITTED");
+    assert.equal(submitData.operations[0].operationId, submitOperationId);
+    const duplicateSubmit = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/sync`, {
+      method: "POST", headers: judgeHeaders, body: JSON.stringify(submitPayload),
+    });
+    assert.equal(duplicateSubmit.status, 200);
+    const { rows: [submitAuditCount] } = await pool.query(
+      "SELECT count(*)::INTEGER AS count FROM ballot_audit_log WHERE ballot_id = $1 AND action = 'BALLOT_SUBMITTED'",
+      [ballotId],
+    );
+    assert.equal(submitAuditCount.count, 1);
 
-    // 10. Judge cannot resubmit → 409.
+    // 11. Judge cannot resubmit → 409.
     const resubmitRes = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/submit`, {
       method: "POST", headers: judgeHeaders,
     });
     assert.equal(resubmitRes.status, 409);
     assert.equal((await resubmitRes.json()).code, "BALLOT_ALREADY_SUBMITTED");
 
-    // 11. Historical subsanation markers prevent reopening even without a detail row.
-    await pool.query("ALTER TABLE ballot_score DISABLE TRIGGER USER");
-    try {
-      await pool.query(
-        "UPDATE ballot_score SET score = NULL, evaluation_state = 'PENDING', requires_subsanation = true, subsidized_score = NULL WHERE id = $1",
-        [firstScore.id],
-      );
-    } finally {
-      await pool.query("ALTER TABLE ballot_score ENABLE TRIGGER USER");
-    }
-    const historicalReopen = await fetch(`${baseUrl}/api/v1/events/${event.id}/ballots/${ballotId}/reopen`, {
-      method: "POST", headers: adminHeaders,
-      body: JSON.stringify({ reason: "Corrección solicitada" }),
-    });
-    assert.equal(historicalReopen.status, 409);
-    assert.equal((await historicalReopen.json()).code, "BALLOT_SUBSANATION_FINAL");
-    await pool.query("ALTER TABLE ballot_score DISABLE TRIGGER USER");
-    try {
-      await pool.query(
-        "UPDATE ballot_score SET score = 8, evaluation_state = 'SCORED', requires_subsanation = false, subsidized_score = NULL WHERE id = $1",
-        [firstScore.id],
-      );
-    } finally {
-      await pool.query("ALTER TABLE ballot_score ENABLE TRIGGER USER");
-    }
-
-    // 12. Reopen ballot → 200.
+    // 12. Reopen endpoint is retired.
     const reopenRes = await fetch(`${baseUrl}/api/v1/events/${event.id}/ballots/${ballotId}/reopen`, {
       method: "POST", headers: adminHeaders,
       body: JSON.stringify({ reason: "Corrección solicitada" }),
     });
-    assert.equal(reopenRes.status, 200, JSON.stringify(await reopenRes.clone().json()));
-    const reopenData = await reopenRes.json();
-    assert.equal(reopenData.status, "REOPENED");
-    assert.equal(reopenData.reopenCount, 1);
-
-    // 13. Judge gets reopened ballot → scores are DRAFT again.
-    const reopenedBallotRes = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}`, { headers: judgeHeaders });
-    assert.equal(reopenedBallotRes.status, 200);
-    const reopenedBallot = await reopenedBallotRes.json();
-    assert.equal(reopenedBallot.status, "REOPENED");
-    assert.equal(reopenedBallot.scores[0].status, "DRAFT");
-
-    const resubmitReopened = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/submit`, {
-      method: "POST", headers: judgeHeaders,
-    });
-    assert.equal(resubmitReopened.status, 200);
+    assert.equal(reopenRes.status, 404);
 
     // 13. Obsolete pre-confirmation omission routes are unavailable.
     const retiredOmission = await fetch(`${baseUrl}/api/v1/scrutiny/ballots/${ballotId}/scores/${secondScore.id}/omissions`, {

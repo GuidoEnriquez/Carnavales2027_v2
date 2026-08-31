@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { apiRequest } from "../api/http.js";
+import { clearUserOfflineData } from "../offline/ballot-store.js";
 
 export function AppNavigation({ session }) {
   const [closing, setClosing] = useState(false);
@@ -8,6 +9,7 @@ export function AppNavigation({ session }) {
     setClosing(true);
     try {
       await apiRequest("/api/auth/sign-out", { method: "POST", body: "{}" });
+      if (session.user?.id) await clearUserOfflineData(session.user.id);
       session.clear?.();
       window.location.hash = "#/login";
     } catch {

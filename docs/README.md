@@ -6,6 +6,12 @@
 - [Mapa de fuentes](source-map.md): relación entre Jira SVC2, Confluence C2, Obsidian, reglamento y specs.
 - [Estado SDD](sdd-status.md): incrementos terminados, alcance diferido y próxima puerta de especificación.
 
+## Estado vigente
+
+- Spec 004 mantiene la completitud obligatoria: `PENDING` bloquea confirmar y cerrar.
+- Spec 005 implementa Offline-First; faltan comprobaciones manuales de PWA, sesión/2FA y viewports.
+- Spec 006 elimina las nuevas reaperturas y muestra los votos pendientes en un modal al rechazar el cierre administrativo.
+
 ## Artefactos ejecutables
 
 Cada incremento vive en `../specs/<nnn-nombre>/` y debe contener, cuando aplica:

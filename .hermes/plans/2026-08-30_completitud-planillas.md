@@ -8,7 +8,7 @@ Hacer explícita la decisión de cada ítem de planilla y bloquear toda confirma
 
 1. Agregar `evaluation_state` a `ballot_score` mediante migraciones incrementales 046-047; conservar `status` como mutabilidad técnica y normalizar omisiones editables heredadas a `PENDING`.
 2. Backfill: score `NULL` pasa a `PENDING`, score 1-10 a `SCORED` y score 0 a `NOT_PRESENTED`; datos históricos con subsanación se preservan sin crear nuevos flujos.
-3. Validar en trigger que estado y score siempre coincidan, incluidos cambios directos en base de datos y reaperturas.
+3. Validar en trigger que estado y score siempre coincidan, incluidos cambios directos en base de datos. Las nuevas reaperturas fueron retiradas posteriormente por Spec 006.
 4. Cambiar la API de guardado a una transición semántica explícita y retirar las rutas de omisión/subsanación.
 5. Cambiar la UI a botones de 1-10, acción separada de no presentación y acción explícita para quitar una decisión.
 6. Actualizar confirmación/cierre para consultar `evaluation_state = 'PENDING'`.

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { apiRequest } from "../api/http.js";
 
 export function AdminVotingPage() {
@@ -10,6 +10,34 @@ export function AdminVotingPage() {
   const [nightId, setNightId] = useState("");
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
+  const [pendingCloseDialog, setPendingCloseDialog] = useState(null);
+  const closeDialogRef = useRef(null);
+  const closeButtonRef = useRef(null);
+
+  useEffect(() => {
+    const dialog = closeDialogRef.current;
+    if (!dialog) return;
+    if (pendingCloseDialog?.length > 0 && !dialog.open) {
+      dialog.showModal();
+      dialog.querySelector("[data-close-pending-dialog-close]")?.focus();
+    } else if (!pendingCloseDialog && dialog.open) {
+      dialog.close();
+    }
+  }, [pendingCloseDialog]);
+
+  const closePendingDialog = () => {
+    const dialog = closeDialogRef.current;
+    if (dialog?.open) dialog.close();
+    else {
+      setPendingCloseDialog(null);
+      closeButtonRef.current?.focus();
+    }
+  };
+
+  const handlePendingDialogClose = () => {
+    setPendingCloseDialog(null);
+    closeButtonRef.current?.focus();
+  };
 
   const refreshNight = async (selectedEventId = eventId, selectedNightId = nightId) => {
     if (!selectedEventId || !selectedNightId) return;
@@ -57,33 +85,23 @@ export function AdminVotingPage() {
       await refreshNight();
     } catch (error) {
       if (error.code === "VOTING_CLOSE_INCOMPLETE_BALLOTS") {
-        const pendingItems = (error.details ?? []).map((item) => {
-          const itemName = item.name ?? item.code;
-          return itemName && `${item.judgeName ?? "Jurado"}: ${item.troupeName ?? "comparsa"} - ${itemName}`;
-        }).filter(Boolean);
-        setMessage(pendingItems.length > 0
-          ? `No se puede cerrar: faltan decisiones en ${pendingItems.join(", ")}.`
-          : "No se puede cerrar: faltan decisiones en planillas abiertas.");
+        setPendingCloseDialog((error.details ?? []).map((item) => ({
+          id: item.id,
+          judgeName: item.judgeName ?? "Jurado",
+          troupeName: item.troupeName ?? "Comparsa",
+          rubricName: item.rubricName ?? "Rubro",
+          itemName: item.name ?? item.code ?? "Ítem pendiente",
+        })));
         return;
       }
       const messages = {
         EVENT_NOT_OPEN: "El evento debe estar abierto para habilitar la votación.",
         NIGHT_NOT_OPEN: "La noche no está disponible para votar.",
-        BALLOT_NOT_SUBMITTED: "Solo se pueden reabrir planillas confirmadas.",
-        BALLOT_MAX_REOPENS_REACHED: "La planilla ya alcanzó su única reapertura permitida.",
       };
       setMessage(messages[error.code] ?? "No se pudo completar la operación.");
     } finally {
       setBusy("");
     }
-  };
-
-  const reopen = async (ballotId, form) => {
-    const reason = new FormData(form).get("reason");
-    await action(`reopen-${ballotId}`, () => apiRequest(`/api/v1/events/${eventId}/ballots/${ballotId}/reopen`, {
-      method: "POST", body: JSON.stringify({ reason }),
-    }), () => "Planilla reabierta para corrección.");
-    form.reset();
   };
 
   return <main className="admin-shell voting-page">
@@ -104,15 +122,25 @@ export function AdminVotingPage() {
       </section>
       <section className="config-section">
         <div className="section-heading"><div><h2>Ventana de votación</h2><p>La apertura crea las planillas pendientes. El cierre exige que todas estén completas y confirma las que sigan en carga.</p></div></div>
-        <div className="event-actions"><button type="button" disabled={Boolean(busy)} onClick={() => void action("open", () => apiRequest(`/api/v1/events/${eventId}/nights/${nightId}/voting/open`, { method: "POST" }), (result) => `${result.ballotsCreated} planilla(s) habilitada(s).`)}>Abrir votación</button><button className="danger-action" type="button" disabled={Boolean(busy)} onClick={() => void action("close", () => apiRequest(`/api/v1/events/${eventId}/nights/${nightId}/voting/close`, { method: "POST" }), (result) => `${result.autoSubmitted} planilla(s) confirmada(s) al cerrar.`)}>Cerrar votación</button></div>
+        <div className="event-actions"><button type="button" disabled={Boolean(busy)} onClick={() => void action("open", () => apiRequest(`/api/v1/events/${eventId}/nights/${nightId}/voting/open`, { method: "POST" }), (result) => `${result.ballotsCreated} planilla(s) habilitada(s).`)}>Abrir votación</button><button ref={closeButtonRef} className="danger-action" type="button" disabled={Boolean(busy)} onClick={() => void action("close", () => apiRequest(`/api/v1/events/${eventId}/nights/${nightId}/voting/close`, { method: "POST" }), (result) => `${result.autoSubmitted} planilla(s) confirmada(s) al cerrar.`)}>Cerrar votación</button></div>
       </section>
       <section className="assignment-grid" aria-label="Planillas de la noche">
         {ballots.length === 0 && <p className="empty-state">Todavía no hay planillas para esta noche.</p>}
         {ballots.map((ballot) => <article className="assignment-card" key={ballot.id}>
           <div className="judge-card-heading"><div><p className="eyebrow">{ballot.specialtyName}</p><h2>{ballot.judgeName}</h2><p>{ballot.status === "SUBMITTED" ? "Confirmada" : ballot.status === "REOPENED" ? "Reabierta" : "En carga"}</p></div><span className="status-pill">{ballot.status}</span></div>
-          {ballot.status === "SUBMITTED" && ballot.reopenCount === 0 && <form className="reopen-form" onSubmit={(event) => { event.preventDefault(); void reopen(ballot.id, event.currentTarget); }}><label>Motivo de reapertura<input name="reason" required /></label><button disabled={Boolean(busy)}>Reabrir una vez</button></form>}
         </article>)}
       </section>
     </>}
+    <dialog ref={closeDialogRef} className="pending-dialog" aria-modal="true" aria-labelledby="close-pending-dialog-title" aria-describedby="close-pending-dialog-description" onCancel={(event) => { event.preventDefault(); closePendingDialog(); }} onClose={handlePendingDialogClose}>
+      {pendingCloseDialog && <div className="pending-dialog-content">
+        <p className="eyebrow">Cierre bloqueado</p>
+        <h2 id="close-pending-dialog-title">Faltan votos por resolver</h2>
+        <p id="close-pending-dialog-description">No se puede cerrar la votación hasta que los jurados resuelvan estos ítems.</p>
+        <ul className="pending-dialog-list" aria-label="Votos pendientes">
+          {pendingCloseDialog.map((item) => <li key={item.id}><span>{item.judgeName} · {item.troupeName}</span><span>{item.rubricName}</span><strong>{item.itemName}</strong></li>)}
+        </ul>
+        <div className="pending-dialog-actions"><button data-close-pending-dialog-close type="button" onClick={closePendingDialog}>Volver al control</button></div>
+      </div>}
+    </dialog>
   </main>;
 }

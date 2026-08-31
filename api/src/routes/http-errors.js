@@ -46,6 +46,10 @@ export function sendKnownError(response, error) {
     response.status(409).json({ code: error.message, details: error.pending ?? [] });
     return true;
   }
+  if (error.message === "BALLOT_REVISION_CONFLICT") {
+    response.status(409).json({ code: error.message, details: error.details ?? {} });
+    return true;
+  }
   if (error.message === "VOTING_CLOSE_INCOMPLETE_BALLOTS") {
     response.status(409).json({ code: error.message, details: error.pending ?? [] });
     return true;
@@ -54,8 +58,6 @@ export function sendKnownError(response, error) {
     "BALLOT_NOT_FOUND",
     "BALLOT_ACCESS_DENIED",
     "BALLOT_ALREADY_SUBMITTED",
-    "BALLOT_NOT_SUBMITTED",
-    "BALLOT_MAX_REOPENS_REACHED",
     "BALLOT_SCORE_IMMUTABLE",
     "SCORE_NOT_FOUND",
     "EVENT_NOT_OPEN",
@@ -63,7 +65,8 @@ export function sendKnownError(response, error) {
     "VOTING_COMPETITION_ONLY",
     "VOTING_WINDOW_CLOSED",
     "VOTING_WINDOW_NOT_OPEN",
-    "BALLOT_SUBSANATION_FINAL",
+    "SYNC_OPERATION_MISMATCH",
+    "SYNC_BATCH_MIXED_RETRY",
   ].includes(error.message)) {
     response.status(409).json({ code: error.message });
     return true;

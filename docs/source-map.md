@@ -6,9 +6,12 @@
 
 - I1/I1-C: configuración operativa, validado.
 - I2-A/I2-B: padrón, invitaciones, cupos, asignaciones y reemplazos, validados.
-- I3 + Spec 004: planillas, puntuaciones, secreto, inmutabilidad y completitud, validados.
-- Diferido: offline/sync, penalizaciones, resultados, escrutinio y actas.
-- Decisión de producto del 2026-08-31: las nuevas planillas previenen omisiones al exigir que cada ítem sea `SCORED` (1 a 10) o `NOT_PRESENTED` (0 por acción explícita) antes de confirmar o cerrar; este comportamiento está implementado en Spec 004. El `5 por equidad` se difiere sin código como contingencia excepcional fuera del flujo del jurado hasta contrastar su procedimiento reglamentario completo.
+- I3 + Spec 004 + Spec 006: planillas, puntuaciones, secreto, inmutabilidad, completitud y cierre sin reapertura, implementados y validados automáticamente; resta verificación manual de teclado, lista extensa y viewports para Spec 006.
+- Diferido: penalizaciones, resultados, escrutinio y actas. Offline/sync está implementado exclusivamente conforme a Spec 005.
+- Spec 004 implementa prevención de omisiones: las nuevas planillas exigen `SCORED` (1 a 10) o `NOT_PRESENTED` (0 por acción explícita) antes de confirmar o cerrar. `PENDING` bloquea ambas operaciones.
+- El `5 por equidad` no está implementado para nuevas planillas digitales. El reglamento vigente todavía lo contempla y su eventual eliminación reglamentaria está pendiente de resolución formal de la COC.
+- I4-A Offline-First está implementado para sincronizar únicamente decisiones ya válidas de planillas; no implementa ni interpreta el `5 por equidad`, subsanaciones, penalizaciones, escrutinio, resultados ni actas. La validación manual de PWA, sesión/2FA, teclado/tacto y viewports sigue pendiente en `specs/005-offline-first/validation.md`.
+- Decisión de producto del 2026-08-31: no se permiten nuevas reaperturas de planillas. Un cierre con `PENDING` se rechaza y ADMIN recibe un modal con jurado, comparsa, rubro e ítem faltante. Fuente de RF-67 a RF-70 de Spec 006.
 
 ## Visión funcional objetivo
 
@@ -126,14 +129,32 @@ El vault contiene copias/síntesis utilizables para redactar la spec. Jira y Con
 - El rechazo de cierre identifica el ítem pendiente y su contexto de jurado y comparsa.
 - Las subsanaciones previas se preservan como historia; su operación futura pertenece al incremento de escrutinio y no autoriza omisiones nuevas antes de confirmar.
 
-## Decisión de producto — 2026-08-31: prevención de omisiones y contingencia
+## Prevención de omisiones y contingencia reglamentaria
 
 - La planilla no permite confirmar ni cerrar si conserva secciones, rubros o ítems en `PENDING`; el rechazo identifica los pendientes para que el jurado los resuelva.
 - Cada ítem se resuelve únicamente con una puntuación ordinaria de 1 a 10 o con la acción `No se presentó`, que registra `NOT_PRESENTED` y score efectivo 0.
 - El jurado no puede seleccionar manualmente la nota 0.
-- El `5 por equidad` no participa del flujo normal de votación ni está disponible para el jurado. Se mantiene diferido, sin implementación, como contingencia reglamentaria excepcional.
-- Una futura spec de escrutinio solo puede operacionalizar esa contingencia después de definir en fuente canónica el supuesto habilitante, actor autorizado, evidencia, aprobación, inmutabilidad y efecto sobre la consolidación.
-- Decisión de producto del 2026-08-31: al intentar confirmar una planilla con pendientes, el jurado recibe un diálogo modal bloqueante que enumera los votos faltantes. La confirmación no se envía hasta resolverlos; el diálogo debe ser accesible y operativo en móvil, tablet y desktop.
+- El `5 por equidad` no participa del flujo normal de votación ni está disponible para el jurado. No se implementan flujo, endpoint, migración, cálculo ni ajuste para esa contingencia.
+- El reglamento vigente todavía contempla el `5 por equidad` como subsanación de una omisión. La COC no aprobó todavía una resolución que lo elimine o lo declare no aplicable a nuevas planillas digitales. Esta ausencia no autoriza inferir su eliminación.
+- Al intentar confirmar una planilla con pendientes, el jurado recibe un diálogo modal bloqueante que enumera los votos faltantes. La confirmación no se envía hasta resolverlos; el diálogo debe ser accesible y operativo en móvil, tablet y desktop.
+
+### Fuente canónica pendiente: resolución COC
+
+Antes de iniciar una Spec de subsanación o escrutinio que aplique, adapte o descarte el `5 por equidad`, se debe incorporar una resolución formal de la COC con:
+
+- Identificador o número de resolución.
+- Fecha.
+- Autoridad aprobatoria.
+- Texto o regla aprobada.
+- Referencia al acta o documento de respaldo.
+
+Hasta contar con esa fuente, no se crea una Spec de implementación del `5 por equidad` ni se modifica Spec 004. I4-A puede especificar e implementar su core técnico solo conforme a su alcance explícito: decisiones existentes, sincronización idempotente, conflicto explícito y secreto local de planillas.
+
+### Decisión de arquitectura I4-A - 2026-08-31
+
+- La contingencia reglamentaria del `5 por equidad` pertenece a un futuro incremento de subsanación o escrutinio. No es una transición disponible para las nuevas planillas y no forma parte de la sincronización offline.
+- I4-A se limita a persistir y sincronizar `PENDING`, `SCORED` y `NOT_PRESENTED`, más la confirmación de una planilla, bajo las invariantes ya aplicadas por el servidor.
+- La API continúa siendo autoritativa para identidad, 2FA, asignación activa, ventana de votación, completitud, inmutabilidad y secreto. Una operación offline que deje de ser válida se rechaza de forma explícita y no se reconcilia aplicando reglas de escrutinio.
 
 ## Uso en SDD
 
@@ -141,4 +162,4 @@ El vault contiene copias/síntesis utilizables para redactar la spec. Jira y Con
 - Toda spec que incorpore o cambie una interfaz operativa debe declarar sus requisitos de uso móvil/tablet/desktop, interacción táctil y accesibilidad, con criterio de validación proporcionado.
 - Los títulos de tickets no se interpretan como reglas completas.
 - Ante conflicto entre una copia de Obsidian y Jira/Confluence actual, se documenta como `[NECESITA ACLARACIÓN]` antes del plan o código.
-- La visión funcional objetivo se divide en incrementos verticales: cierre I1; usuarios y jurados; programación y nominaciones; votación; offline/sync; supervisión y penalizaciones; escrutinio/resultados; actas/reportes.
+- La visión funcional objetivo se divide en incrementos verticales: cierre I1; usuarios y jurados; programación y nominaciones; votación; Offline-First implementado en Spec 005; supervisión y penalizaciones; escrutinio/resultados; actas/reportes.

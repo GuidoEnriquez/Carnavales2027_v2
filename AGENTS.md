@@ -5,6 +5,15 @@ Carnavales2027_v2 es una plataforma configurable de gestión y votación para Ca
 
 ---
 
+## Estado Operativo Vigente
+
+* **Spec 004:** cada ítem debe quedar `SCORED` (1 a 10) o `NOT_PRESENTED` (0 por acción explícita). `PENDING` bloquea la confirmación y el cierre.
+* **Spec 005 / I4-A:** Offline-First está implementado para decisiones válidas de la planilla; resta validación manual de PWA, sesión/2FA, teclado/tacto y viewports. No autoriza subsanaciones, penalizaciones, escrutinio, resultados ni actas.
+* **Spec 006:** no se permiten nuevas reaperturas de planillas. Si ADMIN intenta cerrar con pendientes, la votación sigue abierta y recibe un modal con jurado, comparsa, rubro e ítem faltante. Las planillas históricas ya `REOPENED` solo pueden finalizar en `SUBMITTED`; resta probar el modal con teclado, lista extensa y viewports operativos.
+* **Módulos diferidos:** penalizaciones, resultados, rankings, desempate, escrutinio y actas. El `5 por equidad` sigue pendiente de una resolución formal de la COC.
+
+---
+
 ## Contrato SDD Obligatorio
 
 Antes de modificar código o artefactos SDD que afecten el comportamiento del sistema, el agente **debe**:
@@ -66,7 +75,7 @@ Antes de modificar código o artefactos SDD que afecten el comportamiento del si
 * Prohibido crear autoasignación pública del rol `ADMIN`.
 * Exigir 2FA/OTP verificado para rutas protegidas cuando el incremento lo requiera (sesión primaria no basta).
 * Prohibido eliminar o degradar al último `ADMIN` activo.
-* Prohibido ampliar módulos diferidos (*offline/sync, penalizaciones, resultados, escrutinio o actas*) sin un incremento SDD explícito.
+* Prohibido ampliar módulos diferidos (*penalizaciones, resultados, escrutinio o actas*) sin un incremento SDD explícito. Las modificaciones a Offline-First deben ajustarse exclusivamente a Spec 005 o a una spec posterior aprobada.
 * El módulo de votación existente solo puede modificarse conforme a su spec vigente o una spec aprobada posterior.
 
 ---

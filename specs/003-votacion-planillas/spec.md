@@ -2,8 +2,8 @@
 
 ## Estado
 
-- **Fase SDD:** I3 implementado; completitud semántica evolucionada por Spec 004.
-- **Implementación:** planillas y puntuaciones; módulos de penalizaciones, offline/sync, escrutinio, resultados y actas diferidos.
+- **Fase SDD:** I3 implementado; completitud semántica evolucionada por Spec 004 y reapertura reemplazada por Spec 006.
+- **Implementación:** planillas y puntuaciones; Offline-First se implementa exclusivamente en Spec 005. Penalizaciones, escrutinio, resultados y actas continúan diferidos.
 - **Fuentes:** `docs/source-map.md`, RF-07–RF-12 y RF-16 de Spec 001, Jira SVC2-13, SVC2-14, SVC2-26, SVC2-27, SVC2-28, SVC2-80.
 
 ## Objetivo general
@@ -12,7 +12,7 @@ Permitir que un jurado habilitado cargue puntuaciones por comparsa e ítem dentr
 
 ## Incremento I3 — Planillas y carga de puntuaciones
 
-**Objetivo:** un ADMIN abre la ventana de votación por noche; un jurado asignado carga y confirma sus puntuaciones; la planilla confirmada queda inmutable; un ADMIN puede reabrirla una sola vez con motivo.
+**Objetivo histórico:** un ADMIN abre la ventana de votación por noche; un jurado asignado carga y confirma sus puntuaciones; la planilla confirmada queda inmutable. Spec 006 elimina la reapertura administrativa para nuevas transiciones.
 
 **Incluye:**
 
@@ -20,7 +20,7 @@ Permitir que un jurado habilitado cargue puntuaciones por comparsa e ítem dentr
 - Puntuación (`ballot_score`) por ítem evaluable; su modelo semántico definitivo está en Spec 004.
 - Impedimento de confirmar con ítems obligatorios sin resolver.
 - Planilla confirmada = inmutable.
-- Reapertura por ADMIN una sola vez con motivo y auditoría.
+- Reapertura por ADMIN una sola vez con motivo y auditoría (reemplazada por Spec 006).
 - Ventana de votación persistida por noche; una vez cerrada no vuelve a abrirse.
 - Secreto de puntajes durante competencia: un jurado solo ve los suyos.
 - Veedor: ve estado operativo de planillas sin puntajes.
@@ -37,8 +37,8 @@ Permitir que un jurado habilitado cargue puntuaciones por comparsa e ítem dentr
 - **RF-49.** Evolucionado por RF-61 de Spec 004.
 - **RF-50.** CUANDO un jurado confirme una planilla, EL SISTEMA DEBE pasar su estado a `SUBMITTED` y volver todos sus scores inmutables.
 - **RF-51.** MIENTRAS se realiza la competencia, EL SISTEMA NO DEBE exponer puntajes de otros jurados, totales, rankings ni resultados preliminares a ningún actor.
-- **RF-52.** UN ADMIN CON 2FA DEBE poder reabrir una planilla confirmada una sola vez, con motivo obligatorio y auditoría; la planilla reabierta pasa a `REOPENED` y puede editarse y reconfirmarse.
-- **RF-52a.** UNA planilla con subsanación histórica registrada NO DEBE poder reabrirse.
+- **RF-52.** Reemplazado por RF-67 y RF-68 de Spec 006: no se permiten nuevas reaperturas.
+- **RF-52a.** Reemplazado por Spec 006; las subsanaciones históricas permanecen inmutables.
 - **RF-53.** EL SISTEMA DEBE registrar en auditoría apertura, guardado parcial, confirmación y reapertura de cada planilla, sin incluir los puntajes en el registro.
 - **RF-54.** EL VECEDOR DEBE poder ver el estado de las planillas por noche (conteo de OPEN, SUBMITTED, REOPENED) sin acceder a puntajes.
 - **RF-55.** I3 NO DEBE implementar offline/sync, penalizaciones, consolidación de resultados ni actas. El registro reglamentario de subsanaciones no calcula ni expone resultados.
@@ -54,14 +54,14 @@ Permitir que un jurado habilitado cargue puntuaciones por comparsa e ítem dentr
 - `GET /api/v1/judge/ballots/:ballotId`: planilla del jurado con ítems y scores (JUDGE).
 - `PUT /api/v1/judge/ballots/:ballotId/scores/:scoreId`: guardar puntuación de un ítem (JUDGE).
 - `POST /api/v1/judge/ballots/:ballotId/submit`: confirmar planilla (JUDGE).
-- `POST /api/v1/events/:eventId/ballots/:ballotId/reopen`: reabrir planilla (ADMIN).
+- El endpoint de reapertura fue retirado por Spec 006.
 
 ## Alcance confirmado
 
 - La identidad y sesión continúan bajo Better Auth; roles y relaciones de dominio permanecen separados.
 - Todos los accesos protegidos requieren 2FA verificado.
 - Un jurado sin asignación activa no puede acceder a ninguna planilla.
-- Una planilla confirmada solo cambia por reapertura administrativa auditada.
+- Una planilla confirmada no vuelve a editarse. Las planillas históricas ya `REOPENED` solo pueden finalizar en `SUBMITTED`.
 - Los registros históricos de subsanación no modifican una planilla confirmada y bloquean su reapertura.
 - Los puntajes son secretos durante la competencia para todos excepto el jurado titular.
 
@@ -70,6 +70,6 @@ Permitir que un jurado habilitado cargue puntuaciones por comparsa e ítem dentr
 - Un jurado solo ve sus propios ítems y scores.
 - Un jurado no puede confirmar con ítems obligatorios pendientes.
 - Una planilla confirmada es inmutable.
-- Un ADMIN puede reabrir solo una vez con motivo.
+- No existe control ni endpoint para reabrir una planilla.
 - La auditoría registra cada acción sin exponer puntajes.
 - No existen rutas de offline/sync, penalizaciones, consolidación de resultados ni actas como resultado de I3.

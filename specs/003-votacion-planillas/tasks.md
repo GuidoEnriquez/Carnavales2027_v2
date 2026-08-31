@@ -1,6 +1,6 @@
 # Tasks — Spec 003: Incremento I3 · Votación — Planillas y puntuaciones
 
-> Registro histórico de tareas de I3. Las tareas sobre omisión y subsanación pre-confirmación fueron evolucionadas por Spec 004 y no describen el comportamiento vigente.
+> Registro histórico de tareas de I3. Las tareas sobre omisión y subsanación pre-confirmación fueron evolucionadas por Spec 004; la reapertura fue reemplazada por Spec 006 y no describe el comportamiento vigente.
 
 ## Reglas de ejecución
 

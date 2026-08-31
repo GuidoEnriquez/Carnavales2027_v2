@@ -2,7 +2,7 @@
 
 ## Estado
 
-- **Fase SDD:** I1-C, I2-A, I2-B e I3 implementados; la completitud semántica de planillas se valida en Spec 004.
+- **Fase SDD:** I1-C, I2-A, I2-B, I3, Specs 004, 005 y 006 implementadas; la validación manual de PWA, sesión/2FA, teclado/tacto y viewports de Spec 005, y de viewports de Spec 006, sigue pendiente.
 - **Implementación:** los incrementos posteriores a I1 se rigen por sus propias specs, clarificaciones, planes y tareas; el alcance futuro continúa sujeto a clarificación incremental.
 - **Fuentes:** `docs/source-map.md`, especialmente la copia de Confluence C2 en Obsidian.
 

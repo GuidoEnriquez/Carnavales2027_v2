@@ -4,7 +4,7 @@
 
 - **Fase SDD:** implementado, validado y aceptado el 2026-08-31.
 - **Fuentes:** decisión de producto del 2026-08-30 registrada en `docs/source-map.md`; RF-07 a RF-11 y RF-15 de Spec 001.
-- **Nota de trazabilidad:** el reglamento citado por producto no está distribuido en este repositorio. Esta spec formaliza la decisión recibida y debe contrastarse con el reglamento al incorporarlo al árbol.
+- **Nota de trazabilidad:** el reglamento citado por producto no está distribuido en este repositorio. La COC todavía no aprobó una resolución sobre la aplicación del `5 por equidad` a nuevas planillas digitales; esta spec no declara su eliminación ni implementa esa contingencia.
 
 ## Objetivo
 
@@ -40,6 +40,7 @@ Excluye:
 - Offline/sync, resultados, penalizaciones y actas.
 - Cálculo de subsanaciones para nuevas planillas.
 - Una UI o procedimiento nuevo de escrutinio.
+- El `5 por equidad`, incluidos flujos, rutas, migraciones, cálculos y ajustes automáticos.
 
 ## Compatibilidad histórica
 
@@ -54,7 +55,7 @@ Los registros bloqueados de subsanación (`requires_subsanation` y `ballot_score
 - **RF-61.** CUANDO un jurado o ADMIN intente confirmar o cerrar una planilla con al menos un score `PENDING`, EL SISTEMA DEBE rechazar la operación. Para el cierre administrativo, DEBE identificar cada ítem pendiente junto con su jurado y comparsa.
 - **RF-62.** EL JURADO DEBE poder volver un score editable a `PENDING` antes de confirmar mediante una acción explícita de quitar la decisión; no debe usar 0 ni una opción vacía como sustituto semántico.
 - **RF-63.** CUANDO un score cambie entre `PENDING`, `SCORED` y `NOT_PRESENTED`, EL SISTEMA DEBE auditar la acción, actor y score afectado sin almacenar el valor de la puntuación en la auditoría.
-- **RF-64.** UNA planilla confirmada o score `LOCKED` DEBE conservar su estado y score semánticamente consistentes e inmutables, salvo la reapertura existente autorizada antes del cierre de ventana.
+- **RF-64.** UNA planilla confirmada o score `LOCKED` DEBE conservar su estado y score semánticamente consistentes e inmutables. Spec 006 no permite nuevas reaperturas; solo se admite finalizar registros históricos ya `REOPENED`.
 - **RF-65.** EL SISTEMA DEBE conservar los registros históricos de subsanación sin permitir que una nueva planilla use la marca de omisión pre-confirmación.
 - **RF-66.** CUANDO un jurado pulse `Confirmar planilla` y su planilla cargada contenga scores `PENDING`, LA interfaz DEBE abrir un diálogo modal bloqueante que enumere cada pendiente con comparsa, rubro e ítem, sin enviar la confirmación. El diálogo DEBE tener título y descripción accesibles, foco inicial dentro del diálogo, cierre explícito y con `Escape`, y devolver el foco al botón disparador. DEBE permanecer operativo en móvil, tablet y desktop, con lista desplazable cuando sea necesario.
 

@@ -1,6 +1,6 @@
 # Plan: I3 — Votación: Planillas y carga de puntuaciones
 
-> Histórico: las decisiones de omisión y subsanación de este plan fueron reemplazadas por la Spec 004. El modelo vigente exige una decisión completa por ítem antes de confirmar; el contenido siguiente preserva el plan original y no describe rutas operativas vigentes.
+> Histórico: las decisiones de omisión y subsanación de este plan fueron reemplazadas por la Spec 004 y la reapertura fue retirada por Spec 006. El modelo vigente exige una decisión completa por ítem antes de confirmar; el contenido siguiente preserva el plan original y no describe rutas operativas vigentes.
 
 ## Objetivo
 
