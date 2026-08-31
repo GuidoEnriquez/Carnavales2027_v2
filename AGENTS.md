@@ -1,66 +1,87 @@
 # AGENTS.md — Carnavales2027_v2
 
 ## Propósito
+Carnavales2027_v2 es una plataforma configurable de gestión y votación para Carnavales. Goya 2027 es una configuración inicial de referencia; cantidades, especialidades, categorías y rubros no deben convertirse en constantes globales ni lógica fija en el código.
 
-Carnavales2027_v2 es una plataforma configurable de gestión y votación de Carnavales. Goya 2027 es una configuración inicial; no convertir sus cantidades, especialidades, categorías o rubros en constantes globales.
+---
 
-## Fuente de verdad y flujo SDD
+## Contrato SDD Obligatorio
 
-Antes de modificar código, leer en este orden:
+Antes de modificar código o artefactos SDD que afecten el comportamiento del sistema, el agente **debe**:
+1. Leer `docs/constitution.md`.
+2. Leer `docs/source-map.md`.
+3. Consultar `docs/sdd-status.md` para identificar el incremento vigente y los módulos diferidos.
+4. Leer `spec.md`, `clarifications.md`, el plan aprobado (`plan.md` o el artefacto referenciado en `.hermes/plans/`) y `tasks.md` del incremento afectado.
+5. Leer `validation.md` del incremento afectado y de cualquier incremento previo impactado.
 
-1. `docs/constitution.md`
-2. `docs/source-map.md`
-3. `specs/001-plataforma-votacion-carnavales/spec.md`
-4. `specs/001-plataforma-votacion-carnavales/clarifications.md`
-5. `specs/001-plataforma-votacion-carnavales/tasks.md`
+### Flujo de Trabajo
+> **Constitución → Spec → Clarificación → Plan → Tareas → Implementación → Validación**
 
-El flujo obligatorio es:
+---
 
-```text
-Constitución → Spec → Clarificación → Plan → Tareas → Implementación → Validación
-```
+## Reglas de Alcance
 
-Si cambia un requisito, actualizar primero la spec y sus artefactos derivados. No implementar desde una conversación aislada ni inferir reglas reglamentarias no documentadas.
+* **Rol de artefactos:** La `spec.md` define *qué* y *por qué*; el `plan.md` define *cómo*.
+* **Cero código sin spec:** No implementar ninguna capacidad sin una spec y tareas aprobadas para el incremento actual.
+* **Spec-First:** Ante un requisito nuevo o cambio de comportamiento, actualizar primero spec, clarificaciones, plan y tareas; recién después modificar código.
+* **Atomicidad:** Cada tarea implementa una unidad acotada y se detiene tras su validación. No anticipar tareas posteriores.
+* **Evidencia mandatoria:** Un requisito no está cumplido por la mera existencia de código: exige test o verificación concreta.
+* **SDD proporcional:** Aplicar el proceso según riesgo e impacto: un cambio trivial requiere implementación y verificación; un cambio funcional, de seguridad, datos o alcance requiere los artefactos SDD correspondientes.
+* **Manejo de dudas:** Ante contradicciones entre fuentes, marcar `[NECESITA ACLARACIÓN]`. Jamás inferir reglas de negocio, reglamentarias o de seguridad. Las decisiones técnicas no definidas deben respetar la Constitución, el plan aprobado y los patrones existentes; si afectan arquitectura, datos, seguridad o comportamiento, documentarlas antes de implementar.
 
-## Reglas de ingeniería
+---
 
-- Mantener `api/` y `client/` separados por responsabilidad.
-- Preferir cambios pequeños, trazables y revisables.
-- Usar PostgreSQL con migraciones incrementales, reproducibles y no destructivas.
-- No modificar el esquema interno de Better Auth; identidad/sesión y roles de aplicación se mantienen separados.
-- La autorización se valida en API/servidor; las guardas de UI no son controles de seguridad.
-- Toda regla crítica de dominio necesita test o verificación automatizable.
-- No guardar secretos, tokens, contraseñas ni URLs con credenciales en Git, logs o documentación.
+## Fuentes de Verdad
 
-## Seguridad y operaciones prohibidas sin autorización
+| Fuente | Uso / Prioridad |
+| :--- | :--- |
+| **Reglamento aprobado** | Norma funcional suprema ante cualquier conflicto. |
+| **Confluence C2** | Contexto, reglas de negocio y decisiones compartidas. |
+| **Jira SVC2** | Estado, responsable, backlog y criterios de aceptación del trabajo. |
+| `docs/source-map.md` | Mapa de trazabilidad entre fuentes y artefactos del repositorio. |
+| `specs/` | Contrato ejecutable y vigente de cada incremento. |
+| **Código y pruebas** | Evidencia de implementación real. |
 
-- No hacer push, merge, deploy ni cambios de producción.
-- No ejecutar borrados destructivos de base de datos, esquemas, tablas ni migraciones irreversibles.
-- No crear autoasignación pública del rol ADMIN.
-- Exigir 2FA/OTP verificado para toda ruta protegida; una sesión primaria no basta.
-- No eliminar ni degradar al último ADMIN activo.
-- No implementar votación, nominaciones operativas, sorteo, offline, escrutinio ni actas mientras I1 no las incluya explícitamente.
+> *Nota:* No usar el título de un ticket como regla funcional completa. No convertir notas históricas o borradores en reglas superiores al reglamento vigente.
 
-## Dominio I1 acordado
+---
 
-I1 incluye configuración administrativa de eventos, noches, categorías por evento, comparsas participantes, especialidades, rubros e ítems evaluables; además prepara el modelo de nominaciones y programación por noche sin UI ni lógica operativa.
+## Invariantes de Ingeniería
 
-Reglas clave:
+* **Arquitectura:** Mantener `api/` y `client/` estrictamente separados por responsabilidad.
+* **Persistencia:** Usar PostgreSQL con migraciones incrementales, reproducibles y no destructivas.
+* **Autenticación vs Dominio:** Mantener identidad y sesiones de Better Auth separadas de roles y entidades de dominio del carnaval.
+* **Autorización:** Aplicar autorización estricta en el servidor/API. Las guardas en la UI son únicamente para experiencia de usuario (UX).
+* **Configuración Dinámica:** Mantener Goya 2027 como configuración inicial, nunca hardcodeada en la lógica del producto.
+* **Cobertura:** Toda regla crítica de dominio debe contar con prueba automatizada o verificación reproducible.
+* **Accesibilidad & Responsive:** Interfaces operativas usables en móvil, tablet y desktop. No depender de `:hover` ni precisión de puntero para acciones críticas. Respetar contratos de foco, contraste y prevención de error táctil.
+* **Secretos:** Prohibido commitear credenciales, tokens, contraseñas o URLs sensibles en Git, logs o documentación.
 
-- Evento editable solo en `CONFIGURING`; bloqueado al pasar a `OPEN`.
-- Categorías son catálogo scoped por evento, no texto libre.
-- Una participación pertenece a una categoría del mismo evento.
-- Rubro → especialidades se deriva desde ítems activos; no crear `rubro_especialidad`.
-- Un ítem pertenece a un rubro y tiene una especialidad responsable.
-- Abrir un evento exige configuración completa según `spec.md`.
+---
 
-## Verificación y reporte
+## Seguridad y Operaciones Restringidas
 
-Antes de cerrar una tarea:
+* Prohibido hacer `push`, `merge`, deploy o cambios de producción sin autorización explícita.
+* Prohibido ejecutar `DROP`, truncados destructivos de BD, esquemas o migraciones irreversibles sin autorización previa.
+* Prohibido crear autoasignación pública del rol `ADMIN`.
+* Exigir 2FA/OTP verificado para rutas protegidas cuando el incremento lo requiera (sesión primaria no basta).
+* Prohibido eliminar o degradar al último `ADMIN` activo.
+* Prohibido ampliar módulos diferidos (*offline/sync, penalizaciones, resultados, escrutinio o actas*) sin un incremento SDD explícito.
+* El módulo de votación existente solo puede modificarse conforme a su spec vigente o una spec aprobada posterior.
 
-1. Ejecutar su test específico y luego la suite aplicable.
-2. Ejecutar migración/build/lint que aplique.
-3. Revisar el diff.
-4. Reportar archivos modificados y salida real de verificación.
+---
 
-No declarar una tarea terminada si falta evidencia real.
+## Validación y Reporte de Salida
+
+Antes de marcar una tarea como completada, el agente debe:
+1. Ejecutar la prueba específica y la suite de tests aplicable.
+2. Ejecutar migración, `build`, `lint` y chequeo de tipos (`typecheck`) correspondientes.
+3. Revisar el `git diff` confirmando ausencia de secretos y de cambios fuera de alcance.
+4. Actualizar `tasks.md` y `validation.md` únicamente con evidencia real y comprobada.
+5. Reportar en la respuesta:
+   * Requerimientos Funcionales (RF) cubiertos.
+   * Archivos modificados.
+   * Comandos de prueba ejecutados y sus salidas/resultados.
+   * Pendientes o bloqueos.
+
+> **Regla de Cierre:** No declarar éxito si falta evidencia o si alguna validación falla.

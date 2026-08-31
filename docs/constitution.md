@@ -13,6 +13,7 @@ Construir una plataforma de gestión y votación para Carnavales 2027 mediante u
 5. **Reglas críticas verificadas.** Reglas de negocio, permisos, votación, confirmaciones, cálculos y sincronización deben contar con pruebas o verificaciones automatizables.
 6. **Offline/sync idempotente cuando la spec lo exija.** Las operaciones que puedan reintentarse deben poder procesarse sin duplicar efectos y resolver conflictos de manera explícita.
 7. **Cambios pequeños y revisables.** Las tareas se implementan en unidades acotadas, con commits claros. No hay push, merge, despliegue ni operaciones destructivas sin autorización explícita.
+8. **Operación inclusiva en campo.** Toda capacidad operativa debe ser usable en móvil, tablet y desktop, con interacción táctil, accesibilidad y prevención de error adecuadas al contexto. Las specs de UI deben declarar los viewports/casos relevantes y su validación.
 
 ## Flujo obligatorio
 

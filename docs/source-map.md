@@ -1,6 +1,14 @@
 # Mapa de fuentes — Carnavales2027_v2
 
-> Estado: inventario inicial provisto por Guido. Pendiente: URLs o export/contenido verificable de Jira y Confluence antes de declarar requisitos como definitivos.
+> Estado: Jira SVC2 y Confluence C2 fueron contrastados el 2026-08-31. Sus páginas y tickets siguen siendo las fuentes canónicas; este archivo registra cómo se usan dentro del SDD del repositorio. El reglamento formal completo aún no está distribuido en este árbol.
+
+## Estado SDD actual
+
+- I1/I1-C: configuración operativa, validado.
+- I2-A/I2-B: padrón, invitaciones, cupos, asignaciones y reemplazos, validados.
+- I3 + Spec 004: planillas, puntuaciones, secreto, inmutabilidad y completitud, validados.
+- Diferido: offline/sync, penalizaciones, resultados, escrutinio y actas.
+- Antes del próximo incremento: aclarar contra la fuente reglamentaria el tratamiento de una omisión y el `5 por equidad`.
 
 ## Visión funcional objetivo
 
@@ -121,6 +129,7 @@ El vault contiene copias/síntesis utilizables para redactar la spec. Jira y Con
 ## Uso en SDD
 
 - La spec debe enlazar cada requisito a una fuente Jira/Confluence o a su copia identificada de Obsidian.
+- Toda spec que incorpore o cambie una interfaz operativa debe declarar sus requisitos de uso móvil/tablet/desktop, interacción táctil y accesibilidad, con criterio de validación proporcionado.
 - Los títulos de tickets no se interpretan como reglas completas.
 - Ante conflicto entre una copia de Obsidian y Jira/Confluence actual, se documenta como `[NECESITA ACLARACIÓN]` antes del plan o código.
 - La visión funcional objetivo se divide en incrementos verticales: cierre I1; usuarios y jurados; programación y nominaciones; votación; offline/sync; supervisión y penalizaciones; escrutinio/resultados; actas/reportes.

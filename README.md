@@ -13,6 +13,10 @@ Implementado y validado:
 
 Todavía fuera de alcance: operación offline/sync, penalizaciones, consolidación de resultados, rankings, escrutinio de resultados y actas.
 
+## Próxima puerta SDD
+
+No se debe iniciar otro módulo directamente. Antes del siguiente incremento hay que contrastar con la fuente reglamentaria el tratamiento de una omisión de puntuación y el `5 por equidad`. Esa decisión debe convertirse en una nueva spec, clarificaciones, plan y tareas antes de código. Ver [`docs/sdd-status.md`](docs/sdd-status.md).
+
 ## Arquitectura
 
 ```text
