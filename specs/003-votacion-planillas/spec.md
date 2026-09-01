@@ -3,7 +3,7 @@
 ## Estado
 
 - **Fase SDD:** I3 implementado; completitud semántica evolucionada por Spec 004 y reapertura reemplazada por Spec 006.
-- **Implementación:** planillas y puntuaciones; Offline-First se implementa exclusivamente en Spec 005. Penalizaciones, escrutinio, resultados y actas continúan diferidos.
+- **Implementación:** planillas y puntuaciones; Spec 005 conserva código exploratorio de Offline-First como funcionalidad futura no aceptada para operación. Penalizaciones, escrutinio, resultados y actas continúan diferidos.
 - **Fuentes:** `docs/source-map.md`, RF-07–RF-12 y RF-16 de Spec 001, Jira SVC2-13, SVC2-14, SVC2-26, SVC2-27, SVC2-28, SVC2-80.
 
 ## Objetivo general

@@ -3,7 +3,7 @@
 ## Estado
 
 - **Fase SDD:** I2-A e I2-B implementados y validados.
-- **Implementación:** I2-A e I2-B completadas; los incrementos de votación permanecen diferidos.
+- **Implementación:** I2-A e I2-B completadas. La votación fue abordada posteriormente por Specs 003, 004 y 006; Spec 005 conserva código exploratorio de Offline-First como funcionalidad futura. Este incremento no los habilita ni los modifica.
 - **Fuentes:** `docs/source-map.md`, RF-03–RF-06 de Spec 001, Jira SVC2-9, SVC2-10, SVC2-25, SVC2-59–SVC2-61 y SVC2-67, más el README objetivo.
 
 ## Objetivo general

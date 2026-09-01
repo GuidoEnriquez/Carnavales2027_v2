@@ -2,9 +2,9 @@
 
 ## Estado
 
-- **Implementación:** completada el 2026-08-31.
-- **Validación automatizada:** completada el 2026-08-31.
-- **Validación manual pendiente:** PWA instalada con red interrumpida, sesión/2FA, teclado/tacto y comprobación en 320 px, 768 px y escritorio.
+- **Evidencia técnica histórica:** implementación y pruebas automatizadas ejecutadas el 2026-08-31.
+- **Estado de producto:** conexión y sincronización son una funcionalidad futura; esta evidencia no constituye aceptación operativa.
+- **Validación manual:** no se realizará bajo este incremento diferido; una spec futura deberá definir y ejecutar su validación.
 
 ## Evidencia requerida
 
@@ -16,8 +16,8 @@
 | Build | `npm run build` en `client/` | exitoso, 47 módulos transformados |
 | Migraciones | `npm run db:migrate -- --status` en `api/` | 001-049 aplicadas, sin pendientes; la 049 corresponde posteriormente a Spec 006 |
 | Dependencias | `npm audit` en `api/` y `client/` | 0 vulnerabilidades |
-| PWA | navegador sin red y revisión de cache | Pendiente manual |
-| Operación | 320 px, 768 px y escritorio; teclado y tacto | Pendiente manual |
+| PWA | navegador sin red y revisión de cache | Pendiente, diferida (Wi-Fi asumido) |
+| Operación | 320 px, 768 px y escritorio; teclado y tacto | Pendiente, diferida (Wi-Fi asumido) |
 
 ## Matriz de requisitos
 

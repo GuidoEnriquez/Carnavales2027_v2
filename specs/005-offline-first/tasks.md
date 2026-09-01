@@ -4,9 +4,8 @@
 
 | ID | Estado | Dependencias |
 |---|---|---|
-| T01-T05 | Completadas | Spec 005, clarificaciones y plan aprobados; evidencia automatizada en `validation.md` |
-| T06 | Parcialmente completada | Pruebas automatizadas ejecutadas; faltan verificaciones manuales PWA, sesión/2FA y viewports |
-| T07 | Pendiente de verificación manual | PWA instalada, red interrumpida y viewports operativos |
+| T01-T06 | Código exploratorio y evidencia técnica existentes | No implican aceptación operativa de conexión/sincronización. |
+| T07 | Diferida a funcionalidad futura | Cualquier activación, modificación o retiro requiere una spec posterior aprobada. |
 
 ## T01 - Protocolo y migraciones de sincronización
 

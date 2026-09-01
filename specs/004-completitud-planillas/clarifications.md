@@ -12,11 +12,11 @@
 | Modal de pendientes | `Confirmar planilla` sigue habilitado; al pulsarlo con pendientes abre un diálogo modal y no envía la confirmación. El diálogo lista comparsa, rubro e ítem, se cierra con acción explícita o `Escape`, recibe el foco y lo devuelve al botón disparador. |
 | Corrección previa | El jurado puede quitar una decisión y volver a `PENDING` mientras la planilla sea editable. |
 | Subsanación | No forma parte del flujo de nuevas planillas. La entidad histórica se conserva y el procedimiento operativo queda para el incremento de escrutinio. |
-| `5 por equidad` | No está implementado ni disponible. El reglamento vigente todavía lo contempla y su eventual eliminación para nuevas planillas digitales requiere una resolución formal pendiente de la COC. |
+| `5 por equidad` | Nula para planillas digitales por decisión de producto del 2026-09-01. La completitud obligatoria evita la omisión humana que buscaba subsanar; no se implementa ningún flujo asociado. |
 | Migración de datos | La migración es incremental y no reescribe scores, auditoría ni subsanaciones históricas. |
 
 El diálogo usa el estado cargado de la planilla para prevenir un envío evitable. `BALLOT_INCOMPLETE` continúa siendo la validación autoritativa del servidor para estados desactualizados y se representa con el mismo diálogo.
 
 ## Riesgo de fuente
 
-El repositorio no contiene el Reglamento de Carnavales 2027 ni la resolución COC pendiente. Cuando exista, debe incorporarse con identificador o número, fecha, autoridad aprobatoria, texto o regla aprobada y referencia al acta o documento de respaldo. Hasta entonces, no se declara eliminado el `5 por equidad` ni se altera este flujo. El core técnico de I4-A Offline-First queda separado: puede sincronizar únicamente los estados ya definidos por esta spec, sin crear ni resolver subsanaciones.
+Esta spec y su implementación reemplazan las decisiones transitorias previas sobre cierres incompletos. La prevención de omisiones vuelve nula la regla de "5 por equidad" para planillas digitales. Conexión y sincronización Offline-First son una funcionalidad futura; el código exploratorio de I4-A no amplía esta spec.

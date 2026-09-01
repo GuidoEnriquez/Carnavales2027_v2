@@ -100,12 +100,17 @@ async function saveScoreLocked(client, { ballot, actorUserId, ballotId, scoreId,
   const decision = requireEvaluationDecision(evaluationState, score);
   if (ballot.status === "SUBMITTED") throw new Error("BALLOT_ALREADY_SUBMITTED");
   const { rows: scores } = await client.query(
-    `SELECT bs.id, bs.status FROM ballot_score bs
+    `SELECT bs.id, bs.status, bs.evaluation_state AS "evaluationState" FROM ballot_score bs
       WHERE bs.id = $1 AND bs.ballot_id = $2 FOR UPDATE`,
     [scoreId, ballotId],
   );
   if (!scores[0]) throw new Error("SCORE_NOT_FOUND");
   if (scores[0].status === "LOCKED") throw new Error("BALLOT_SCORE_IMMUTABLE");
+  if (scores[0].evaluationState === "SCORED" || scores[0].evaluationState === "NOT_PRESENTED") {
+    const error = new Error("SCORE_IMMUTABLE");
+    error.code = "SCORE_IMMUTABLE";
+    throw error;
+  }
   const { rows } = await client.query(
     `UPDATE ballot_score
         SET score = $3, evaluation_state = $4, updated_at = clock_timestamp()

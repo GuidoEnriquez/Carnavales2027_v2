@@ -4,9 +4,11 @@ import { useSession } from "./auth/session-context.jsx";
 import { AppNavigation } from "./components/AppNavigation.jsx";
 import { AdminEventsPage } from "./pages/AdminEventsPage.jsx";
 import { AdminJudgesPage } from "./pages/AdminJudgesPage.jsx";
+import { AdminUsersPage } from "./pages/AdminUsersPage.jsx";
 import { AdminAssignmentsPage } from "./pages/AdminAssignmentsPage.jsx";
 import { AdminVotingPage } from "./pages/AdminVotingPage.jsx";
 import { AcceptedJudgeInvitationPage, AcceptJudgeInvitationPage } from "./pages/AcceptJudgeInvitationPage.jsx";
+import { AcceptRoleInvitationPage } from "./pages/AcceptRoleInvitationPage.jsx";
 import { HomePage } from "./pages/HomePage.jsx";
 import { JudgeHomePage } from "./pages/JudgeHomePage.jsx";
 import { JudgeBallotPage } from "./pages/JudgeBallotPage.jsx";
@@ -40,6 +42,10 @@ export default function App({ session: providedSession }) {
     const secret = new URLSearchParams(query).get("secret") ?? "";
     return <AcceptJudgeInvitationPage key={secret} secret={secret} />;
   }
+  if (route === "#/invitations/role/accept") {
+    const token = new URLSearchParams(query).get("token") ?? "";
+    return <AcceptRoleInvitationPage key={token} token={token} />;
+  }
   if (route === "#/invitations/accepted") return <AcceptedJudgeInvitationPage />;
   if (route === "#/login" || route === "") return <LoginPage />;
   if (route === "#/admin/events") {
@@ -48,6 +54,9 @@ export default function App({ session: providedSession }) {
   }
   if (route === "#/admin/judges") {
     return <RoleArea session={session} admin><AdminJudgesPage /></RoleArea>;
+  }
+  if (route === "#/admin/users") {
+    return <RoleArea session={session} admin><AdminUsersPage /></RoleArea>;
   }
   if (route === "#/admin/assignments") {
     return <RoleArea session={session} admin><AdminAssignmentsPage /></RoleArea>;

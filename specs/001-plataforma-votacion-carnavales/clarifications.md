@@ -2,8 +2,8 @@
 
 ## Estado
 
-- **Fase SDD:** I1-C, I2-A, I2-B e I3 implementados; Spec 004 validada.
-- **Código:** la evolución de planillas vigente se documenta en Specs 004 y 006; Offline-First se implementa exclusivamente en Spec 005. Penalizaciones, escrutinio, resultados y actas continúan diferidos.
+- **Fase SDD:** I1-C, I2-A, I2-B, I3, Specs 004, 005 y 006 implementados. Los estados de aprobación de Specs 007 y 008 se consultan en `docs/sdd-status.md`.
+- **Código:** la evolución de planillas vigente se documenta en Specs 004 y 006; Spec 005 conserva código exploratorio de Offline-First, funcionalidad futura no aceptada para operación. Penalizaciones, escrutinio, resultados y actas continúan diferidos.
 - **Base revisada:** `spec.md`, `docs/source-map.md` y las notas de Obsidian referenciadas.
 
 ## Decisiones ya resueltas
@@ -45,4 +45,4 @@
 
 ## Siguiente resolución prioritaria
 
-I2-A, I2-B, I3 y Spec 004 están cerrados y validados. Impugnaciones, offline/sync, penalizaciones, escrutinio, resultados y actas requieren sus propios incrementos antes de implementarse.
+I2-A, I2-B, I3 y Spec 004 están cerrados y validados. Conexión/sincronización Offline-First es una funcionalidad futura; el código exploratorio de Spec 005 no la habilita operativamente. Impugnaciones, penalizaciones, escrutinio, resultados y actas requieren sus propios incrementos antes de implementarse.

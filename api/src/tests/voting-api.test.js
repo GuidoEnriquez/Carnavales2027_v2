@@ -266,15 +266,14 @@ test("API votación: ciclo completo de planilla", {
     });
     assert.equal(invalidOrdinaryScore.status, 400);
 
-    // 9. The judge records one ordinary score and one independent non-presentation.
+    // 9. The judge attempts to rewrite a score but is rejected due to immutability. Then records independent non-presentation.
     const saveRes = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/scores/${firstScore.id}`, {
       method: "PUT", headers: judgeHeaders,
       body: JSON.stringify({ evaluationState: "SCORED", score: 8 }),
     });
-    assert.equal(saveRes.status, 200, JSON.stringify(await saveRes.clone().json()));
-    const saveData = await saveRes.json();
-    assert.equal(saveData.score, 8);
-    assert.equal(saveData.evaluationState, "SCORED");
+    assert.equal(saveRes.status, 409);
+    assert.equal((await saveRes.json()).code, "SCORE_IMMUTABLE");
+
     const notPresented = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/scores/${secondScore.id}`, {
       method: "PUT", headers: judgeHeaders,
       body: JSON.stringify({ evaluationState: "NOT_PRESENTED" }),

@@ -5,7 +5,7 @@
 | ID | Estado | Dependencias |
 |---|---|---|
 | T01-T03 | Completadas | Spec y clarificaciones aprobadas |
-| T04 | En progreso | Validacion manual de viewports pendiente |
+| T04 | En progreso | Validación manual declarada como finalizada, pero falta documentar entorno, ejecutante y pasos reproducibles. |
 
 ## T01 - Bloquear reaperturas en persistencia y API
 

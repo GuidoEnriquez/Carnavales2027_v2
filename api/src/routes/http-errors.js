@@ -59,6 +59,7 @@ export function sendKnownError(response, error) {
     "BALLOT_ACCESS_DENIED",
     "BALLOT_ALREADY_SUBMITTED",
     "BALLOT_SCORE_IMMUTABLE",
+    "SCORE_IMMUTABLE",
     "SCORE_NOT_FOUND",
     "EVENT_NOT_OPEN",
     "NIGHT_NOT_OPEN",

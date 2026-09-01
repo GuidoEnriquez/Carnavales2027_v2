@@ -26,6 +26,7 @@ test("solo un ADMIN con 2FA lista usuarios y administra privilegios", {
     [adminId, `${adminId}@example.test`, candidateId, `${candidateId}@example.test`],
   );
   await pool.query("INSERT INTO user_role(user_id,role_code) VALUES($1,'ADMIN')", [adminId]);
+  await pool.query("INSERT INTO user_role(user_id,role_code) VALUES($1,'VEEDOR')", [candidateId]);
 
   const app = createApp({
     getSession: async ({ headers }) => ({

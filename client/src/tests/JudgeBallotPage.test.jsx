@@ -26,7 +26,7 @@ const ballot = {
 describe("JudgeBallotPage", () => {
   afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
-  it("carga comparsas, separa no presentado de la escala y confirma la planilla", async () => {
+  it("carga comparsas, muestra modal de confirmación y confirma la planilla", async () => {
     apiRequest.mockImplementation((path, options) => {
       if (path === "/api/v1/judge/ballots/ballot-1" && !options) return Promise.resolve(ballot);
       if (path.endsWith("/sync")) {
@@ -40,19 +40,27 @@ describe("JudgeBallotPage", () => {
     expect(await screen.findByText("Comparsa Uno")).toBeInTheDocument();
     expect(screen.getByText("Comparsa Dos")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "0" })).not.toBeInTheDocument();
+
     fireEvent.click(screen.getAllByRole("button", { name: "No se presentó" })[0]);
+    expect(screen.getByRole("dialog", { name: "¿Desea confirmar esta puntuación?" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
     await waitFor(() => expect(apiRequest).toHaveBeenCalledWith(
       "/api/v1/judge/ballots/ballot-1/sync",
       expect.objectContaining({ method: "POST" }),
     ));
+
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "8" })[1]).not.toBeDisabled());
     fireEvent.click(screen.getAllByRole("button", { name: "8" })[1]);
+    expect(screen.getByRole("dialog", { name: "¿Desea confirmar esta puntuación?" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
     await waitFor(() => expect(apiRequest).toHaveBeenCalledTimes(3));
+
     fireEvent.click(screen.getByRole("button", { name: "Confirmar planilla" }));
     await waitFor(() => expect(apiRequest).toHaveBeenCalledTimes(4));
     expect(await screen.findByText(/planilla confirmada/i)).toBeInTheDocument();
   });
 
-  it("permite quitar una decisión antes de confirmar", async () => {
+  it("bloquea y deshabilita botones de una decisión ya confirmada", async () => {
     apiRequest.mockImplementation((path, options) => {
       if (!options) return Promise.resolve({ ...ballot, scores: [{ ...ballot.scores[0], score: 4, evaluationState: "SCORED" }] });
       if (path.endsWith("/sync")) return Promise.resolve({ revision: 1, operations: [] });
@@ -61,11 +69,15 @@ describe("JudgeBallotPage", () => {
     render(<JudgeBallotPage ballotId="ballot-1" />);
 
     await screen.findByText("Comparsa Uno");
-    fireEvent.click(screen.getByRole("button", { name: "Quitar decisión" }));
-    await waitFor(() => expect(apiRequest).toHaveBeenCalledWith(
-      "/api/v1/judge/ballots/ballot-1/sync",
-      expect.objectContaining({ method: "POST" }),
-    ));
+    expect(screen.queryByRole("button", { name: "Quitar decisión" })).not.toBeInTheDocument();
+
+    // First score should have disabled buttons
+    const firstScoreContainer = screen.getByLabelText("Comparsa Uno: Presencia");
+    const disabledButton = within(firstScoreContainer).getByRole("button", { name: "4" });
+    expect(disabledButton).toBeDisabled();
+    expect(disabledButton).toHaveClass("is-selected");
+    const disabledMissing = within(firstScoreContainer).getByRole("button", { name: "No se presentó" });
+    expect(disabledMissing).toBeDisabled();
   });
 
   it("muestra todos los pendientes en un diálogo y no envía una confirmación incompleta", async () => {
@@ -136,6 +148,7 @@ describe("JudgeBallotPage", () => {
 
     await screen.findByText("Comparsa Uno");
     fireEvent.click(screen.getAllByRole("button", { name: "No se presentó" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
 
     expect(await screen.findByText(/cambió en otro dispositivo/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Recargar estado canónico" })).toBeInTheDocument();

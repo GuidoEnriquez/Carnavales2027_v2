@@ -3,13 +3,13 @@
 ## Estado
 
 - **Fase SDD:** I3 implementado; completitud semántica evolucionada por Spec 004 y reapertura reemplazada por Spec 006.
-- **Código:** planillas y puntajes; Offline-First se implementa exclusivamente en Spec 005. Penalizaciones, escrutinio, resultados y actas continúan diferidos.
+- **Código:** planillas y puntajes; Spec 005 conserva código exploratorio de Offline-First como funcionalidad futura no aceptada para operación. Penalizaciones, escrutinio, resultados y actas continúan diferidos.
 
 ## Decisiones ya resueltas
 
 | Tema | Decisión | Impacto en spec |
 |---|---|---|
-| Scope I3 | Planillas, carga de scores, inmutabilidad, secreto y veedor. | Offline-First se implementó posteriormente en Spec 005; penalizaciones, consolidación de resultados y actas siguen fuera de alcance. |
+| Scope I3 | Planillas, carga de scores, inmutabilidad, secreto y veedor. | Conexión/sincronización Offline-First es una funcionalidad futura; Spec 005 solo conserva código exploratorio. Penalizaciones, consolidación de resultados y actas siguen fuera de alcance. |
 | Puntuaciones | La semántica de puntajes y pendientes está definida por Spec 004. | El flujo no permite omisiones operativas antes de confirmar. |
 | Subsanación | Los registros existentes se conservan como historial. | El procedimiento operativo se difiere a escrutinio. |
 | Reapertura | Reemplazada por Spec 006. | No se permiten reaperturas nuevas; las históricas pueden finalizar. |
@@ -26,5 +26,5 @@
 
 ## Estado posterior de decisiones históricas
 
-- Offline-First y sincronización idempotente se implementaron exclusivamente en Spec 005.
+- Conexión y sincronización idempotente Offline-First son una funcionalidad futura; Spec 005 conserva código exploratorio no aceptado para operación.
 - La definición de rubros nominativos o aleatorios y la regla de mínimo de integrantes por noche y rubro siguen pendientes para un incremento SDD de penalizaciones.

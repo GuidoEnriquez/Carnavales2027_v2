@@ -4,7 +4,7 @@
 
 | Tema | Decisión |
 |---|---|
-| Alcance normativo | I4-A no implementa ni cambia el `5 por equidad`; esa regla queda para una fuente COC y un incremento posterior de subsanación o escrutinio. |
+| Alcance normativo | I4-A no implementa ni cambia el `5 por equidad`, nulo para planillas digitales por decisión de producto del 2026-09-01. |
 | Operaciones | Solo `SAVE_SCORE` y `SUBMIT_BALLOT` de la planilla propia del jurado. `SAVE_SCORE` conserva las transiciones actuales a `PENDING`, `SCORED` o `NOT_PRESENTED`. |
 | Consistencia | El servidor procesa un lote FIFO de una planilla en transacción y conserva la autoridad final. |
 | Idempotencia | `operationId` UUID es generado antes del envío. La identidad de una operación incluye actor, planilla e identificador; el servidor rechaza reutilización con contenido diferente. |
@@ -18,4 +18,4 @@
 ## Preguntas diferidas
 
 - `[NECESITA ACLARACIÓN]` La interfaz final para comparar evidencia local con el estado canónico ante conflicto requiere validación con jurados; I4-A no autoriza aplicar la operación local automáticamente.
-- `[NECESITA ACLARACIÓN]` El Reglamento de Carnavales 2027 y la resolución COC aplicable no están distribuidos en el repositorio. Esta ausencia bloquea una futura Spec de subsanación o escrutinio, no el alcance técnico definido aquí.
+- `[NECESITA ACLARACIÓN]` El Reglamento de Carnavales 2027 no está distribuido en el repositorio. Esta ausencia bloquea una futura Spec de subsanación o escrutinio, no el alcance técnico definido aquí.

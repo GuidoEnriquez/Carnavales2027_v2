@@ -4,7 +4,7 @@
 
 - **I2-A e I2-B validados:** 2026-08-30.
 - **Resultado:** padrón, invitaciones, cupos, asignaciones y reemplazos completados sin habilitar votación.
-- **Siguiente puerta:** cualquier módulo de votación, planillas u operación offline requiere una nueva spec y clarificación.
+- **Siguiente puerta histórica:** al cierre de I2, cualquier módulo de votación, planillas u operación offline requería una nueva spec y clarificación. Ese trabajo se documentó posteriormente en Specs 003 a 005.
 
 ## Evidencia ejecutada
 

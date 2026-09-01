@@ -4,7 +4,10 @@
 
 - **Fase SDD:** implementado, validado y aceptado el 2026-08-31.
 - **Fuentes:** decisión de producto del 2026-08-30 registrada en `docs/source-map.md`; RF-07 a RF-11 y RF-15 de Spec 001.
-- **Nota de trazabilidad:** el reglamento citado por producto no está distribuido en este repositorio. La COC todavía no aprobó una resolución sobre la aplicación del `5 por equidad` a nuevas planillas digitales; esta spec no declara su eliminación ni implementa esa contingencia.
+- **Nota de trazabilidad:** Por decisión de producto del 2026-09-01, la regla de "5 por equidad" es nula para nuevas planillas digitales. La completitud obligatoria elimina la omisión humana que buscaba subsanar; no se implementa flujo, migración, cálculo ni ajuste asociado.
+- **Implementación:** 2026-08-30.
+- **Estado:** ✅ Validada y Aprobada.
+- **Discrepancia de implementación:** RF-62 permanece en esta spec aceptada. El árbol de trabajo contiene cambios atribuidos a la Spec 007 que lo bloquean; como la Spec 007 declara aprobación pendiente, la reconciliación contractual queda **[NECESITA ACLARACIÓN]**.
 
 ## Objetivo
 

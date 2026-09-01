@@ -75,6 +75,8 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
          || filename === "047_normalize_legacy_editable_omissions.sql"
          || filename === "048_ballot_offline_sync.sql"
          || filename === "049_disable_ballot_reopen.sql"
+         || filename === "050_add_comisario_role.sql"
+         || filename === "051_operational_invitations.sql"
   )));
 
   const status = await getMigrationStatus();
@@ -324,6 +326,16 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
       version: "049",
       applied: true,
     },
+    {
+      filename: "050_add_comisario_role.sql",
+      version: "050",
+      applied: true,
+    },
+    {
+      filename: "051_operational_invitations.sql",
+      version: "051",
+      applied: true,
+    }
   ]);
 
   const secondRun = await migrate();

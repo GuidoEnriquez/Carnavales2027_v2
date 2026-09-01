@@ -2,10 +2,11 @@
 
 ## Estado
 
-- **Fase SDD:** implementada; validación manual de PWA, sesión/2FA, teclado/tacto y viewports pendiente.
+- **Fase SDD:** funcionalidad futura. Existe código exploratorio, pero conexión y sincronización no están aceptadas para operación; su activación, modificación o retiro requiere un nuevo ciclo SDD.
 - **Fuentes:** RF-13, RF-14 y RNF-01 a RNF-05 de Spec 001; Jira SVC2-38; `docs/source-map.md`.
 - **Dependencias:** I3 y Spec 004 implementadas y validadas.
-- **Decisión de alcance:** el core Offline-First es independiente de la resolución COC pendiente sobre el `5 por equidad`, porque no crea, interpreta ni resuelve subsanaciones.
+- **Decisión de alcance:** el core Offline-First es independiente del `5 por equidad`, nulo para planillas digitales por decisión de producto del 2026-09-01; no crea, interpreta ni resuelve subsanaciones.
+- **Discrepancia de dependencia:** esta spec conserva `PENDING` y `Quitar decisión` conforme a RF-62 de Spec 004. El árbol de trabajo contiene una implementación de Spec 007 que los bloquea; su aprobación pendiente exige reconciliación antes de ampliar o cerrar este contrato.
 
 ## Objetivo
 

@@ -10,14 +10,15 @@ Implementado y validado:
 - **I2-A:** padrón de jurados, invitaciones seguras, aceptación, 2FA, suspensión/reactivación y rol `JUDGE`.
 - **I2-B:** cupos por noche/especialidad, asignaciones `PRIMARY`/`SUBSTITUTE`, revocaciones, reemplazos auditados y cierre operativo de noches.
 - **I3/Spec 004/Spec 006:** apertura y cierre de votación, planillas por jurado, puntuaciones por comparsa, confirmación inmutable sin nuevas reaperturas, secreto de puntajes, supervisión por `VEEDOR` y completitud obligatoria por ítem. El cierre con pendientes abre un modal administrativo con jurado, comparsa, rubro e ítem.
+- **Spec 008:** invitaciones para `VEEDOR`, `COMISARIO` y `SCRUTINEER`; la emisión, inspección y aceptación API están cubiertas automáticamente. La validación de login real, 2FA y las pantallas operativas continúa pendiente.
 
-Todavía fuera de alcance: penalizaciones, consolidación de resultados, rankings, escrutinio de resultados y actas. I4-A Offline-First está implementado; resta su comprobación manual de PWA, sesión/2FA, teclado/tacto y viewports operativos.
+Todavía fuera de alcance: penalizaciones, consolidación de resultados, rankings, escrutinio de resultados, actas y conexión/sincronización Offline-First. Spec 005 conserva código exploratorio, pero es una funcionalidad futura y no una capacidad operativa aceptada. La Spec 007 tiene implementación en el árbol de trabajo, pero su `spec.md` declara aprobación pendiente; su estado SDD requiere aclaración antes de considerarla aceptada.
 
 ## Próxima puerta SDD
 
-Spec 004 mantiene activa la prevención de omisiones: cada ítem debe resolverse con 1 a 10 o `No se presentó` (0) antes de confirmar o cerrar una planilla; `PENDING` bloquea ambas operaciones. El `5 por equidad` no está implementado. El reglamento vigente todavía lo contempla y cualquier cambio a esa regla requiere una resolución formal de la COC con identificador o número, fecha, autoridad aprobatoria, texto o regla aprobada y referencia al acta o documento de respaldo.
+Spec 004 mantiene activa la prevención de omisiones: cada ítem debe resolverse con 1 a 10 o `No se presentó` (0) antes de confirmar o cerrar una planilla; `PENDING` bloquea ambas operaciones. Por decisión de producto del 2026-09-01, el `5 por equidad` es nulo para planillas digitales: la plataforma impide la omisión humana que esa regla buscaba subsanar. No existe flujo, cálculo ni ajuste operativo asociado.
 
-I4-A Offline-First está separado de esa decisión normativa: sincroniza de forma idempotente las decisiones vigentes de una planilla y su confirmación, sin subsanaciones ni escrutinio. Persiste localmente una outbox cifrada por usuario, detecta conflictos de revisión y cachea solo recursos estáticos mediante PWA; no cachea API. Sus artefactos y evidencia están en [`specs/005-offline-first/`](specs/005-offline-first/). La validación manual de PWA, sesión/2FA, teclado/tacto y viewports sigue pendiente. Ver [`docs/sdd-status.md`](docs/sdd-status.md).
+Conexión y sincronización Offline-First son una funcionalidad futura. Existe código exploratorio de I4-A para una outbox idempotente, conflictos de revisión y PWA de recursos estáticos, pero no está aceptado para operación ni validado manualmente. Sus artefactos históricos están en [`specs/005-offline-first/`](specs/005-offline-first/); cualquier activación, modificación o retiro requiere un nuevo ciclo SDD. Ver [`docs/sdd-status.md`](docs/sdd-status.md).
 
 ## Arquitectura
 
@@ -32,7 +33,7 @@ La autorización real se verifica en la API: sesión, 2FA, rol y estado del perf
 
 ## Estructura de base de datos
 
-La persistencia usa PostgreSQL y está definida por las migraciones incrementales `001` a `049` en `api/src/db/migrations/`. Los estados se implementan con columnas `TEXT` y restricciones `CHECK`; no se usan tipos `ENUM` nativos. La tabla `"user"` pertenece a Better Auth y el modelo de dominio solo la referencia.
+La persistencia usa PostgreSQL y está definida por las migraciones incrementales `001` a `051` en `api/src/db/migrations/`. Los estados se implementan con columnas `TEXT` y restricciones `CHECK`; no se usan tipos `ENUM` nativos. La tabla `"user"` pertenece a Better Auth y el modelo de dominio solo la referencia.
 
 ### Relaciones principales
 
@@ -69,7 +70,7 @@ erDiagram
 
 | Dominio | Tablas | Estructura y relaciones relevantes |
 |---|---|---|
-| Autorización y auditoría | `app_role`, `user_role`, `bootstrap_state`, `audit_event` | `user_role` es la relación N:M entre usuarios Better Auth y roles. `bootstrap_state` conserva el ADMIN inicial. `audit_event` es append-only. |
+| Autorización y auditoría | `app_role`, `user_role`, `bootstrap_state`, `audit_event`, `role_invitation` | `user_role` es la relación N:M entre usuarios Better Auth y roles. `bootstrap_state` conserva el ADMIN inicial. `audit_event` es append-only. `role_invitation` registra invitaciones operativas con vencimiento. |
 | Configuración | `carnival_event`, `night`, `event_category`, `event_troupe`, `event_specialty` | Un evento contiene jornadas, categorías, comparsas y especialidades. Categorías, especialidades y comparsas están scoped por evento. |
 | Evaluación | `rubric`, `evaluation_item`, `rubric_criterion`, `troupe_nomination` | Una rúbrica pertenece a un evento y tiene ítems y criterios. Cada ítem referencia una rúbrica y una especialidad del mismo evento. Las nominaciones vinculan comparsa y rúbrica del mismo evento. |
 | Programación | `night_troupe_schedule`, `configuration_seed` | `night_troupe_schedule` relaciona jornada y comparsa, con orden de presentación único por jornada. `configuration_seed` registra la semilla inicial aplicada a un evento. |
@@ -99,12 +100,13 @@ erDiagram
 - Un jurado solo puede tener una asignación activa por jornada, y las asignaciones activas no pueden exceder el cupo de jornada y especialidad.
 - Una planilla debe coincidir con una asignación activa en jurado, evento, jornada y especialidad.
 - Un score es único por planilla, ítem evaluable y comparsa programada; el ítem, rúbrica, especialidad y jornada deben pertenecer al mismo contexto de evento.
-- Las planillas confirmadas y scores `LOCKED` son inmutables; no existen nuevas reaperturas. Una planilla histórica ya `REOPENED` solo puede finalizar en `SUBMITTED`.
+- **[NECESITA ACLARACIÓN] Spec 007:** el código del árbol de trabajo bloquea decisiones por ítem, pero su spec declara aprobación pendiente. No se debe tratar como requisito SDD aceptado hasta resolver esa discrepancia.
+- Las planillas confirmadas son inmutables; no existen nuevas reaperturas. Una planilla histórica ya `REOPENED` solo puede finalizar en `SUBMITTED`.
 - Los scores `PENDING` bloquean confirmar la planilla y cerrar la votación; la combinación de estado semántico y score se valida en PostgreSQL.
 - La auditoría, perfiles, invitaciones, asignaciones, planillas y scores conservan historia y no admiten borrado físico operativo.
 - No se puede eliminar ni degradar al último `ADMIN` activo.
 
-Offline/sync cuenta con la revisión de planilla y el ledger `ballot_sync_operation` de I4-A. Penalizaciones, consolidación de resultados, rankings, desempate, escrutinio y actas continúan fuera de alcance hasta contar con su incremento SDD correspondiente.
+El código exploratorio de I4-A conserva la revisión de planilla y el ledger `ballot_sync_operation`, pero Offline/sync continúa fuera del alcance operativo hasta contar con un incremento SDD futuro. Penalizaciones, consolidación de resultados, rankings, desempate, escrutinio y actas también continúan fuera de alcance.
 
 ## Requisitos
 
@@ -153,9 +155,11 @@ Abrir `http://localhost:5173/#/login`. En desarrollo, Vite redirige `/api` a `ht
 - `#/admin/judges`: padrón e invitaciones de jurados.
 - `#/admin/assignments`: cupos, asignaciones y reemplazos.
 - `#/admin/voting`: apertura, cierre y estado de planillas; un cierre bloqueado lista los votos pendientes en un modal.
+- `#/admin/users`: listado e invitación de accesos operativos.
 - `#/judge`: consulta de asignaciones y planillas propias.
 - `#/judge/ballot?ballotId=:ballotId`: carga y confirmación de una planilla propia.
 - `#/invitations/accept`: aceptación de invitaciones.
+- `#/invitations/role/accept?token=:token`: aceptación de invitaciones operativas.
 
 Las rutas protegidas requieren 2FA verificado. `ADMIN` administra el sistema; `JUDGE` solo accede a sus asignaciones activas y planillas propias; `VEEDOR` ve conteos operativos sin puntajes.
 
@@ -164,6 +168,10 @@ Las rutas protegidas requieren 2FA verificado. `ADMIN` administra el sistema; `J
 La API expone, entre otros, estos contratos bajo `/api/v1`:
 
 - `GET /me`
+- `GET /users`
+- `POST /users/invitations`
+- `GET /invitations/role/:token`
+- `POST /invitations/role/accept`
 - `GET/POST /judges`
 - `POST /judges/:judgeId/invitations`
 - `POST /judges/:judgeId/suspend`
@@ -220,7 +228,7 @@ npm run build
 npm audit
 ```
 
-Las pruebas PostgreSQL requieren que `TEST_DATABASE_URL` apunte a una base aislada. La evidencia detallada está en [`specs/002-jurados-asignaciones/validation.md`](specs/002-jurados-asignaciones/validation.md), [`specs/004-completitud-planillas/validation.md`](specs/004-completitud-planillas/validation.md), [`specs/005-offline-first/validation.md`](specs/005-offline-first/validation.md) y [`specs/006-cierre-sin-reapertura/validation.md`](specs/006-cierre-sin-reapertura/validation.md).
+Las pruebas PostgreSQL requieren que `TEST_DATABASE_URL` apunte a una base aislada. La evidencia detallada está en [`specs/002-jurados-asignaciones/validation.md`](specs/002-jurados-asignaciones/validation.md), [`specs/004-completitud-planillas/validation.md`](specs/004-completitud-planillas/validation.md), [`specs/005-offline-first/validation.md`](specs/005-offline-first/validation.md), [`specs/006-cierre-sin-reapertura/validation.md`](specs/006-cierre-sin-reapertura/validation.md) y [`specs/008-gestion-accesos/validation.md`](specs/008-gestion-accesos/validation.md).
 
 ## SDD y seguridad
 
@@ -252,5 +260,14 @@ Las pruebas PostgreSQL requieren que `TEST_DATABASE_URL` apunte a una base aisla
 - [Tareas Spec 006](specs/006-cierre-sin-reapertura/tasks.md)
 - [Plan Spec 006](.hermes/plans/2026-08-31_cierre-sin-reapertura.md)
 - [Validación Spec 006](specs/006-cierre-sin-reapertura/validation.md)
+- [Spec 007 - Inmutabilidad por ítem](specs/007-inmutabilidad-por-item/spec.md)
+- [Clarificaciones Spec 007](specs/007-inmutabilidad-por-item/clarifications.md)
+- [Tareas Spec 007](specs/007-inmutabilidad-por-item/tasks.md)
+- [Plan Spec 007](specs/007-inmutabilidad-por-item/plan.md)
+- [Spec 008 - Gestión de accesos](specs/008-gestion-accesos/spec.md)
+- [Clarificaciones Spec 008](specs/008-gestion-accesos/clarifications.md)
+- [Plan Spec 008](specs/008-gestion-accesos/plan.md)
+- [Tareas Spec 008](specs/008-gestion-accesos/tasks.md)
+- [Validación Spec 008](specs/008-gestion-accesos/validation.md)
 
 No commitear `.env`, contraseñas, tokens ni secretos. No existe autoasignación pública de `ADMIN`. La seguridad del sistema se aplica del lado del servidor.

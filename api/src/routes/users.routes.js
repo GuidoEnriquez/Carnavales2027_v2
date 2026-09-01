@@ -1,22 +1,27 @@
 import { Router } from "express";
 import { requireAdmin } from "../auth/require-admin.js";
-import { grantRole, listUsers, revokeRole } from "../auth/role-service.js";
+import { grantRole, revokeRole } from "../auth/role-service.js";
 import { requireTwoFactor } from "../auth/two-factor.js";
 import { sendKnownError } from "./http-errors.js";
+import * as userController from "../modules/users/user-controller.js";
 
-export function createUsersRouter({ requireSession }) {
+export function createUsersRouter({ requireSession, createUser }) {
   const router = Router();
-  router.use(requireSession, requireTwoFactor, requireAdmin);
 
-  router.get("/users", async (_request, response, next) => {
-    try {
-      response.json(await listUsers());
-    } catch (error) {
-      next(error);
-    }
+  router.use((req, res, next) => {
+    req.createUser = createUser;
+    next();
   });
 
-  router.post("/users/:userId/roles/admin", async (request, response, next) => {
+  router.get("/invitations/role/:token", userController.getInvitation);
+  router.post("/invitations/role/accept", userController.acceptInvitation);
+
+  const admin = [requireSession, requireTwoFactor, requireAdmin];
+
+  router.get("/users", ...admin, userController.listUsers);
+  router.post("/users/invitations", ...admin, userController.inviteUser);
+
+  router.post("/users/:userId/roles/admin", ...admin, async (request, response, next) => {
     try {
       const result = await grantRole({
         actorUserId: request.user.id,
@@ -31,7 +36,7 @@ export function createUsersRouter({ requireSession }) {
     }
   });
 
-  router.delete("/users/:userId/roles/admin", async (request, response, next) => {
+  router.delete("/users/:userId/roles/admin", ...admin, async (request, response, next) => {
     try {
       return response.json(await revokeRole({
         actorUserId: request.user.id,

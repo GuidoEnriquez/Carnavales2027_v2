@@ -37,6 +37,10 @@ export function createApp({
   app.use("/api/v1", createJudgeInvitationsRouter({ createUser }));
 
   if (getSession) {
+    app.use("/api/v1", createUsersRouter({
+      requireSession: createRequireSession(getSession),
+      createUser,
+    }));
     app.use("/api/v1", createVotingRouter({
       requireSession: createRequireSession(getSession),
     }));
@@ -50,9 +54,6 @@ export function createApp({
       requireSession: createRequireSession(getSession),
     }));
     app.use("/api/v1", createEventsRouter({
-      requireSession: createRequireSession(getSession),
-    }));
-    app.use("/api/v1", createUsersRouter({
       requireSession: createRequireSession(getSession),
     }));
     app.use("/api/v1", createJudgesRouter({

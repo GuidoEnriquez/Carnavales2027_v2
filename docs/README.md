@@ -9,8 +9,10 @@
 ## Estado vigente
 
 - Spec 004 mantiene la completitud obligatoria: `PENDING` bloquea confirmar y cerrar.
-- Spec 005 implementa Offline-First; faltan comprobaciones manuales de PWA, sesión/2FA y viewports.
-- Spec 006 elimina las nuevas reaperturas y muestra los votos pendientes en un modal al rechazar el cierre administrativo.
+- Spec 005 conserva una implementación exploratoria de Offline-First, pero conexión y sincronización son una funcionalidad futura no aceptada para operación.
+- Spec 006 elimina las nuevas reaperturas y muestra los votos pendientes en un modal al rechazar el cierre administrativo; la evidencia manual requiere completar su entorno reproducible.
+- Spec 007 tiene implementación en el árbol de trabajo, pero su aprobación SDD está marcada como pendiente.
+- Spec 008 valida automáticamente la aceptación de accesos auxiliares; faltan login real, 2FA y pruebas de sus pantallas.
 
 ## Artefactos ejecutables
 

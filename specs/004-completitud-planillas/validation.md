@@ -32,6 +32,5 @@
 ## Notas
 
 - La migración 046 desactiva triggers de usuario únicamente durante su backfill transaccional y los reactiva antes de aplicar la constraint y el guard final. La 047 normaliza solo omisiones heredadas que aún estaban en `DRAFT`; los registros bloqueados permanecen históricos.
-- El reglamento de Carnavales 2027 y la resolución COC sobre el `5 por equidad` no están distribuidos en el repositorio. No se declara eliminada esa regla para nuevas planillas digitales ni se implementa ninguna contingencia mientras falte la fuente canónica.
+- La regla de subsanación "5 por equidad" no forma parte de la implementación validada. Por decisión de producto del 2026-09-01, es nula para planillas digitales porque la prevención de omisiones elimina su causa técnica.
 - Offline/sync, resultados, penalizaciones, escrutinio operativo y actas continúan fuera de alcance.
-- No se agregaron migraciones, rutas ni cálculos para el `5 por equidad`; permanece no implementado y fuera del flujo del jurado.

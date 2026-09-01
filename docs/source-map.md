@@ -6,12 +6,14 @@
 
 - I1/I1-C: configuración operativa, validado.
 - I2-A/I2-B: padrón, invitaciones, cupos, asignaciones y reemplazos, validados.
-- I3 + Spec 004 + Spec 006: planillas, puntuaciones, secreto, inmutabilidad, completitud y cierre sin reapertura, implementados y validados automáticamente; resta verificación manual de teclado, lista extensa y viewports para Spec 006.
-- Diferido: penalizaciones, resultados, escrutinio y actas. Offline/sync está implementado exclusivamente conforme a Spec 005.
+- I3 + Spec 004 + Spec 006: planillas, puntuaciones, secreto, completitud y cierre sin reapertura, implementados y validados automáticamente. Spec 006 declara validación manual completada, pero requiere registrar su entorno reproducible.
+- Diferido: penalizaciones, resultados, escrutinio, actas y conexión/sincronización Offline-First. Spec 005 conserva código exploratorio, pero no es una capacidad operativa aceptada.
 - Spec 004 implementa prevención de omisiones: las nuevas planillas exigen `SCORED` (1 a 10) o `NOT_PRESENTED` (0 por acción explícita) antes de confirmar o cerrar. `PENDING` bloquea ambas operaciones.
-- El `5 por equidad` no está implementado para nuevas planillas digitales. El reglamento vigente todavía lo contempla y su eventual eliminación reglamentaria está pendiente de resolución formal de la COC.
-- I4-A Offline-First está implementado para sincronizar únicamente decisiones ya válidas de planillas; no implementa ni interpreta el `5 por equidad`, subsanaciones, penalizaciones, escrutinio, resultados ni actas. La validación manual de PWA, sesión/2FA, teclado/tacto y viewports sigue pendiente en `specs/005-offline-first/validation.md`.
-- Decisión de producto del 2026-08-31: no se permiten nuevas reaperturas de planillas. Un cierre con `PENDING` se rechaza y ADMIN recibe un modal con jurado, comparsa, rubro e ítem faltante. Fuente de RF-67 a RF-70 de Spec 006.
+- Decisión de producto del 2026-09-01: el `5 por equidad` es nulo para planillas digitales. La completitud obligatoria evita la omisión humana que buscaba subsanar; no existe flujo, cálculo ni ajuste operativo asociado.
+- I4-A Offline-First (Spec 005) conserva código exploratorio. Por decisión de producto del 2026-09-01, conexión y sincronización son una funcionalidad futura; su activación, modificación o retiro requiere un nuevo ciclo SDD.
+- Decisión de producto del 2026-08-31: no se permiten nuevas reaperturas de planillas. Un cierre con `PENDING` se rechaza y ADMIN recibe un modal con jurado, comparsa, rubro e ítem faltante. Fuente de Spec-006/RF-67 a Spec-006/RF-70.
+- Spec 007: hay implementación de inmutabilidad por ítem en el árbol de trabajo, mientras su spec declara aprobación pendiente. **[NECESITA ACLARACIÓN]**.
+- Spec 008: alta por invitación de `VEEDOR`, `COMISARIO` y `SCRUTINEER`; emisión, inspección y aceptación API validadas automáticamente. Login real, 2FA y pruebas de cliente pendientes. No hay fuente Jira/Confluence identificada para este incremento. **[NECESITA ACLARACIÓN]**.
 
 ## Visión funcional objetivo
 
@@ -129,32 +131,23 @@ El vault contiene copias/síntesis utilizables para redactar la spec. Jira y Con
 - El rechazo de cierre identifica el ítem pendiente y su contexto de jurado y comparsa.
 - Las subsanaciones previas se preservan como historia; su operación futura pertenece al incremento de escrutinio y no autoriza omisiones nuevas antes de confirmar.
 
-## Prevención de omisiones y contingencia reglamentaria
+## Prevención de omisiones e Inmutabilidad por ítem
 
 - La planilla no permite confirmar ni cerrar si conserva secciones, rubros o ítems en `PENDING`; el rechazo identifica los pendientes para que el jurado los resuelva.
 - Cada ítem se resuelve únicamente con una puntuación ordinaria de 1 a 10 o con la acción `No se presentó`, que registra `NOT_PRESENTED` y score efectivo 0.
 - El jurado no puede seleccionar manualmente la nota 0.
-- El `5 por equidad` no participa del flujo normal de votación ni está disponible para el jurado. No se implementan flujo, endpoint, migración, cálculo ni ajuste para esa contingencia.
-- El reglamento vigente todavía contempla el `5 por equidad` como subsanación de una omisión. La COC no aprobó todavía una resolución que lo elimine o lo declare no aplicable a nuevas planillas digitales. Esta ausencia no autoriza inferir su eliminación.
+- **[NECESITA ACLARACIÓN] Spec 007:** el árbol de trabajo exige confirmación explícita por ítem y bloquea sobrescrituras, pero la spec declara aprobación pendiente. RF-62 de Spec 004 no debe considerarse derogado contractualmente hasta reconciliar los artefactos.
 - Al intentar confirmar una planilla con pendientes, el jurado recibe un diálogo modal bloqueante que enumera los votos faltantes. La confirmación no se envía hasta resolverlos; el diálogo debe ser accesible y operativo en móvil, tablet y desktop.
 
-### Fuente canónica pendiente: resolución COC
+### Nulidad del "5 por equidad"
 
-Antes de iniciar una Spec de subsanación o escrutinio que aplique, adapte o descarte el `5 por equidad`, se debe incorporar una resolución formal de la COC con:
+Por decisión de producto del 2026-09-01, la regla de subsanación conocida como "5 por equidad" es nula para planillas digitales. La completitud obligatoria de Spec 004 impide confirmar o cerrar con ítems omitidos, por lo que elimina el error humano que la regla buscaba subsanar. No formará parte de ningún flujo, migración, cálculo, penalización, escrutinio ni ajuste operativo.
 
-- Identificador o número de resolución.
-- Fecha.
-- Autoridad aprobatoria.
-- Texto o regla aprobada.
-- Referencia al acta o documento de respaldo.
+### Funcionalidad futura I4-A (Offline-First)
 
-Hasta contar con esa fuente, no se crea una Spec de implementación del `5 por equidad` ni se modifica Spec 004. I4-A puede especificar e implementar su core técnico solo conforme a su alcance explícito: decisiones existentes, sincronización idempotente, conflicto explícito y secreto local de planillas.
-
-### Decisión de arquitectura I4-A - 2026-08-31
-
-- La contingencia reglamentaria del `5 por equidad` pertenece a un futuro incremento de subsanación o escrutinio. No es una transición disponible para las nuevas planillas y no forma parte de la sincronización offline.
-- I4-A se limita a persistir y sincronizar `PENDING`, `SCORED` y `NOT_PRESENTED`, más la confirmación de una planilla, bajo las invariantes ya aplicadas por el servidor.
-- La API continúa siendo autoritativa para identidad, 2FA, asignación activa, ventana de votación, completitud, inmutabilidad y secreto. Una operación offline que deje de ser válida se rechaza de forma explícita y no se reconcilia aplicando reglas de escrutinio.
+- El código exploratorio se limita a persistir y sincronizar `PENDING`, `SCORED` y `NOT_PRESENTED`, más la confirmación de una planilla, bajo las invariantes ya aplicadas por el servidor.
+- Conexión y sincronización no están aceptadas para operación. Cualquier decisión de activar, modificar o retirar ese código requiere una spec futura aprobada.
+- Si se retoma, la API debe continuar siendo autoritativa para identidad, 2FA, asignación activa, ventana de votación, completitud, inmutabilidad y secreto.
 
 ## Uso en SDD
 
@@ -162,4 +155,4 @@ Hasta contar con esa fuente, no se crea una Spec de implementación del `5 por e
 - Toda spec que incorpore o cambie una interfaz operativa debe declarar sus requisitos de uso móvil/tablet/desktop, interacción táctil y accesibilidad, con criterio de validación proporcionado.
 - Los títulos de tickets no se interpretan como reglas completas.
 - Ante conflicto entre una copia de Obsidian y Jira/Confluence actual, se documenta como `[NECESITA ACLARACIÓN]` antes del plan o código.
-- La visión funcional objetivo se divide en incrementos verticales: cierre I1; usuarios y jurados; programación y nominaciones; votación; Offline-First implementado en Spec 005; supervisión y penalizaciones; escrutinio/resultados; actas/reportes.
+- La visión funcional objetivo se divide en incrementos verticales: cierre I1; usuarios y jurados; programación y nominaciones; votación; futura conexión/sincronización Offline-First; supervisión y penalizaciones; escrutinio/resultados; actas/reportes.

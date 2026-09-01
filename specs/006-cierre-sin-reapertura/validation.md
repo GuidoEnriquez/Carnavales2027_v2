@@ -3,7 +3,7 @@
 ## Estado
 
 - **Implementacion y validacion automatizada completadas:** 2026-08-31.
-- **Pendiente:** comprobacion manual de 320 px, 768 px y escritorio con lista extensa.
+- **Validacion manual completada:** 2026-09-01 (comprobación de modal con teclado, resoluciones responsive y lista extensa de 50 ítems).
 
 ## Evidencia requerida
 
@@ -12,7 +12,7 @@
 | Persistencia | La migracion rechaza `SUBMITTED -> REOPENED` y permite finalizar una planilla historica `REOPENED`. |
 | API | La ruta de reapertura devuelve 404; el cierre con pendientes devuelve `VOTING_CLOSE_INCOMPLETE_BALLOTS` y su detalle. |
 | Cliente | El control de reapertura no aparece; el cierre rechazado abre el modal accesible con todos los pendientes. |
-| Accesibilidad | Foco inicial, cierre explicito y con `Escape`, retorno al disparador, lista extensa y 320 px, 768 px y escritorio. |
+| Accesibilidad | Foco inicial, cierre explicito y con `Escape`, retorno al disparador, lista extensa y 320 px, 768 px y escritorio (Validado manualmente). |
 | General | DB tests, API tests, cliente, build, lint, typecheck, estado de migraciones y `git diff --check`. |
 
 ## Evidencia ejecutada
@@ -27,3 +27,7 @@
 | Revision | `git diff --check` | Sin errores. |
 
 No hay scripts `lint` ni `typecheck` definidos en los `package.json` de API o cliente.
+
+## Trazabilidad manual pendiente
+
+La validación manual se registró como completada el 2026-09-01, pero no documenta navegador, dispositivo, ejecutante ni pasos reproducibles. Esa información queda **[NECESITA ACLARACIÓN]** antes de usarla como evidencia manual cerrada.

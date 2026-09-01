@@ -57,7 +57,9 @@ export function JudgeBallotPage({ ballotId, userId }) {
   const [expiredPending, setExpiredPending] = useState(false);
   const [online, setOnline] = useState(() => navigator.onLine);
   const [pendingDialog, setPendingDialog] = useState(null);
+  const [confirmModal, setConfirmModal] = useState(null);
   const pendingDialogRef = useRef(null);
+  const confirmDialogRef = useRef(null);
   const submitButtonRef = useRef(null);
   const syncInFlightRef = useRef(false);
 
@@ -72,6 +74,17 @@ export function JudgeBallotPage({ ballotId, userId }) {
       dialog.close();
     }
   }, [pendingDialog]);
+
+  useEffect(() => {
+    const dialog = confirmDialogRef.current;
+    if (!dialog) return;
+
+    if (confirmModal && !dialog.open) {
+      dialog.showModal();
+    } else if (!confirmModal && dialog.open) {
+      dialog.close();
+    }
+  }, [confirmModal]);
 
   const closePendingDialog = () => {
     const dialog = pendingDialogRef.current;
@@ -320,9 +333,8 @@ export function JudgeBallotPage({ ballotId, userId }) {
           {rubric.scores.map((score) => <div className="score-row" key={score.id}>
             <div><span>{score.itemName}</span><small>{score.evaluationState === "NOT_PRESENTED" ? "No se presentó" : score.evaluationState === "SCORED" ? `Puntuado: ${score.score}` : "Pendiente"}</small></div>
             <div className="score-actions" role="group" aria-label={`${group.troupeName}: ${score.itemName}`}>
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => <button key={value} type="button" className={score.evaluationState === "SCORED" && score.score === value ? "is-selected" : ""} disabled={readonly || score.status === "LOCKED" || Boolean(busy)} onClick={() => void saveDecision(score.id, "SCORED", value)}>{value}</button>)}
-              <button type="button" className={score.evaluationState === "NOT_PRESENTED" ? "is-selected" : ""} disabled={readonly || score.status === "LOCKED" || Boolean(busy)} onClick={() => void saveDecision(score.id, "NOT_PRESENTED")}>No se presentó</button>
-              {score.evaluationState !== "PENDING" && <button type="button" className="score-clear" disabled={readonly || score.status === "LOCKED" || Boolean(busy)} onClick={() => void saveDecision(score.id, "PENDING")}>Quitar decisión</button>}
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => <button key={value} type="button" className={score.evaluationState === "SCORED" && score.score === value ? "is-selected" : ""} disabled={readonly || score.status === "LOCKED" || score.evaluationState !== "PENDING" || Boolean(busy)} onClick={() => setConfirmModal({ scoreId: score.id, evaluationState: "SCORED", score: value, itemContext: { troupeName: group.troupeName, rubricName: rubric.rubricName, itemName: score.itemName } })}>{value}</button>)}
+              <button type="button" className={score.evaluationState === "NOT_PRESENTED" ? "is-selected" : ""} disabled={readonly || score.status === "LOCKED" || score.evaluationState !== "PENDING" || Boolean(busy)} onClick={() => setConfirmModal({ scoreId: score.id, evaluationState: "NOT_PRESENTED", score: 0, itemContext: { troupeName: group.troupeName, rubricName: rubric.rubricName, itemName: score.itemName } })}>No se presentó</button>
             </div>
           </div>)}
         </section>)}
@@ -353,6 +365,29 @@ export function JudgeBallotPage({ ballotId, userId }) {
           </li>)}
         </ul>
         <div className="pending-dialog-actions"><button data-pending-dialog-close type="button" onClick={closePendingDialog}>Volver a la planilla</button></div>
+      </div>}
+    </dialog>
+    <dialog
+      ref={confirmDialogRef}
+      className="pending-dialog confirm-dialog"
+      aria-modal="true"
+      aria-labelledby="confirm-modal-title"
+      onCancel={(event) => { event.preventDefault(); setConfirmModal(null); }}
+    >
+      {confirmModal && <div className="pending-dialog-content">
+        <p className="eyebrow">Confirmación de Voto</p>
+        <h2 id="confirm-modal-title">¿Desea confirmar esta puntuación?</h2>
+        <p><strong>{confirmModal.itemContext.troupeName}</strong></p>
+        <p>{confirmModal.itemContext.rubricName} - {confirmModal.itemContext.itemName}</p>
+        <p className="confirm-score-display">Puntuación: <strong>{confirmModal.evaluationState === "NOT_PRESENTED" ? "No se presentó" : confirmModal.score}</strong></p>
+        <p className="sync-warning" style={{ color: "var(--accent-color)", fontWeight: "bold" }}>Atención: Una vez confirmada, esta decisión no podrá modificarse.</p>
+        <div className="pending-dialog-actions" style={{ gap: "1rem", marginTop: "1rem" }}>
+          <button type="button" className="secondary" onClick={() => setConfirmModal(null)} disabled={Boolean(busy)}>Cancelar</button>
+          <button type="button" onClick={() => {
+            void saveDecision(confirmModal.scoreId, confirmModal.evaluationState, confirmModal.score);
+            setConfirmModal(null);
+          }} disabled={Boolean(busy)}>Confirmar</button>
+        </div>
       </div>}
     </dialog>
   </main>;
