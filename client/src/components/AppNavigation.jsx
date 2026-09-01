@@ -1,10 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { apiRequest } from "../api/http.js";
 import { clearUserOfflineData } from "../offline/ballot-store.js";
 
 export function AppNavigation({ session }) {
   const [closing, setClosing] = useState(false);
   const [message, setMessage] = useState("");
+  const [currentRoute, setCurrentRoute] = useState(() => window.location.hash.split("?")[0]);
+  useEffect(() => {
+    const updateRoute = () => setCurrentRoute(window.location.hash.split("?")[0]);
+    window.addEventListener("hashchange", updateRoute);
+    return () => window.removeEventListener("hashchange", updateRoute);
+  }, []);
   const signOut = async () => {
     setClosing(true);
     try {
@@ -23,12 +29,12 @@ export function AppNavigation({ session }) {
     <header className="app-navigation">
       <a className="brand" href="#/home">Carnavales <strong>2027</strong></a>
       <nav aria-label="Navegación principal">
-        {session.roles?.includes("ADMIN") && <a href="#/admin/events">Eventos</a>}
-        {session.roles?.includes("ADMIN") && <a href="#/admin/judges">Jurados</a>}
-        {session.roles?.includes("ADMIN") && <a href="#/admin/users">Accesos</a>}
-        {session.roles?.includes("ADMIN") && <a href="#/admin/assignments">Asignaciones</a>}
-        {session.roles?.includes("ADMIN") && <a href="#/admin/voting">Votación</a>}
-        {session.roles?.includes("JUDGE") && <a href="#/judge">Mi panel</a>}
+        {session.roles?.includes("ADMIN") && <span className="nav-section-label">Administración</span>}
+        {session.roles?.includes("ADMIN") && <a href="#/admin/events" aria-current={currentRoute === "#/admin/events" ? "page" : undefined}>Evento</a>}
+        {session.roles?.includes("ADMIN") && <a href="#/admin/judges" aria-current={currentRoute === "#/admin/judges" ? "page" : undefined}>Personas</a>}
+        {session.roles?.includes("ADMIN") && <a href="#/admin/assignments" aria-current={currentRoute === "#/admin/assignments" ? "page" : undefined}>Asignaciones</a>}
+        {session.roles?.includes("ADMIN") && <a href="#/admin/voting" aria-current={currentRoute === "#/admin/voting" ? "page" : undefined}>Votación</a>}
+        {session.roles?.includes("JUDGE") && <a href="#/judge" aria-current={currentRoute === "#/judge" ? "page" : undefined}>Mi panel</a>}
       </nav>
       <div className="session-actions">
         <span>{session.user?.name}</span>

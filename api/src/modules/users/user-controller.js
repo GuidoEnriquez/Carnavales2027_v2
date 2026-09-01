@@ -18,15 +18,18 @@ export const inviteUser = async (req, res, next) => {
     const invitation = await userService.inviteOperationalUser(email, roleCode, req.user.id);
     res.status(201).json(invitation);
   } catch (error) {
+    if (error.code === "INVALID_OPERATIONAL_ROLE") {
+      return res.status(400).json({ code: error.code });
+    }
     next(error);
   }
 };
 
 export const getInvitation = async (req, res, next) => {
   try {
-    const { token } = req.params;
+    const { token } = req.body ?? {};
     const invitation = await userService.getInvitationByToken(token);
-    if (!invitation) return res.status(404).json({ code: "INVITATION_NOT_FOUND" });
+    if (!invitation) return res.status(400).json({ code: "INVITATION_INVALID" });
     res.json(invitation);
   } catch (error) {
     next(error);
@@ -40,13 +43,12 @@ export const acceptInvitation = async (req, res, next) => {
       return res.status(400).json({ code: "BAD_REQUEST", message: "Faltan datos" });
     }
 
-    // req.createUser comes from router injection if we passed it, but wait!
-    // We need to inject createUser in createUsersRouter like we did in createJudgeInvitationsRouter
-    const result = await userService.acceptRoleInvitation({
+    const input = {
       token,
       password,
-      createUser: req.createUser,
-    });
+    };
+    if (req.createUser) input.createUser = req.createUser;
+    const result = await userService.acceptRoleInvitation(input);
     res.status(201).json(result);
   } catch (error) {
     if (error.message === "INVITATION_INVALID") return res.status(400).json({ code: "INVITATION_INVALID" });

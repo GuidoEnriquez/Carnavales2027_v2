@@ -10,7 +10,7 @@ Implementado y validado:
 - **I2-A:** padrón de jurados, invitaciones seguras, aceptación, 2FA, suspensión/reactivación y rol `JUDGE`.
 - **I2-B:** cupos por noche/especialidad, asignaciones `PRIMARY`/`SUBSTITUTE`, revocaciones, reemplazos auditados y cierre operativo de noches.
 - **I3/Spec 004/Spec 006:** apertura y cierre de votación, planillas por jurado, puntuaciones por comparsa, confirmación inmutable sin nuevas reaperturas, secreto de puntajes, supervisión por `VEEDOR` y completitud obligatoria por ítem. El cierre con pendientes abre un modal administrativo con jurado, comparsa, rubro e ítem.
-- **Spec 008:** invitaciones para `VEEDOR`, `COMISARIO` y `SCRUTINEER`; la emisión, inspección y aceptación API están cubiertas automáticamente. La validación de login real, 2FA y las pantallas operativas continúa pendiente.
+- **Spec 008:** invitaciones de un solo uso para `VEEDOR`, `COMISARIO` y `SCRUTINEER`, persistidas solo como hash. La emisión, inspección, aceptación, login real y 2FA están validados automáticamente. Las altas se gestionan desde Personas y la comprobación manual de teclado, tacto y viewports continúa pendiente.
 
 Todavía fuera de alcance: penalizaciones, consolidación de resultados, rankings, escrutinio de resultados, actas y conexión/sincronización Offline-First. Spec 005 conserva código exploratorio, pero es una funcionalidad futura y no una capacidad operativa aceptada. La Spec 007 tiene implementación en el árbol de trabajo, pero su `spec.md` declara aprobación pendiente; su estado SDD requiere aclaración antes de considerarla aceptada.
 
@@ -33,7 +33,7 @@ La autorización real se verifica en la API: sesión, 2FA, rol y estado del perf
 
 ## Estructura de base de datos
 
-La persistencia usa PostgreSQL y está definida por las migraciones incrementales `001` a `051` en `api/src/db/migrations/`. Los estados se implementan con columnas `TEXT` y restricciones `CHECK`; no se usan tipos `ENUM` nativos. La tabla `"user"` pertenece a Better Auth y el modelo de dominio solo la referencia.
+La persistencia usa PostgreSQL y está definida por las migraciones incrementales `001` a `052` en `api/src/db/migrations/`. Los estados se implementan con columnas `TEXT` y restricciones `CHECK`; no se usan tipos `ENUM` nativos. La tabla `"user"` pertenece a Better Auth y el modelo de dominio solo la referencia.
 
 ### Relaciones principales
 
@@ -70,7 +70,7 @@ erDiagram
 
 | Dominio | Tablas | Estructura y relaciones relevantes |
 |---|---|---|
-| Autorización y auditoría | `app_role`, `user_role`, `bootstrap_state`, `audit_event`, `role_invitation` | `user_role` es la relación N:M entre usuarios Better Auth y roles. `bootstrap_state` conserva el ADMIN inicial. `audit_event` es append-only. `role_invitation` registra invitaciones operativas con vencimiento. |
+| Autorización y auditoría | `app_role`, `user_role`, `bootstrap_state`, `audit_event`, `role_invitation` | `user_role` es la relación N:M entre usuarios Better Auth y roles. `bootstrap_state` conserva el ADMIN inicial. `audit_event` es append-only. `role_invitation` conserva solo el hash, estado y vencimiento de cada invitación operativa. |
 | Configuración | `carnival_event`, `night`, `event_category`, `event_troupe`, `event_specialty` | Un evento contiene jornadas, categorías, comparsas y especialidades. Categorías, especialidades y comparsas están scoped por evento. |
 | Evaluación | `rubric`, `evaluation_item`, `rubric_criterion`, `troupe_nomination` | Una rúbrica pertenece a un evento y tiene ítems y criterios. Cada ítem referencia una rúbrica y una especialidad del mismo evento. Las nominaciones vinculan comparsa y rúbrica del mismo evento. |
 | Programación | `night_troupe_schedule`, `configuration_seed` | `night_troupe_schedule` relaciona jornada y comparsa, con orden de presentación único por jornada. `configuration_seed` registra la semilla inicial aplicada a un evento. |
@@ -86,6 +86,7 @@ erDiagram
 | `night` | Tipo `COMPETITION` o `AWARDS`; estado `DRAFT`, `OPEN` o `CLOSED` |
 | `judge_profile` | `INVITED`, `REGISTERED`, `SUSPENDED` |
 | `judge_invitation` | Estado `PENDING`, `USED`, `REVOKED`; entrega `PENDING`, `SENT`, `FAILED` |
+| `role_invitation` | Estado `PENDING`, `USED`, `REVOKED`; token persistido solo como hash |
 | `judge_assignment` | Estado `ACTIVE`, `REVOKED`; tipo `PRIMARY`, `SUBSTITUTE` |
 | `ballot` | `OPEN`, `SUBMITTED`; `REOPENED` solo para finalización de registros históricos |
 | `ballot_score.status` | `DRAFT`, `LOCKED` |
@@ -152,14 +153,13 @@ Abrir `http://localhost:5173/#/login`. En desarrollo, Vite redirige `/api` a `ht
 ## Roles y rutas de cliente
 
 - `#/admin/events`: configuración y apertura de eventos.
-- `#/admin/judges`: padrón e invitaciones de jurados.
+- `#/admin/judges`: Personas: padrón de jurados, altas de Veedores, Comisarios y Escrutadores, y listado de accesos auxiliares.
 - `#/admin/assignments`: cupos, asignaciones y reemplazos.
 - `#/admin/voting`: apertura, cierre y estado de planillas; un cierre bloqueado lista los votos pendientes en un modal.
-- `#/admin/users`: listado e invitación de accesos operativos.
 - `#/judge`: consulta de asignaciones y planillas propias.
 - `#/judge/ballot?ballotId=:ballotId`: carga y confirmación de una planilla propia.
 - `#/invitations/accept`: aceptación de invitaciones.
-- `#/invitations/role/accept?token=:token`: aceptación de invitaciones operativas.
+- `#/invitations/role/accept?token=:token`: aceptación pública de una invitación operativa; el cliente elimina el token de la URL antes de inspeccionarla.
 
 Las rutas protegidas requieren 2FA verificado. `ADMIN` administra el sistema; `JUDGE` solo accede a sus asignaciones activas y planillas propias; `VEEDOR` ve conteos operativos sin puntajes.
 
@@ -170,7 +170,7 @@ La API expone, entre otros, estos contratos bajo `/api/v1`:
 - `GET /me`
 - `GET /users`
 - `POST /users/invitations`
-- `GET /invitations/role/:token`
+- `POST /invitations/role/inspect`
 - `POST /invitations/role/accept`
 - `GET/POST /judges`
 - `POST /judges/:judgeId/invitations`
@@ -229,6 +229,8 @@ npm audit
 ```
 
 Las pruebas PostgreSQL requieren que `TEST_DATABASE_URL` apunte a una base aislada. La evidencia detallada está en [`specs/002-jurados-asignaciones/validation.md`](specs/002-jurados-asignaciones/validation.md), [`specs/004-completitud-planillas/validation.md`](specs/004-completitud-planillas/validation.md), [`specs/005-offline-first/validation.md`](specs/005-offline-first/validation.md), [`specs/006-cierre-sin-reapertura/validation.md`](specs/006-cierre-sin-reapertura/validation.md) y [`specs/008-gestion-accesos/validation.md`](specs/008-gestion-accesos/validation.md).
+
+La última evidencia automatizada de Spec 008 reporta 27 pruebas de persistencia, 60 de API y 52 de cliente, además del build exitoso y las migraciones 001-052 sin pendientes.
 
 ## SDD y seguridad
 

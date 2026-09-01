@@ -18,10 +18,16 @@ describe("AdminJudgesPage", () => {
   afterEach(() => { cleanup(); vi.clearAllMocks(); vi.restoreAllMocks(); });
 
   it("crea un perfil sin especialidad y actualiza el padrón", async () => {
-    apiRequest
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce({ judge: { id: "j1" } })
-      .mockResolvedValueOnce([registered]);
+    let judgeRequests = 0;
+    apiRequest.mockImplementation((path, options) => {
+      if (path === "/api/v1/users") return Promise.resolve([]);
+      if (path === "/api/v1/judges" && !options) {
+        judgeRequests += 1;
+        return Promise.resolve(judgeRequests === 1 ? [] : [registered]);
+      }
+      if (path === "/api/v1/judges") return Promise.resolve({ judge: { id: "j1" } });
+      return Promise.resolve({});
+    });
     render(<AdminJudgesPage />);
     await screen.findByText("Todavía no hay jurados registrados.");
 
@@ -42,12 +48,41 @@ describe("AdminJudgesPage", () => {
     expect(JSON.stringify(apiRequest.mock.calls)).not.toContain("specialty");
   });
 
+  it("genera una invitación auxiliar desde la misma sección", async () => {
+    apiRequest.mockImplementation((path, options) => {
+      if (path === "/api/v1/judges" && !options) return Promise.resolve([]);
+      if (path === "/api/v1/users" && !options) return Promise.resolve([]);
+      if (path === "/api/v1/users/invitations") return Promise.resolve({ token: "operational-token" });
+      return Promise.resolve([]);
+    });
+    render(<AdminJudgesPage />);
+    await screen.findByText("Todavía no hay jurados registrados.");
+
+    fireEvent.change(screen.getByLabelText("Tipo de alta"), { target: { value: "COMISARIO" } });
+    fireEvent.change(screen.getByLabelText("Correo"), { target: { value: "comisario@example.test" } });
+    fireEvent.click(screen.getByRole("button", { name: "Generar link de invitación" }));
+
+    await waitFor(() => expect(apiRequest).toHaveBeenCalledWith("/api/v1/users/invitations", {
+      method: "POST",
+      body: JSON.stringify({ email: "comisario@example.test", roleCode: "COMISARIO" }),
+    }));
+    expect(await screen.findByText("Link de invitación")).toBeInTheDocument();
+    expect(screen.getByText(/operational-token/)).toBeInTheDocument();
+    expect(screen.queryByLabelText("DNI")).not.toBeInTheDocument();
+  });
+
   it("suspende con confirmación y refresca el estado", async () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
-    apiRequest
-      .mockResolvedValueOnce([registered])
-      .mockResolvedValueOnce({ suspended: true })
-      .mockResolvedValueOnce([{ ...registered, registrationStatus: "SUSPENDED" }]);
+    let judgeRequests = 0;
+    apiRequest.mockImplementation((path, options) => {
+      if (path === "/api/v1/users") return Promise.resolve([]);
+      if (path === "/api/v1/judges" && !options) {
+        judgeRequests += 1;
+        return Promise.resolve(judgeRequests === 1 ? [registered] : [{ ...registered, registrationStatus: "SUSPENDED" }]);
+      }
+      if (path === "/api/v1/judges/j1/suspend") return Promise.resolve({ suspended: true });
+      return Promise.resolve({});
+    });
     render(<AdminJudgesPage />);
     fireEvent.click(await screen.findByRole("button", { name: "Suspender a Jurado Registrado" }));
     await waitFor(() => expect(apiRequest).toHaveBeenCalledWith("/api/v1/judges/j1/suspend", { method: "POST" }));

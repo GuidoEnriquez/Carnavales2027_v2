@@ -3,75 +3,73 @@ import { apiRequest } from "../api/http.js";
 
 export function AcceptRoleInvitationPage({ token }) {
   const [invitation, setInvitation] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [password, setPassword] = useState("");
+  const [status, setStatus] = useState(token ? "loading" : "invalid");
+  const [message, setMessage] = useState(token ? "" : "La invitación no es válida.");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    apiRequest(`/api/v1/invitations/role/${token}`)
-      .then(setInvitation)
-      .catch((err) => setError(err.code === "INVITATION_NOT_FOUND" ? "El link de invitación no es válido o ha expirado." : err.message))
-      .finally(() => setLoading(false));
+    if (!token) return;
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#/invitations/role/accept`);
+    let current = true;
+    apiRequest("/api/v1/invitations/role/inspect", {
+      method: "POST",
+      body: JSON.stringify({ token }),
+    })
+      .then((data) => {
+        if (!current) return;
+        setInvitation(data);
+        setStatus("ready");
+      })
+      .catch(() => {
+        if (!current) return;
+        setStatus("invalid");
+        setMessage("El link de invitación no es válido, ya fue usado o ha expirado.");
+      });
+    return () => { current = false; };
   }, [token]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (password.length < 8) {
-      setError("La contraseña debe tener al menos 8 caracteres.");
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const password = data.get("password");
+    if (password !== data.get("passwordConfirmation")) {
+      setMessage("Las contraseñas no coinciden.");
       return;
     }
     setSaving(true);
-    setError("");
+    setMessage("");
     try {
       await apiRequest("/api/v1/invitations/role/accept", {
         method: "POST",
         body: JSON.stringify({ token, password }),
       });
-      window.location.hash = "#/login";
-    } catch (err) {
-      setError(err.code === "INVITATION_INVALID" ? "El link expiró o ya fue usado." : err.message);
+      setStatus("accepted");
+    } catch {
+      setStatus("invalid");
+      setMessage("El link de invitación no es válido, ya fue usado o ha expirado.");
+    } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <main className="container"><div className="card"><p>Verificando invitación...</p></div></main>;
-
-  if (error && !invitation) {
-    return (
-      <main className="container">
-        <div className="card">
-          <h1>Invitación inválida</h1>
-          <p>{error}</p>
-          <a href="#/login">Ir al inicio de sesión</a>
-        </div>
-      </main>
-    );
-  }
-
   return (
-    <main className="container">
+    <main className="container invitation-page">
       <div className="card">
-        <h1>Aceptar acceso como {invitation.roleCode}</h1>
-        <p>Estás a punto de crear o asociar tu cuenta <strong>{invitation.email}</strong>.</p>
-
-        {error && <p className="alert-error" style={{ color: "red" }}>{error}</p>}
-
-        <form onSubmit={handleSubmit} className="form-group">
-          <label htmlFor="password">Crea una contraseña (mínimo 8 caracteres)</label>
-          <input
-            type="password"
-            id="password"
-            required
-            minLength="8"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            disabled={saving}
-          />
-          <button type="submit" disabled={saving || password.length < 8}>
-            {saving ? "Registrando..." : "Crear cuenta y acceder"}
-          </button>
-        </form>
+        <p className="eyebrow">Acceso operativo</p>
+        <h1>Completar registro</h1>
+        {status === "loading" && <p>Verificando invitación…</p>}
+        {status === "invalid" && <div role="alert"><p>{message}</p><a href="#/login">Ir al inicio de sesión</a></div>}
+        {status === "accepted" && <div className="success-panel"><h2>Cuenta creada</h2><p>Iniciá sesión y completá la verificación en dos pasos antes de acceder.</p><a className="button-link" href="#/login">Continuar al inicio de sesión</a></div>}
+        {status === "ready" && <>
+          <p>Invitación para <strong>{invitation.maskedEmail}</strong> como {invitation.roleCode}. Vence el {new Date(invitation.expiresAt).toLocaleString()}.</p>
+          <form onSubmit={handleSubmit}>
+            <label>Nueva contraseña<input name="password" type="password" minLength="8" maxLength="128" autoComplete="new-password" required /></label>
+            <label>Repetir contraseña<input name="passwordConfirmation" type="password" minLength="8" maxLength="128" autoComplete="new-password" required /></label>
+            <button disabled={saving}>{saving ? "Creando cuenta…" : "Crear cuenta"}</button>
+          </form>
+          <p role="status" aria-live="polite">{message}</p>
+        </>}
       </div>
     </main>
   );

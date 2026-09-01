@@ -17,4 +17,13 @@ describe("AppNavigation", () => {
     expect(clear).not.toHaveBeenCalled();
     expect(window.location.hash).toBe("");
   });
+
+  it("agrupa la administración y marca la sección activa", () => {
+    window.location.hash = "#/admin/judges";
+    render(<AppNavigation session={{ user: { name: "Admin" }, roles: ["ADMIN"] }} />);
+    expect(screen.getByText("Administración")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Personas" })).toHaveAttribute("href", "#/admin/judges");
+    expect(screen.getByRole("link", { name: "Personas" })).toHaveAttribute("aria-current", "page");
+    expect(screen.queryByRole("link", { name: "Accesos" })).not.toBeInTheDocument();
+  });
 });

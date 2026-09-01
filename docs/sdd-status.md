@@ -14,7 +14,7 @@
 | I4-A / Spec 005 | Código exploratorio de Offline-First preservado; conexión y sincronización se declaran funcionalidad futura, no aceptada para operación. | `specs/005-offline-first/validation.md` |
 | Spec 006 | Implementada y validada automáticamente. La validación manual se declara completada, pero falta registrar entorno y pasos reproducibles. | `specs/006-cierre-sin-reapertura/validation.md` |
 | Spec 007 | Implementación presente en el árbol de trabajo; su `spec.md` declara aprobación pendiente. **[NECESITA ACLARACIÓN]** antes de marcarla aceptada. | `specs/007-inmutabilidad-por-item/spec.md` |
-| Spec 008 | Emisión, inspección y aceptación API de accesos auxiliares validadas automáticamente. Login real, 2FA y pruebas de cliente pendientes. | `specs/008-gestion-accesos/validation.md` |
+| Spec 008 | Emisión, inspección y aceptación de accesos auxiliares validadas automáticamente: token hasheado, exclusión de `ADMIN`, login/2FA y altas unificadas con Jurados. Resta comprobación manual de UI. | `specs/008-gestion-accesos/validation.md` |
 
 ## Diferido explícitamente
 
@@ -30,7 +30,7 @@
 
 ## Próxima puerta SDD
 
-Permanecen pendientes un nuevo ciclo SDD para conexión y sincronización Offline-First, la evidencia reproducible de la comprobación manual declarada para Spec 006, la aprobación formal de Spec 007 y la validación de login/2FA y cliente de Spec 008. Ninguna de ellas habilita penalizaciones, escrutinio, resultados ni actas.
+Permanecen pendientes un nuevo ciclo SDD para conexión y sincronización Offline-First, la evidencia reproducible de la comprobación manual declarada para Spec 006, la aprobación formal de Spec 007 y la comprobación manual de UI de Spec 008. Ninguna de ellas habilita penalizaciones, escrutinio, resultados ni actas.
 
 Antes de iniciar cualquier incremento posterior (como Escrutinio, Resultados o Penalizaciones), se debe redactar y aprobar su especificación e iniciar un nuevo ciclo:
 
@@ -47,6 +47,6 @@ Toda spec que modifique una pantalla operativa debe declarar el criterio de uso 
 Al 2026-09-01, las suites ejecutadas reportaron:
 
 - DB: 27 passed.
-- API: 59 passed.
-- Cliente: 48 passed.
+- API: 60 passed.
+- Cliente: 52 passed.
 - Build de cliente: exitoso.

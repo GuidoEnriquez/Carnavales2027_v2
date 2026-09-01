@@ -13,20 +13,29 @@ const statusLabels = {
 
 export function AdminJudgesPage() {
   const [judges, setJudges] = useState([]);
+  const [operationalUsers, setOperationalUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
   const [loadError, setLoadError] = useState(false);
+  const [creationType, setCreationType] = useState("JUDGE");
+  const [invitationLink, setInvitationLink] = useState("");
 
   const refresh = async () => {
     setLoading(true);
     try {
-      setJudges(await apiRequest("/api/v1/judges"));
+      const [nextJudges, nextOperationalUsers] = await Promise.all([
+        apiRequest("/api/v1/judges"),
+        apiRequest("/api/v1/users"),
+      ]);
+      setJudges(nextJudges);
+      setOperationalUsers(nextOperationalUsers);
       setLoadError(false);
     } catch {
       setJudges([]);
+      setOperationalUsers([]);
       setLoadError(true);
-      setMessage("No se pudo cargar el padrón de jurados.");
+      setMessage("No se pudieron cargar las personas y accesos.");
     } finally {
       setLoading(false);
     }
@@ -39,23 +48,33 @@ export function AdminJudgesPage() {
     const data = new FormData(form);
     setBusy("create");
     setMessage("");
+    setInvitationLink("");
     try {
-      await apiRequest("/api/v1/judges", {
-        method: "POST",
-        body: JSON.stringify({
-          name: data.get("name"),
-          email: data.get("email"),
-          documentNumber: data.get("documentNumber"),
-        }),
-      });
+      if (creationType === "JUDGE") {
+        await apiRequest("/api/v1/judges", {
+          method: "POST",
+          body: JSON.stringify({
+            name: data.get("name"),
+            email: data.get("email"),
+            documentNumber: data.get("documentNumber"),
+          }),
+        });
+        setMessage("Jurado registrado e invitación enviada.");
+      } else {
+        const invitation = await apiRequest("/api/v1/users/invitations", {
+          method: "POST",
+          body: JSON.stringify({ email: data.get("email"), roleCode: creationType }),
+        });
+        setInvitationLink(`${window.location.origin}${window.location.pathname}#/invitations/role/accept?token=${invitation.token}`);
+        setMessage("Link de invitación generado. Entregalo solo a la persona invitada.");
+      }
       form.reset();
-      setMessage("Jurado registrado e invitación enviada.");
     } catch (error) {
-      setMessage(error.code === "INVITATION_DELIVERY_FAILED"
+      setMessage(creationType === "JUDGE" && error.code === "INVITATION_DELIVERY_FAILED"
         ? "El perfil fue creado, pero el correo no pudo entregarse. Podés reemitir la invitación."
-        : error.code === "RESOURCE_CONFLICT" || error.code === "ACCOUNT_ALREADY_EXISTS"
+        : creationType === "JUDGE" && (error.code === "RESOURCE_CONFLICT" || error.code === "ACCOUNT_ALREADY_EXISTS")
           ? "Ya existe un perfil, documento o cuenta con esos datos."
-          : "No se pudo registrar al jurado.");
+          : "No se pudo generar la invitación.");
     } finally {
       await refresh();
       setBusy("");
@@ -84,18 +103,27 @@ export function AdminJudgesPage() {
   return (
     <main className="admin-shell roster-page">
       <header className="event-header">
-        <div><p className="eyebrow">Identidad y acceso</p><h1>Padrón de jurados</h1></div>
-        <span className="roster-count">{judges.length} perfiles</span>
+        <div><p className="eyebrow">Identidad y acceso</p><h1>Personas y accesos</h1></div>
+        <span className="roster-count">{judges.length} jurados · {operationalUsers.length} auxiliares</span>
       </header>
 
       <section className="config-section">
-        <div className="section-heading"><div><h2>Incorporar jurado</h2><p>Registrar no habilita votación. La especialidad se definirá en cada asignación.</p></div></div>
+        <div className="section-heading"><div><h2>Incorporar persona</h2><p>{creationType === "JUDGE" ? "Registrar no habilita votación. La especialidad se definirá en cada asignación." : "El link permite crear la cuenta y completar la verificación en dos pasos."}</p></div></div>
         <form className="judge-create-form" onSubmit={create}>
-          <label>Nombre completo<input name="name" autoComplete="name" required /></label>
+          <label>Tipo de alta
+            <select value={creationType} onChange={(event) => setCreationType(event.target.value)} disabled={Boolean(busy)}>
+              <option value="JUDGE">Jurado</option>
+              <option value="VEEDOR">Veedor</option>
+              <option value="COMISARIO">Comisario</option>
+              <option value="SCRUTINEER">Escrutador</option>
+            </select>
+          </label>
+          {creationType === "JUDGE" && <label>Nombre completo<input name="name" autoComplete="name" required /></label>}
           <label>Correo<input name="email" type="email" autoComplete="email" required /></label>
-          <label>DNI<input name="documentNumber" inputMode="numeric" required /></label>
-          <button disabled={Boolean(busy)}>Registrar e invitar</button>
+          {creationType === "JUDGE" && <label>DNI<input name="documentNumber" inputMode="numeric" required /></label>}
+          <button disabled={Boolean(busy)}>{creationType === "JUDGE" ? "Registrar e invitar" : "Generar link de invitación"}</button>
         </form>
+        {invitationLink && <div className="invitation-link" role="status"><strong>Link de invitación</strong><code>{invitationLink}</code></div>}
       </section>
 
       <p className="feedback" role="status" aria-live="polite">{message}</p>
@@ -129,6 +157,12 @@ export function AdminJudgesPage() {
           })}
         </section>
       )}
+      {!loading && !loadError && <section className="config-section operational-roster">
+        <div className="section-heading"><div><h2>Accesos auxiliares activos</h2><p>Veedores, Comisarios y Escrutadores habilitados.</p></div></div>
+        {operationalUsers.length === 0 ? <p className="empty-state">Todavía no hay accesos auxiliares activos.</p> : <div className="operational-user-list">
+          {operationalUsers.map((user) => <article className="operational-user" key={user.id}><strong>{user.name}</strong><span>{user.email}</span><span>{user.roles.join(", ")}</span></article>)}
+        </div>}
+      </section>}
     </main>
   );
 }

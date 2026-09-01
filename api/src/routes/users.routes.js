@@ -13,7 +13,7 @@ export function createUsersRouter({ requireSession, createUser }) {
     next();
   });
 
-  router.get("/invitations/role/:token", userController.getInvitation);
+  router.post("/invitations/role/inspect", userController.getInvitation);
   router.post("/invitations/role/accept", userController.acceptInvitation);
 
   const admin = [requireSession, requireTwoFactor, requireAdmin];

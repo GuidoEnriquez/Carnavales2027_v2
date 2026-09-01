@@ -13,7 +13,7 @@
 - I4-A Offline-First (Spec 005) conserva código exploratorio. Por decisión de producto del 2026-09-01, conexión y sincronización son una funcionalidad futura; su activación, modificación o retiro requiere un nuevo ciclo SDD.
 - Decisión de producto del 2026-08-31: no se permiten nuevas reaperturas de planillas. Un cierre con `PENDING` se rechaza y ADMIN recibe un modal con jurado, comparsa, rubro e ítem faltante. Fuente de Spec-006/RF-67 a Spec-006/RF-70.
 - Spec 007: hay implementación de inmutabilidad por ítem en el árbol de trabajo, mientras su spec declara aprobación pendiente. **[NECESITA ACLARACIÓN]**.
-- Spec 008: alta por invitación de `VEEDOR`, `COMISARIO` y `SCRUTINEER`; emisión, inspección y aceptación API validadas automáticamente. Login real, 2FA y pruebas de cliente pendientes. No hay fuente Jira/Confluence identificada para este incremento. **[NECESITA ACLARACIÓN]**.
+- Spec 008: alta por invitación de `VEEDOR`, `COMISARIO` y `SCRUTINEER`; emisión, inspección, aceptación, login real y 2FA validados automáticamente. La decisión de producto 2026-09-01 revoca links existentes, elimina el token plano y unifica las altas con Jurados; resta comprobación manual de UI. No hay fuente Jira/Confluence identificada para este incremento. **[NECESITA ACLARACIÓN]**.
 
 ## Visión funcional objetivo
 

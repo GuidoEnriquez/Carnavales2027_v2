@@ -5,7 +5,7 @@ import { createApp } from "../app.js";
 import { getPool, closePool } from "../db/pool.js";
 import { migrate } from "../db/migrate.js";
 
-test("ADMIN emite y un invitado acepta un acceso operativo", {
+test("ADMIN emite y un invitado acepta un acceso operativo seguro", {
   skip: !process.env.TEST_DATABASE_URL,
 }, async (context) => {
   const original = process.env.DATABASE_URL;
@@ -21,6 +21,11 @@ test("ADMIN emite y un invitado acepta un acceso operativo", {
   const invitedUserId = randomUUID();
   const email = `comisario-${randomUUID()}@example.test`;
   const pool = getPool();
+  let releaseConcurrentCreate;
+  let notifyConcurrentCreate;
+  const concurrentCreateStarted = new Promise((resolve) => { notifyConcurrentCreate = resolve; });
+  const concurrentCreateCanFinish = new Promise((resolve) => { releaseConcurrentCreate = resolve; });
+  let concurrentCreateCalls = 0;
   await pool.query(
     `INSERT INTO "user"(id, name, email, "emailVerified")
      VALUES ($1, 'Admin', $2, true)`,
@@ -33,12 +38,19 @@ test("ADMIN emite y un invitado acepta un acceso operativo", {
       ? { user: { id: adminId, twoFactorEnabled: true } }
       : null,
     createUser: async ({ email: invitedEmail, name }) => {
+      const isConcurrent = invitedEmail.startsWith("concurrent-");
+      if (isConcurrent) {
+        concurrentCreateCalls += 1;
+        notifyConcurrentCreate();
+        await concurrentCreateCanFinish;
+      }
+      const id = invitedEmail === email ? invitedUserId : randomUUID();
       await pool.query(
         `INSERT INTO "user"(id, name, email, "emailVerified")
          VALUES ($1, $2, $3, false)`,
-        [invitedUserId, name, invitedEmail],
+        [id, name, invitedEmail],
       );
-      return { id: invitedUserId };
+      return { id };
     },
   });
   const server = await new Promise((resolve) => {
@@ -57,15 +69,29 @@ test("ADMIN emite y un invitado acepta un acceso operativo", {
     });
     assert.equal(inviteResponse.status, 201);
     const invitation = await inviteResponse.json();
+    assert.match(invitation.token, /^[A-Za-z0-9_-]{43}$/);
 
-    const inspectResponse = await fetch(`${base}/api/v1/invitations/role/${invitation.token}`);
-    assert.equal(inspectResponse.status, 200);
-    assert.deepEqual(await inspectResponse.json(), {
-      id: invitation.id,
-      email,
-      roleCode: "COMISARIO",
-      expiresAt: invitation.expiresAt,
+    const { rows: invitationRows } = await pool.query(
+      "SELECT token_hash, status FROM role_invitation WHERE id = $1",
+      [invitation.id],
+    );
+    assert.equal(invitationRows[0].status, "PENDING");
+    assert.notEqual(invitationRows[0].token_hash, invitation.token);
+    const { rows: tokenColumns } = await pool.query(
+      "SELECT column_name FROM information_schema.columns WHERE table_name = 'role_invitation' AND column_name = 'token'",
+    );
+    assert.equal(tokenColumns.length, 0);
+
+    const inspectResponse = await fetch(`${base}/api/v1/invitations/role/inspect`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token: invitation.token }),
     });
+    assert.equal(inspectResponse.status, 200);
+    const inspection = await inspectResponse.json();
+    assert.match(inspection.maskedEmail, /^c\*+@example\.test$/);
+    assert.equal(inspection.roleCode, "COMISARIO");
+    assert.equal(inspection.expiresAt, invitation.expiresAt);
 
     const acceptResponse = await fetch(`${base}/api/v1/invitations/role/accept`, {
       method: "POST",
@@ -93,6 +119,59 @@ test("ADMIN emite y un invitado acepta un acceso operativo", {
     });
     assert.equal(reusedResponse.status, 400);
     assert.deepEqual(await reusedResponse.json(), { code: "INVITATION_INVALID" });
+
+    const forbiddenResponse = await fetch(`${base}/api/v1/users/invitations`, {
+      method: "POST",
+      headers: adminHeaders,
+      body: JSON.stringify({ email: `admin-${randomUUID()}@example.test`, roleCode: "ADMIN" }),
+    });
+    assert.equal(forbiddenResponse.status, 400);
+    assert.deepEqual(await forbiddenResponse.json(), { code: "INVALID_OPERATIONAL_ROLE" });
+
+    const expiredResponse = await fetch(`${base}/api/v1/users/invitations`, {
+      method: "POST",
+      headers: adminHeaders,
+      body: JSON.stringify({ email: `expired-${randomUUID()}@example.test`, roleCode: "VEEDOR" }),
+    });
+    const expiredInvitation = await expiredResponse.json();
+    await pool.query(
+      `UPDATE role_invitation
+          SET created_at = clock_timestamp() - INTERVAL '73 hours',
+              expires_at = clock_timestamp() - INTERVAL '1 minute'
+        WHERE id = $1`,
+      [expiredInvitation.id],
+    );
+    const inspectExpired = await fetch(`${base}/api/v1/invitations/role/inspect`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token: expiredInvitation.token }),
+    });
+    assert.equal(inspectExpired.status, 400);
+    assert.deepEqual(await inspectExpired.json(), { code: "INVITATION_INVALID" });
+
+    const concurrentResponse = await fetch(`${base}/api/v1/users/invitations`, {
+      method: "POST",
+      headers: adminHeaders,
+      body: JSON.stringify({ email: `concurrent-${randomUUID()}@example.test`, roleCode: "SCRUTINEER" }),
+    });
+    const concurrentInvitation = await concurrentResponse.json();
+    const firstAcceptance = fetch(`${base}/api/v1/invitations/role/accept`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token: concurrentInvitation.token, password: "password-de-prueba" }),
+    });
+    await concurrentCreateStarted;
+    const losingAcceptance = await fetch(`${base}/api/v1/invitations/role/accept`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token: concurrentInvitation.token, password: "password-de-prueba" }),
+    });
+    releaseConcurrentCreate();
+    const winningAcceptance = await firstAcceptance;
+    assert.equal(winningAcceptance.status, 201);
+    assert.equal(losingAcceptance.status, 400);
+    assert.deepEqual(await losingAcceptance.json(), { code: "INVITATION_INVALID" });
+    assert.equal(concurrentCreateCalls, 1);
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }

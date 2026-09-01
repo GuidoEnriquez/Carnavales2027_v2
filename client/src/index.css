@@ -108,6 +108,11 @@ button.secondary {
 
 .app-navigation nav {
   flex: 1;
+  gap: 0.25rem;
+  padding: 0.3rem;
+  border: 1px solid #c8d1df;
+  border-radius: 0.6rem;
+  background: #e9eef6;
 }
 
 .navigation-feedback {
@@ -118,8 +123,34 @@ button.secondary {
 }
 
 .app-navigation nav a {
-  padding: 0.5rem;
+  min-block-size: 2.5rem;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.4rem;
+  color: var(--primary-dark);
   font-weight: 750;
+  text-decoration: none;
+}
+
+.app-navigation nav a:hover {
+  background: #d8e4f5;
+}
+
+.app-navigation nav a[aria-current="page"] {
+  color: white;
+  background: var(--primary-dark);
+  box-shadow: 0 1px 2px rgba(24, 58, 120, 0.25);
+}
+
+.nav-section-label {
+  padding-inline: 0.45rem 0.65rem;
+  color: var(--muted-color);
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 button.danger-action {
@@ -127,6 +158,7 @@ button.danger-action {
 }
 
 button:focus-visible,
+a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
@@ -395,6 +427,42 @@ form {
 .judge-grid {
   display: grid;
   gap: 1rem;
+}
+
+.invitation-link {
+  display: grid;
+  gap: 0.45rem;
+  margin-block-start: 1rem;
+  border-inline-start: 4px solid var(--accent-color);
+  padding: 0.75rem 1rem;
+  background: #fff8e7;
+}
+
+.invitation-link code {
+  overflow-wrap: anywhere;
+  color: var(--primary-dark);
+}
+
+.operational-roster {
+  margin-block-start: 1.5rem;
+}
+
+.operational-user-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.operational-user {
+  display: grid;
+  gap: 0.2rem;
+  border-inline-start: 4px solid var(--accent-color);
+  padding: 0.75rem 1rem;
+  background: #fbfcff;
+}
+
+.operational-user span {
+  color: var(--muted-color);
+  overflow-wrap: anywhere;
 }
 
 .judge-card {
@@ -771,7 +839,7 @@ form {
   }
 
   .judge-create-form {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
     align-items: end;
   }
 
@@ -819,6 +887,15 @@ form {
   .judge-actions,
   .judge-actions button {
     inline-size: 100%;
+  }
+
+  .app-navigation nav a {
+    flex: 1 1 7.5rem;
+    justify-content: center;
+  }
+
+  .nav-section-label {
+    flex-basis: 100%;
   }
 
   .judge-card-heading {
