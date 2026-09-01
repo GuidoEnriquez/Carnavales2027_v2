@@ -7,7 +7,7 @@
 - **Nota de trazabilidad:** Por decisión de producto del 2026-09-01, la regla de "5 por equidad" es nula para nuevas planillas digitales. La completitud obligatoria elimina la omisión humana que buscaba subsanar; no se implementa flujo, migración, cálculo ni ajuste asociado.
 - **Implementación:** 2026-08-30.
 - **Estado:** ✅ Validada y Aprobada.
-- **Discrepancia de implementación:** RF-62 permanece en esta spec aceptada. El árbol de trabajo contiene cambios atribuidos a la Spec 007 que lo bloquean; como la Spec 007 declara aprobación pendiente, la reconciliación contractual queda **[NECESITA ACLARACIÓN]**.
+- **Derogación posterior:** el RF-62 (acción "quitar decisión") queda derogado por la Spec 007, aprobada el 2026-09-01. Un score confirmado por el jurado es inmutable por ítem desde ese momento.
 
 ## Objetivo
 
@@ -56,7 +56,7 @@ Los registros bloqueados de subsanación (`requires_subsanation` y `ballot_score
 - **RF-59.** LA interfaz del jurado DEBE ofrecer únicamente 1 a 10 como puntuación ordinaria. `0` NO DEBE aparecer dentro de esa escala.
 - **RF-60.** LA interfaz del jurado DEBE ofrecer una acción independiente `No se presentó` que registre `NOT_PRESENTED` para el ítem seleccionado.
 - **RF-61.** CUANDO un jurado o ADMIN intente confirmar o cerrar una planilla con al menos un score `PENDING`, EL SISTEMA DEBE rechazar la operación. Para el cierre administrativo, DEBE identificar cada ítem pendiente junto con su jurado y comparsa.
-- **RF-62.** EL JURADO DEBE poder volver un score editable a `PENDING` antes de confirmar mediante una acción explícita de quitar la decisión; no debe usar 0 ni una opción vacía como sustituto semántico.
+- **RF-62 (derogado por Spec 007).** Históricamente, EL JURADO podía volver un score editable a `PENDING` mediante una acción explícita de quitar la decisión. Desde la aprobación de Spec 007, toda decisión confirmada por ítem es inmutable y no puede volver a `PENDING`.
 - **RF-63.** CUANDO un score cambie entre `PENDING`, `SCORED` y `NOT_PRESENTED`, EL SISTEMA DEBE auditar la acción, actor y score afectado sin almacenar el valor de la puntuación en la auditoría.
 - **RF-64.** UNA planilla confirmada o score `LOCKED` DEBE conservar su estado y score semánticamente consistentes e inmutables. Spec 006 no permite nuevas reaperturas; solo se admite finalizar registros históricos ya `REOPENED`.
 - **RF-65.** EL SISTEMA DEBE conservar los registros históricos de subsanación sin permitir que una nueva planilla use la marca de omisión pre-confirmación.

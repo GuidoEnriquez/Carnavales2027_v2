@@ -2,9 +2,9 @@
 
 ## Estado
 
-- **Fase SDD:** implementación y validación automática completadas; T08 continúa en progreso solo por la comprobación manual de teclado, tacto y viewports.
+- **Fase SDD:** implementación, validación automática y comprobación manual de teclado, emulación táctil y viewports completadas.
 - **Fuente:** requisito de producto incorporado al repositorio; no hay referencia Jira, Confluence ni reglamento identificada. **[NECESITA ACLARACIÓN]**.
-- **Pendiente de evidencia:** comprobación manual de ambas pantallas con teclado, tacto y viewports móvil/tablet/desktop.
+- **Evidencia manual:** ambas pantallas fueron comprobadas con teclado, emulación táctil y viewports móvil/tablet/desktop; ver `validation.md`.
 - **Identificadores:** los RF se refieren como `Spec-008/RF-xx` para evitar colisiones con la numeración local de otros incrementos.
 
 ## Objetivo

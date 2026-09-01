@@ -7,10 +7,10 @@ describe("App", () => {
   it("muestra login como ruta pública inicial", () => {
     render(<App />);
 
-    expect(screen.getByRole("heading", { name: "Carnavales 2027" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Carnavales Goya 2027" })).toBeInTheDocument();
     expect(screen.getByLabelText("Correo")).toBeInTheDocument();
     expect(screen.getByLabelText("Contraseña")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Continuar" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Ingresar" })).toBeInTheDocument();
   });
 
   it("protege rutas ADMIN y permite el panel informativo JUDGE", () => {
@@ -21,7 +21,7 @@ describe("App", () => {
     window.location.hash = "#/judge";
     window.dispatchEvent(new HashChangeEvent("hashchange"));
     rerender(<App session={{ status: "authenticated", roles: ["JUDGE"], judgeProfile: { registrationStatus: "REGISTERED" }, user: { name: "Jurado" } }} />);
-    expect(screen.getByRole("heading", { name: "Mi panel" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Buenas noches, Jurado" })).toBeInTheDocument();
   });
 
   it("mantiene una ruta segura después de aceptar una invitación", () => {

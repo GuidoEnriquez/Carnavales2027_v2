@@ -2,7 +2,7 @@
 
 ## Estado
 
-- **Fase SDD:** I1-C, I2-A, I2-B, I3, Specs 004, 005 y 006 implementadas. La validación manual de Spec 005 continúa pendiente; Spec 006 declara una comprobación manual completada, pero requiere evidencia reproducible. Spec 007 requiere aclarar su aprobación antes de considerarla aceptada.
+- **Fase SDD:** I1-C, I2-A, I2-B, I3, Specs 004, 005 y 006 implementadas. Spec 006 y Spec 007 cuentan con validación automatizada y manual reproducible. La validación manual de Spec 005 continúa pendiente.
 - **Implementación:** los incrementos posteriores a I1 se rigen por sus propias specs, clarificaciones, planes y tareas; el alcance futuro continúa sujeto a clarificación incremental.
 - **Fuentes:** `docs/source-map.md`, especialmente la copia de Confluence C2 en Obsidian.
 

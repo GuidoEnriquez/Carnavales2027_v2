@@ -9,8 +9,10 @@ Carnavales2027_v2 es una plataforma configurable de gestión y votación para Ca
 
 * **Spec 004:** cada ítem debe quedar `SCORED` (1 a 10) o `NOT_PRESENTED` (0 por acción explícita). `PENDING` bloquea la confirmación y el cierre.
 * **Spec 005 / I4-A:** Conexión y sincronización Offline-First son una funcionalidad futura. Existe código exploratorio en el árbol, pero no constituye una capacidad operativa aceptada ni autoriza subsanaciones, penalizaciones, escrutinio, resultados ni actas.
-* **Spec 006:** no se permiten nuevas reaperturas de planillas. Si ADMIN intenta cerrar con pendientes, la votación sigue abierta y recibe un modal con jurado, comparsa, rubro e ítem faltante. Las planillas históricas ya `REOPENED` solo pueden finalizar en `SUBMITTED`; resta probar el modal con teclado, lista extensa y viewports operativos.
-* **Spec 008:** las invitaciones de `VEEDOR`, `COMISARIO` y `SCRUTINEER` persisten solo como hash, vencen y se consumen una vez. El alta se realiza desde Personas; emisión, aceptación, login y 2FA están validados automáticamente. Resta comprobación manual de teclado, tacto y viewports.
+* **Spec 006:** no se permiten nuevas reaperturas de planillas. Si ADMIN intenta cerrar con pendientes, la votación sigue abierta y recibe un modal con jurado, comparsa, rubro e ítem faltante. Las planillas históricas ya `REOPENED` solo pueden finalizar en `SUBMITTED`; el modal fue validado manualmente con teclado, lista extensa y viewports operativos.
+* **Spec 007:** cada decisión confirmada por un jurado queda inmutable por ítem; el modal de confirmación fue validado manualmente con teclado, emulación táctil y viewports operativos.
+* **Spec 008:** las invitaciones de `VEEDOR`, `COMISARIO` y `SCRUTINEER` persisten solo como hash, vencen y se consumen una vez. El alta se realiza desde Personas; emisión, aceptación, login y 2FA están validados automáticamente y la UI fue validada manualmente con teclado, emulación táctil y viewports operativos.
+* **Spec 009:** el rediseño visual del jurado está implementado con evidencia automática de cliente y build. La comprobación manual de responsive, teclado y emulación táctil en 390x844, 768x1024 y 1440x900 sigue pendiente; no habilita nuevos flujos ni modifica Specs 004, 006, 007 u 008.
 * **Módulos diferidos:** penalizaciones, resultados, rankings, desempate, escrutinio y actas. El `5 por equidad` es nulo para planillas digitales: la completitud obligatoria previene la omisión humana que buscaba subsanar.
 
 ---

@@ -10,9 +10,10 @@
 
 - Spec 004 mantiene la completitud obligatoria: `PENDING` bloquea confirmar y cerrar.
 - Spec 005 conserva una implementación exploratoria de Offline-First, pero conexión y sincronización son una funcionalidad futura no aceptada para operación.
-- Spec 006 elimina las nuevas reaperturas y muestra los votos pendientes en un modal al rechazar el cierre administrativo; la evidencia manual requiere completar su entorno reproducible.
-- Spec 007 tiene implementación en el árbol de trabajo, pero su aprobación SDD está marcada como pendiente.
-- Spec 008 valida automáticamente invitaciones seguras de accesos auxiliares, login real, 2FA y sus pruebas de cliente. Resta la comprobación manual de teclado, tacto y viewports.
+- Spec 006 elimina las nuevas reaperturas y muestra los votos pendientes en un modal al rechazar el cierre administrativo; cuenta con evidencia manual reproducible.
+- Spec 007 está aprobada, implementada y validada con evidencia automatizada y manual.
+- Spec 008 valida invitaciones seguras de accesos auxiliares, login real, 2FA y UI con evidencia automatizada y manual.
+- Spec 009 implementa el rediseño visual del jurado y registra pruebas de cliente y build. La validación manual de responsive, teclado y emulación táctil en 390x844, 768x1024 y 1440x900 sigue pendiente.
 
 ## Artefactos ejecutables
 

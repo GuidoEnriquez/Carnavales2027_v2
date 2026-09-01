@@ -5,7 +5,7 @@
 | Tema | Decisión |
 |---|---|
 | Alcance normativo | I4-A no implementa ni cambia el `5 por equidad`, nulo para planillas digitales por decisión de producto del 2026-09-01. |
-| Operaciones | Solo `SAVE_SCORE` y `SUBMIT_BALLOT` de la planilla propia del jurado. `SAVE_SCORE` conserva las transiciones actuales a `PENDING`, `SCORED` o `NOT_PRESENTED`. |
+| Operaciones | Solo `SAVE_SCORE` y `SUBMIT_BALLOT` de la planilla propia del jurado. `PENDING` es el estado inicial sin decisión; `SAVE_SCORE` solo registra la decisión inicial a `SCORED` o `NOT_PRESENTED` y nunca revierte una decisión confirmada. |
 | Consistencia | El servidor procesa un lote FIFO de una planilla en transacción y conserva la autoridad final. |
 | Idempotencia | `operationId` UUID es generado antes del envío. La identidad de una operación incluye actor, planilla e identificador; el servidor rechaza reutilización con contenido diferente. |
 | Conflicto | La planilla usa revisión monotónica. Un `BALLOT_REVISION_CONFLICT` detiene esa outbox; no hay last-write-wins ni reintento automático. |

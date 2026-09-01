@@ -10,9 +10,15 @@ Implementado y validado:
 - **I2-A:** padrón de jurados, invitaciones seguras, aceptación, 2FA, suspensión/reactivación y rol `JUDGE`.
 - **I2-B:** cupos por noche/especialidad, asignaciones `PRIMARY`/`SUBSTITUTE`, revocaciones, reemplazos auditados y cierre operativo de noches.
 - **I3/Spec 004/Spec 006:** apertura y cierre de votación, planillas por jurado, puntuaciones por comparsa, confirmación inmutable sin nuevas reaperturas, secreto de puntajes, supervisión por `VEEDOR` y completitud obligatoria por ítem. El cierre con pendientes abre un modal administrativo con jurado, comparsa, rubro e ítem.
-- **Spec 008:** invitaciones de un solo uso para `VEEDOR`, `COMISARIO` y `SCRUTINEER`, persistidas solo como hash. La emisión, inspección, aceptación, login real y 2FA están validados automáticamente. Las altas se gestionan desde Personas y la comprobación manual de teclado, tacto y viewports continúa pendiente.
+- **Spec 007:** confirmación e inmutabilidad inmediata por ítem, con modal de decisión y controles bloqueados tras confirmar. Validada automáticamente y con comprobación manual responsive.
+- **Spec 008:** invitaciones de un solo uso para `VEEDOR`, `COMISARIO` y `SCRUTINEER`, persistidas solo como hash. La emisión, inspección, aceptación, login real, 2FA y la UI responsive están validados. Las altas se gestionan desde Personas.
+- **Spec 009:** rediseño operativo oscuro del jurado, con login institucional, home por comparsa, navegación contextual de planilla y controles táctiles. La suite de cliente y el build pasan; queda pendiente la comprobación manual de 390x844, 768x1024 y 1440x900 con teclado y emulación táctil.
 
-Todavía fuera de alcance: penalizaciones, consolidación de resultados, rankings, escrutinio de resultados, actas y conexión/sincronización Offline-First. Spec 005 conserva código exploratorio, pero es una funcionalidad futura y no una capacidad operativa aceptada. La Spec 007 tiene implementación en el árbol de trabajo, pero su `spec.md` declara aprobación pendiente; su estado SDD requiere aclaración antes de considerarla aceptada.
+Todavía fuera de alcance: penalizaciones, consolidación de resultados, rankings, escrutinio de resultados, actas y conexión/sincronización Offline-First. Spec 005 conserva código exploratorio, pero es una funcionalidad futura y no una capacidad operativa aceptada.
+
+## Incremento vigente
+
+Spec 009 - Experiencia operativa del jurado es el incremento vigente. No puede marcarse como validado por completo hasta registrar la comprobación manual de sus viewports y recorridos de teclado/tacto en [`specs/009-experiencia-operativa-jurado/validation.md`](specs/009-experiencia-operativa-jurado/validation.md).
 
 ## Próxima puerta SDD
 
@@ -101,7 +107,7 @@ erDiagram
 - Un jurado solo puede tener una asignación activa por jornada, y las asignaciones activas no pueden exceder el cupo de jornada y especialidad.
 - Una planilla debe coincidir con una asignación activa en jurado, evento, jornada y especialidad.
 - Un score es único por planilla, ítem evaluable y comparsa programada; el ítem, rúbrica, especialidad y jornada deben pertenecer al mismo contexto de evento.
-- **[NECESITA ACLARACIÓN] Spec 007:** el código del árbol de trabajo bloquea decisiones por ítem, pero su spec declara aprobación pendiente. No se debe tratar como requisito SDD aceptado hasta resolver esa discrepancia.
+- La Spec 007 deroga el RF-62 de Spec 004: toda decisión confirmada por el jurado para un ítem queda inmutable y ya no puede volver a `PENDING`.
 - Las planillas confirmadas son inmutables; no existen nuevas reaperturas. Una planilla histórica ya `REOPENED` solo puede finalizar en `SUBMITTED`.
 - Los scores `PENDING` bloquean confirmar la planilla y cerrar la votación; la combinación de estado semántico y score se valida en PostgreSQL.
 - La auditoría, perfiles, invitaciones, asignaciones, planillas y scores conservan historia y no admiten borrado físico operativo.
@@ -266,6 +272,7 @@ La última evidencia automatizada de Spec 008 reporta 27 pruebas de persistencia
 - [Clarificaciones Spec 007](specs/007-inmutabilidad-por-item/clarifications.md)
 - [Tareas Spec 007](specs/007-inmutabilidad-por-item/tasks.md)
 - [Plan Spec 007](specs/007-inmutabilidad-por-item/plan.md)
+- [Validación Spec 007](specs/007-inmutabilidad-por-item/validation.md)
 - [Spec 008 - Gestión de accesos](specs/008-gestion-accesos/spec.md)
 - [Clarificaciones Spec 008](specs/008-gestion-accesos/clarifications.md)
 - [Plan Spec 008](specs/008-gestion-accesos/plan.md)

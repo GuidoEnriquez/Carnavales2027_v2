@@ -12,4 +12,4 @@
 | T08a | (DB) Revocar links existentes y migrar `role_invitation` a token hasheado con ciclo de vida | Completada: migración 052 aplicada y comprobada |
 | T08b | (API) Restringir roles, validar expiración y resolver aceptación concurrente | Completada: pruebas HTTP y Better Auth |
 | T08c | (Cliente) Unificar altas en Personas/Jurados y retirar Accesos como pantalla independiente | Completada: pruebas de componente y build |
-| T08d | (Pruebas) Validar circuito completo desde creación hasta login, 2FA y cliente | En progreso: evidencia automatizada completa; resta comprobación manual de teclado, tacto y 320 px/768 px/escritorio |
+| T08d | (Pruebas) Validar circuito completo desde creación hasta login, 2FA y cliente | Completada: evidencia automatizada y comprobación manual con teclado, emulación táctil y 320 px/768 px/escritorio |

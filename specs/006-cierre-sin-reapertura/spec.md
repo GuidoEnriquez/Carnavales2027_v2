@@ -2,7 +2,7 @@
 
 ## Estado
 
-- **Fase SDD:** implementada y validada automáticamente; resta comprobación manual con teclado, lista extensa y viewports.
+- **Fase SDD:** implementada y validada automáticamente y de forma manual con teclado, emulación táctil, lista extensa y viewports.
 - **Fuente:** decision de producto del 2026-08-31, registrada en esta spec; SVC2-14, SVC2-26, SVC2-27 y SVC2-80.
 - **Relacion:** reemplaza exclusivamente la reapertura administrativa de I3. Mantiene vigente la completitud de Spec 004.
 

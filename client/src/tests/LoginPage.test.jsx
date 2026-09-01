@@ -16,7 +16,7 @@ describe("LoginPage", () => {
 
     fireEvent.change(screen.getByLabelText("Correo"), { target: { value: "admin@example.test" } });
     fireEvent.change(screen.getByLabelText("Contraseña"), { target: { value: "local-password" } });
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ingresar" }));
 
     await waitFor(() => expect(apiRequest).toHaveBeenNthCalledWith(1, "/api/auth/sign-in/email", {
       method: "POST",
@@ -49,7 +49,7 @@ describe("LoginPage", () => {
 
     fireEvent.change(screen.getByLabelText("Correo"), { target: { value: "admin@example.test" } });
     fireEvent.change(screen.getByLabelText("Contraseña"), { target: { value: "local-password" } });
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ingresar" }));
 
     expect(await screen.findByLabelText("Código de verificación")).toBeInTheDocument();
     expect(apiRequest).toHaveBeenCalledTimes(2);
@@ -75,7 +75,7 @@ describe("LoginPage", () => {
 
     fireEvent.change(screen.getByLabelText("Correo"), { target: { value: "judge@example.test" } });
     fireEvent.change(screen.getByLabelText("Contraseña"), { target: { value: "JudgePassword-2026!" } });
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ingresar" }));
     fireEvent.change(await screen.findByLabelText("Código de verificación"), { target: { value: "123456" } });
     fireEvent.click(screen.getByRole("button", { name: "Verificar código" }));
 
@@ -97,7 +97,7 @@ describe("LoginPage", () => {
     render(<SessionProvider><LoginPage /></SessionProvider>);
     fireEvent.change(screen.getByLabelText("Correo"), { target: { value: "judge@example.test" } });
     fireEvent.change(screen.getByLabelText("Contraseña"), { target: { value: "JudgePassword-2026!" } });
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ingresar" }));
     fireEvent.change(await screen.findByLabelText("Código de verificación"), { target: { value: "123456" } });
     fireEvent.click(screen.getByRole("button", { name: "Verificar código" }));
 

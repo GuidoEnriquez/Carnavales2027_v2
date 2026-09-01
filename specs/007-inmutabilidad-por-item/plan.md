@@ -7,10 +7,10 @@
 
 ## 2. Implementación de Interfaz del Jurado (Cliente)
 - Modificar el componente de selección de voto en la vista del jurado.
-- Al hacer clic en un puntaje, en lugar de invocar la mutación de guardado de inmediato, se deberá abrir un modal `ItemScoreConfirmModal`.
+- Al hacer clic en un puntaje, en lugar de invocar la mutación de guardado de inmediato, se abre el diálogo de confirmación integrado en `JudgeBallotPage.jsx`.
 - El modal mostrará el puntaje seleccionado y pedirá confirmación explícita (Sí/Ok vs Cancelar). Al confirmar, se ejecuta la llamada a la API.
 - Eliminar por completo el botón y la lógica de "Quitar decisión" que permitía regresar a `PENDING`.
 - Deshabilitar o bloquear visualmente los botones de puntaje de un ítem si este ya fue evaluado (`evaluationState !== 'PENDING'`).
 
 ## 3. Consideraciones Offline (Outbox)
-- Asegurar que el estado local (Zustand/IndexedDB) trate los ítems confirmados como inmutables y no permita apilar nuevas operaciones de actualización para el mismo ítem en la cola de sincronización.
+- Asegurar que el estado local de IndexedDB trate los ítems confirmados como inmutables y no permita apilar nuevas operaciones de actualización para el mismo ítem en la cola de sincronización.

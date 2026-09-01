@@ -1,10 +1,10 @@
 # Spec 007 - Inmutabilidad por ítem y confirmación de voto
 
 ## Estado
-- **Fase SDD:** Redacción de Spec (Pendiente de aprobación).
-- **Trazabilidad:** no hay fuente de aprobación registrada ni `validation.md`. **[NECESITA ACLARACIÓN]** antes de declararla implementada o aceptada.
+- **Fase SDD:** Aprobada e implementada; validación automatizada y manual completas.
+- **Aprobación:** 2026-09-01, por decisión del responsable de producto (sesión de chat sobre el sistema operativo local), tras verificar implementación y suites completas.
 - **Fuente:** Requisito de usuario del 2026-09-01 (Chat).
-- **Relación:** Sobrescribe el RF-62 de la Spec 004. Elimina la posibilidad de editar o "quitar" una decisión de puntaje una vez confirmada.
+- **Relación:** Sobrescribe y deroga formalmente el RF-62 de la Spec 004. Elimina la posibilidad de editar o "quitar" una decisión de puntaje una vez confirmada.
 
 ## Objetivo
 Garantizar que el jurado reflexione y confirme cada voto individual antes de registrarlo, y volver ese voto inmutable de forma inmediata (por ítem) tras su confirmación, sin esperar al cierre de toda la planilla.

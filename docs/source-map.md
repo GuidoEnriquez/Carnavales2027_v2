@@ -6,14 +6,15 @@
 
 - I1/I1-C: configuración operativa, validado.
 - I2-A/I2-B: padrón, invitaciones, cupos, asignaciones y reemplazos, validados.
-- I3 + Spec 004 + Spec 006: planillas, puntuaciones, secreto, completitud y cierre sin reapertura, implementados y validados automáticamente. Spec 006 declara validación manual completada, pero requiere registrar su entorno reproducible.
+- I3 + Spec 004 + Spec 006: planillas, puntuaciones, secreto, completitud y cierre sin reapertura, implementados y validados automáticamente y manualmente en Chrome de escritorio con emulación responsive.
 - Diferido: penalizaciones, resultados, escrutinio, actas y conexión/sincronización Offline-First. Spec 005 conserva código exploratorio, pero no es una capacidad operativa aceptada.
 - Spec 004 implementa prevención de omisiones: las nuevas planillas exigen `SCORED` (1 a 10) o `NOT_PRESENTED` (0 por acción explícita) antes de confirmar o cerrar. `PENDING` bloquea ambas operaciones.
 - Decisión de producto del 2026-09-01: el `5 por equidad` es nulo para planillas digitales. La completitud obligatoria evita la omisión humana que buscaba subsanar; no existe flujo, cálculo ni ajuste operativo asociado.
 - I4-A Offline-First (Spec 005) conserva código exploratorio. Por decisión de producto del 2026-09-01, conexión y sincronización son una funcionalidad futura; su activación, modificación o retiro requiere un nuevo ciclo SDD.
 - Decisión de producto del 2026-08-31: no se permiten nuevas reaperturas de planillas. Un cierre con `PENDING` se rechaza y ADMIN recibe un modal con jurado, comparsa, rubro e ítem faltante. Fuente de Spec-006/RF-67 a Spec-006/RF-70.
-- Spec 007: hay implementación de inmutabilidad por ítem en el árbol de trabajo, mientras su spec declara aprobación pendiente. **[NECESITA ACLARACIÓN]**.
-- Spec 008: alta por invitación de `VEEDOR`, `COMISARIO` y `SCRUTINEER`; emisión, inspección, aceptación, login real y 2FA validados automáticamente. La decisión de producto 2026-09-01 revoca links existentes, elimina el token plano y unifica las altas con Jurados; resta comprobación manual de UI. No hay fuente Jira/Confluence identificada para este incremento. **[NECESITA ACLARACIÓN]**.
+- Spec 007: inmutabilidad por ítem aprobada formalmente el 2026-09-01; implementación validada automáticamente y manualmente en Chrome de escritorio con emulación responsive.
+- Spec 008: alta por invitación de `VEEDOR`, `COMISARIO` y `SCRUTINEER`; emisión, inspección, aceptación, login real, 2FA y UI validados. La decisión de producto 2026-09-01 revoca links existentes, elimina el token plano y unifica las altas con Jurados. No hay fuente Jira/Confluence identificada para este incremento. **[NECESITA ACLARACIÓN]**.
+- Spec 009: rediseño operativo del cliente de jurado basado en el brief y las referencias visuales de producto del 2026-09-01, preservando Specs 004, 006 y 007. La implementación y pruebas de cliente están completadas; la validación manual responsive, de teclado y táctil permanece pendiente. No habilita Offline-First ni módulos de resultados.
 
 ## Visión funcional objetivo
 
@@ -136,7 +137,7 @@ El vault contiene copias/síntesis utilizables para redactar la spec. Jira y Con
 - La planilla no permite confirmar ni cerrar si conserva secciones, rubros o ítems en `PENDING`; el rechazo identifica los pendientes para que el jurado los resuelva.
 - Cada ítem se resuelve únicamente con una puntuación ordinaria de 1 a 10 o con la acción `No se presentó`, que registra `NOT_PRESENTED` y score efectivo 0.
 - El jurado no puede seleccionar manualmente la nota 0.
-- **[NECESITA ACLARACIÓN] Spec 007:** el árbol de trabajo exige confirmación explícita por ítem y bloquea sobrescrituras, pero la spec declara aprobación pendiente. RF-62 de Spec 004 no debe considerarse derogado contractualmente hasta reconciliar los artefactos.
+- Spec 007 deroga formalmente RF-62 de Spec 004: la confirmación explícita convierte la decisión del jurado en inmutable por ítem.
 - Al intentar confirmar una planilla con pendientes, el jurado recibe un diálogo modal bloqueante que enumera los votos faltantes. La confirmación no se envía hasta resolverlos; el diálogo debe ser accesible y operativo en móvil, tablet y desktop.
 
 ### Nulidad del "5 por equidad"

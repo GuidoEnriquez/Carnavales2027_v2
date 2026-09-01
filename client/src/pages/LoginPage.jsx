@@ -95,14 +95,19 @@ export function LoginPage({ onAuthenticated }) {
   };
 
   return (
-    <main className="container">
-      <div className="card">
-        <h1>Carnavales 2027</h1>
+    <main className="login-page">
+      <div className="login-orbit login-orbit-left" aria-hidden="true" />
+      <div className="login-orbit login-orbit-right" aria-hidden="true" />
+      <div className="card login-card">
+        <div className="login-emblem" aria-hidden="true" />
+        <p className="login-kicker">Acceso seguro</p>
+        <h1>Carnavales Goya <span>2027</span></h1>
+        <p className="login-subtitle">Sistema de jurados</p>
         {step === "credentials" ? (
           <form onSubmit={submitCredentials}>
-            <label>Correo<input name="email" type="email" autoComplete="username" required /></label>
+            <label>Correo<input name="email" type="email" autoComplete="username" placeholder="nombre@ejemplo.com" required /></label>
             <label>Contraseña<input name="password" type="password" autoComplete="current-password" required /></label>
-            <button disabled={loading}>Continuar</button>
+            <button className="primary-action" disabled={loading}>{loading ? "Verificando…" : "Ingresar"}</button>
           </form>
         ) : step === "otp" ? (
           <form onSubmit={submitOtp}>
@@ -112,7 +117,7 @@ export function LoginPage({ onAuthenticated }) {
             <button className="secondary" type="button" disabled={loading} onClick={() => { setStep("credentials"); setMessage(""); }}>Volver</button>
           </form>
         ) : <div className="verified-session"><p>La verificación en dos pasos ya fue completada.</p><button type="button" disabled={loading} onClick={finishAuthentication}>Cargar mi perfil</button></div>}
-        <p role="status" aria-live="polite">{message}</p>
+        <p className="login-device-status" role="status" aria-live="polite"><span aria-hidden="true">●</span> {message || "Dispositivo conectado"}</p>
       </div>
     </main>
   );

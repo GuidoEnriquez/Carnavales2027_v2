@@ -37,30 +37,33 @@ describe("JudgeBallotPage", () => {
     });
     render(<JudgeBallotPage ballotId="ballot-1" />);
 
-    expect(await screen.findByText("Comparsa Uno")).toBeInTheDocument();
-    expect(screen.getByText("Comparsa Dos")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Comparsa Uno", level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Comparsa Dos", level: 2 })).toBeInTheDocument();
+    expect(within(screen.getByRole("complementary", { name: "Navegación de comparsas" })).getByRole("button", { name: /Comparsa Uno/ })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "0" })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getAllByRole("button", { name: "No se presentó" })[0]);
-    expect(screen.getByRole("dialog", { name: "¿Desea confirmar esta puntuación?" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "¿Confirmás esta decisión?" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
     await waitFor(() => expect(apiRequest).toHaveBeenCalledWith(
       "/api/v1/judge/ballots/ballot-1/sync",
       expect.objectContaining({ method: "POST" }),
     ));
 
-    await waitFor(() => expect(screen.getAllByRole("button", { name: "8" })[1]).not.toBeDisabled());
-    fireEvent.click(screen.getAllByRole("button", { name: "8" })[1]);
-    expect(screen.getByRole("dialog", { name: "¿Desea confirmar esta puntuación?" })).toBeInTheDocument();
+    const secondScore = await screen.findByLabelText("Comparsa Dos: Presencia");
+    await waitFor(() => expect(within(secondScore).getByRole("button", { name: "8" })).not.toBeDisabled());
+    fireEvent.click(within(secondScore).getByRole("button", { name: "8" }));
+    expect(screen.getByRole("dialog", { name: "¿Confirmás esta decisión?" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
     await waitFor(() => expect(apiRequest).toHaveBeenCalledTimes(3));
 
     fireEvent.click(screen.getByRole("button", { name: "Confirmar planilla" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Confirmar y cerrar" }));
     await waitFor(() => expect(apiRequest).toHaveBeenCalledTimes(4));
     expect(await screen.findByText(/planilla confirmada/i)).toBeInTheDocument();
   });
 
-  it("bloquea y deshabilita botones de una decisión ya confirmada", async () => {
+  it("muestra una decisión confirmada como lectura bloqueada", async () => {
     apiRequest.mockImplementation((path, options) => {
       if (!options) return Promise.resolve({ ...ballot, scores: [{ ...ballot.scores[0], score: 4, evaluationState: "SCORED" }] });
       if (path.endsWith("/sync")) return Promise.resolve({ revision: 1, operations: [] });
@@ -68,16 +71,11 @@ describe("JudgeBallotPage", () => {
     });
     render(<JudgeBallotPage ballotId="ballot-1" />);
 
-    await screen.findByText("Comparsa Uno");
+    await screen.findByRole("heading", { name: "Comparsa Uno", level: 2 });
     expect(screen.queryByRole("button", { name: "Quitar decisión" })).not.toBeInTheDocument();
 
-    // First score should have disabled buttons
-    const firstScoreContainer = screen.getByLabelText("Comparsa Uno: Presencia");
-    const disabledButton = within(firstScoreContainer).getByRole("button", { name: "4" });
-    expect(disabledButton).toBeDisabled();
-    expect(disabledButton).toHaveClass("is-selected");
-    const disabledMissing = within(firstScoreContainer).getByRole("button", { name: "No se presentó" });
-    expect(disabledMissing).toBeDisabled();
+    expect(screen.getByLabelText("Comparsa Uno: Presencia, puntuado 4")).toHaveTextContent("Decisión bloqueada");
+    expect(screen.queryByLabelText("Comparsa Uno: Presencia", { selector: '[role="group"]' })).not.toBeInTheDocument();
   });
 
   it("muestra todos los pendientes en un diálogo y no envía una confirmación incompleta", async () => {
@@ -87,7 +85,7 @@ describe("JudgeBallotPage", () => {
     });
     render(<JudgeBallotPage ballotId="ballot-1" />);
 
-    await screen.findByText("Comparsa Uno");
+    await screen.findByRole("heading", { name: "Comparsa Uno", level: 2 });
     const submitButton = screen.getByRole("button", { name: "Confirmar planilla" });
     fireEvent.click(submitButton);
 
@@ -129,8 +127,9 @@ describe("JudgeBallotPage", () => {
     });
     render(<JudgeBallotPage ballotId="ballot-1" />);
 
-    await screen.findByText("Comparsa Uno");
+    await screen.findByRole("heading", { name: "Comparsa Uno", level: 2 });
     fireEvent.click(screen.getByRole("button", { name: "Confirmar planilla" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Confirmar y cerrar" }));
 
     const dialog = await screen.findByRole("dialog", { name: "Faltan decisiones por resolver" });
     expect(within(dialog).getByText("Comparsa Uno")).toBeInTheDocument();
@@ -146,7 +145,7 @@ describe("JudgeBallotPage", () => {
     });
     render(<JudgeBallotPage ballotId="ballot-1" />);
 
-    await screen.findByText("Comparsa Uno");
+    await screen.findByRole("heading", { name: "Comparsa Uno", level: 2 });
     fireEvent.click(screen.getAllByRole("button", { name: "No se presentó" })[0]);
     fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
 

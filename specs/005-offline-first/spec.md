@@ -6,7 +6,7 @@
 - **Fuentes:** RF-13, RF-14 y RNF-01 a RNF-05 de Spec 001; Jira SVC2-38; `docs/source-map.md`.
 - **Dependencias:** I3 y Spec 004 implementadas y validadas.
 - **Decisión de alcance:** el core Offline-First es independiente del `5 por equidad`, nulo para planillas digitales por decisión de producto del 2026-09-01; no crea, interpreta ni resuelve subsanaciones.
-- **Discrepancia de dependencia:** esta spec conserva `PENDING` y `Quitar decisión` conforme a RF-62 de Spec 004. El árbol de trabajo contiene una implementación de Spec 007 que los bloquea; su aprobación pendiente exige reconciliación antes de ampliar o cerrar este contrato.
+- **Dependencia posterior:** Spec 007 deroga RF-62 de Spec 004. Si un incremento futuro reactiva Offline-First, debe preservar la inmutabilidad de una decisión confirmada por ítem y no incluir `Quitar decisión`.
 
 ## Objetivo
 
@@ -62,7 +62,7 @@ Excluye:
 
 ## Criterios de aceptación
 
-- Una planilla descargada se abre sin red y permite guardar localmente 1 a 10, `No se presentó` y `Quitar decisión`.
+- Una planilla descargada se abre sin red y permite guardar localmente la decisión inicial 1 a 10 o `No se presentó`; una decisión confirmada no puede volver a `PENDING` ni incluir `Quitar decisión`.
 - Recobrar conectividad sincroniza una secuencia de operaciones una sola vez, incluso si se repite el envío o se pierde la respuesta.
 - Un lote que intenta confirmar con `PENDING` recibe el mismo rechazo autoritativo de completitud y permanece visible para corrección.
 - Una edición concurrente de otro dispositivo produce conflicto explícito y nunca una sobrescritura silenciosa.

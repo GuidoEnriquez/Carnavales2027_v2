@@ -29,13 +29,13 @@
 
 ## T03 - Adaptar UI de planilla
 
-**RF:** RF-59, RF-60, RF-62.
+**RF:** RF-59, RF-60 y RF-62 histórico, derogado por Spec 007.
 
-- Reemplazar el selector que incluía 0 por controles 1-10, `No se presentó` y `Quitar decisión`.
+- Histórico: reemplazar el selector que incluía 0 por controles 1-10, `No se presentó` y `Quitar decisión`. Spec 007 retiró posteriormente `Quitar decisión`.
 - Representar visualmente los tres estados y los pendientes de confirmación.
 - Conservar uso táctil y responsive.
 
-**Hecho cuando:** pruebas de cliente cubren escala, acción independiente, retorno a pendiente y confirmación bloqueada.
+**Hecho cuando:** evidencia histórica de escala, acción independiente y retorno a pendiente; la inmutabilidad posterior se valida en Spec 007.
 
 ## T04 - Actualizar pruebas de regresión
 

@@ -12,9 +12,15 @@
 | I3 | Planillas, puntajes, secreto, confirmación e inmutabilidad; la reapertura histórica fue reemplazada por Spec 006. | `specs/003-votacion-planillas/validation.md` |
 | Spec 004 | IMPLEMENTADA y VALIDADA: estados `PENDING`/`SCORED`/`NOT_PRESENTED`, completitud obligatoria y diálogo modal de pendientes para el jurado. Aceptada. | `specs/004-completitud-planillas/validation.md` |
 | I4-A / Spec 005 | Código exploratorio de Offline-First preservado; conexión y sincronización se declaran funcionalidad futura, no aceptada para operación. | `specs/005-offline-first/validation.md` |
-| Spec 006 | Implementada y validada automáticamente. La validación manual se declara completada, pero falta registrar entorno y pasos reproducibles. | `specs/006-cierre-sin-reapertura/validation.md` |
-| Spec 007 | Implementación presente en el árbol de trabajo; su `spec.md` declara aprobación pendiente. **[NECESITA ACLARACIÓN]** antes de marcarla aceptada. | `specs/007-inmutabilidad-por-item/spec.md` |
-| Spec 008 | Emisión, inspección y aceptación de accesos auxiliares validadas automáticamente: token hasheado, exclusión de `ADMIN`, login/2FA y altas unificadas con Jurados. Resta comprobación manual de UI. | `specs/008-gestion-accesos/validation.md` |
+| Spec 006 | Implementada y validada automáticamente y de forma manual en Chrome de escritorio con emulación responsive 320px, 768px y escritorio. | `specs/006-cierre-sin-reapertura/validation.md` |
+| Spec 007 | Aprobada, implementada y validada automáticamente y de forma manual en Chrome de escritorio con emulación responsive 320px, 768px y escritorio. | `specs/007-inmutabilidad-por-item/validation.md` |
+| Spec 008 | Emisión, inspección y aceptación de accesos auxiliares validadas: token hasheado, exclusión de `ADMIN`, login/2FA, altas unificadas con Jurados y UI manualmente comprobada en Chrome responsive. | `specs/008-gestion-accesos/validation.md` |
+
+## Incremento vigente
+
+| Incremento | Estado | Evidencia principal |
+|---|---|---|
+| Spec 009 | Implementación y validación automática completadas. Pendiente la comprobación manual de responsive, teclado y emulación táctil en 390x844, 768x1024 y 1440x900. | `specs/009-experiencia-operativa-jurado/validation.md` |
 
 ## Diferido explícitamente
 
@@ -30,7 +36,7 @@
 
 ## Próxima puerta SDD
 
-Permanecen pendientes un nuevo ciclo SDD para conexión y sincronización Offline-First, la evidencia reproducible de la comprobación manual declarada para Spec 006, la aprobación formal de Spec 007 y la comprobación manual de UI de Spec 008. Ninguna de ellas habilita penalizaciones, escrutinio, resultados ni actas.
+El incremento vigente es Spec 009 - Experiencia operativa del jurado. Offline-First, penalizaciones, escrutinio, resultados y actas continúan requiriendo sus propias specs aprobadas.
 
 Antes de iniciar cualquier incremento posterior (como Escrutinio, Resultados o Penalizaciones), se debe redactar y aprobar su especificación e iniciar un nuevo ciclo:
 
@@ -44,9 +50,9 @@ Toda spec que modifique una pantalla operativa debe declarar el criterio de uso 
 
 ## Verificación de referencia
 
-Al 2026-09-01, las suites ejecutadas reportaron:
+Al 2026-09-01, la última ejecución registrada para Spec 009 reportó:
 
-- DB: 27 passed.
-- API: 60 passed.
-- Cliente: 52 passed.
+- Cliente: 53 passed.
 - Build de cliente: exitoso.
+
+Las últimas evidencias aceptadas de API y persistencia permanecen en las validaciones de Specs 007 y 008: API 60 passed y DB 27 passed.

@@ -23,7 +23,7 @@
 | RF-57, RF-58 | Migraciones 046-047 y `ballots.test.js` prueban `PENDING`/NULL, `SCORED`/1-10 y `NOT_PRESENTED`/0, además de combinaciones inválidas rechazadas. |
 | RF-59, RF-60 | `JudgeBallotPage.jsx` y su prueba muestran botones 1-10 y la acción separada `No se presentó`; 0 no aparece como puntuación ordinaria. |
 | RF-61 | `voting-api.test.js` comprueba que la confirmación y el cierre rechazan ítems pendientes y devuelven ítem, jurado y comparsa; `AdminVotingPage.test.jsx` verifica que ADMIN recibe ese detalle. |
-| RF-62 | `JudgeBallotPage.test.jsx` verifica la acción explícita `Quitar decisión`, que vuelve el score a `PENDING`. |
+| RF-62 | Evidencia histórica. El requisito queda derogado por Spec 007; `JudgeBallotPage.test.jsx` ahora verifica la confirmación e inmutabilidad por ítem. |
 | RF-63 | `ballot-service.js` registra `SCORE_DECISION_SAVED` con actor y `scoreId`, sin el valor del score. |
 | RF-64 | Migraciones 035-046 y Spec 006 preservan inmutabilidad; `049_disable_ballot_reopen.sql` impide nuevas reaperturas y permite finalizar solo registros históricos `REOPENED`. |
 | RF-65 | Las dos rutas de omisión/subsanación ya no están montadas; migración 047 normaliza borradores heredados y permite resolverlos sin modificar la historia bloqueada. |

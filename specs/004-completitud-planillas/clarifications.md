@@ -10,7 +10,7 @@
 | Cero | Solo `NOT_PRESENTED`, registrado por acción explícita y no como opción de la escala. |
 | Pendiente | `PENDING` almacena `NULL` y bloquea confirmar/cerrar. |
 | Modal de pendientes | `Confirmar planilla` sigue habilitado; al pulsarlo con pendientes abre un diálogo modal y no envía la confirmación. El diálogo lista comparsa, rubro e ítem, se cierra con acción explícita o `Escape`, recibe el foco y lo devuelve al botón disparador. |
-| Corrección previa | El jurado puede quitar una decisión y volver a `PENDING` mientras la planilla sea editable. |
+| Corrección previa | Histórico, derogado por Spec 007: el jurado podía quitar una decisión y volver a `PENDING` mientras la planilla fuera editable. Actualmente, una decisión confirmada no puede revertirse. |
 | Subsanación | No forma parte del flujo de nuevas planillas. La entidad histórica se conserva y el procedimiento operativo queda para el incremento de escrutinio. |
 | `5 por equidad` | Nula para planillas digitales por decisión de producto del 2026-09-01. La completitud obligatoria evita la omisión humana que buscaba subsanar; no se implementa ningún flujo asociado. |
 | Migración de datos | La migración es incremental y no reescribe scores, auditoría ni subsanaciones históricas. |
