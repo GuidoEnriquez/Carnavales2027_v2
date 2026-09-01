@@ -20,7 +20,8 @@
 
 | Incremento | Estado | Evidencia principal |
 |---|---|---|
-| Spec 009 | Implementación y validación automática completadas. Pendiente la comprobación manual de responsive, teclado y emulación táctil en 390x844, 768x1024 y 1440x900. | `specs/009-experiencia-operativa-jurado/validation.md` |
+| Spec 009 | Implementación y validación automática completadas. **Pendiente comprobación manual** de responsive, teclado y emulación táctil en 390x844, 768x1024 y 1440x900 (la realiza el responsable). | `specs/009-experiencia-operativa-jurado/validation.md` |
+| Spec 010 | Implementada y validada automáticamente (DB 37, API 71, cliente 53, build OK). Pendiente confirmación del criterio 1 de desempate y autoría del sorteo. | `specs/010-resultados/validation.md` |
 
 ## Diferido explícitamente
 

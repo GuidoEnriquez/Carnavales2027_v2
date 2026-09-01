@@ -10,6 +10,7 @@ import { createAssignmentsRouter } from "./routes/assignments.routes.js";
 import { createVotingRouter } from "./routes/voting.routes.js";
 import { sendKnownError } from "./routes/http-errors.js";
 import { requireTrustedOrigin } from "./auth/trusted-origin.js";
+import { createResultsRouter } from "./routes/results.routes.js";
 
 export function createApp({
   authHandler,
@@ -42,6 +43,9 @@ export function createApp({
       createUser,
     }));
     app.use("/api/v1", createVotingRouter({
+      requireSession: createRequireSession(getSession),
+    }));
+    app.use("/api/v1", createResultsRouter({
       requireSession: createRequireSession(getSession),
     }));
     app.use("/api/v1", createAssignmentsRouter({

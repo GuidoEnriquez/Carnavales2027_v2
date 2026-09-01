@@ -7,6 +7,18 @@ export function sendKnownError(response, error) {
     response.status(400).json({ code: "VALIDATION_ERROR", message: error.message });
     return true;
   }
+  if (error.message === "RESULTS_NOT_RELEASED" || error.message === "RESULTS_ACCESS_DENIED") {
+    response.status(403).json({ code: error.message });
+    return true;
+  }
+  if (error.message === "TIE_BREAKER_REQUIRES_MANUAL_DRAW") {
+    response.status(409).json({
+      code: error.message,
+      remainingTroupeIds: error.remainingTroupeIds ?? [],
+      tieBreakerContext: error.tieBreakerContext ?? {},
+    });
+    return true;
+  }
   if (error.message === "EVENT_LOCKED" || error.message === "LAST_ADMIN_REQUIRED") {
     response.status(409).json({ code: error.message });
     return true;

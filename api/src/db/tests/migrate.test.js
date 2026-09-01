@@ -78,6 +78,7 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
          || filename === "050_add_comisario_role.sql"
      || filename === "051_operational_invitations.sql"
      || filename === "052_harden_operational_invitations.sql"
+     || filename === "053_rubric_kind_results_stage.sql"
   )));
 
   const status = await getMigrationStatus();
@@ -340,6 +341,11 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
     {
       filename: "052_harden_operational_invitations.sql",
       version: "052",
+      applied: true,
+    },
+    {
+      filename: "053_rubric_kind_results_stage.sql",
+      version: "053",
       applied: true,
     }
   ]);

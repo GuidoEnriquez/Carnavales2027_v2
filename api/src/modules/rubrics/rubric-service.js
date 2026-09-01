@@ -3,6 +3,7 @@ import { requireConfiguringEvent, requireEventExists } from "../events/event-ser
 
 const EVALUATION_TARGETS = new Set(["TROUPE", "NOMINATION"]);
 const SUBJECT_TYPES = new Set(["PERSON", "COUPLE", "GROUP", "FIGURE", "ELEMENT", "OTHER"]);
+const RUBRIC_KINDS = new Set(["NOMINATIVE", "RANDOM"]);
 
 function text(value, name) {
   if (typeof value !== "string" || !value.trim()) throw new TypeError(`${name} debe ser texto no vacío.`);
@@ -19,7 +20,13 @@ function boolean(value, name) {
   return value;
 }
 
-function rubricValues({ name, code, evaluationTarget, expectedSubjectType, active = true }) {
+function rubricKind(value) {
+  const kind = value === undefined ? "NOMINATIVE" : text(value, "rubricKind");
+  if (!RUBRIC_KINDS.has(kind)) throw new TypeError("rubricKind inválido.");
+  return kind;
+}
+
+function rubricValues({ name, code, evaluationTarget, expectedSubjectType, active = true, rubricKind: kind = "NOMINATIVE" }) {
   const target = text(evaluationTarget, "evaluationTarget");
   if (!EVALUATION_TARGETS.has(target)) throw new TypeError("evaluationTarget inválido.");
   let subjectType = null;
@@ -35,6 +42,7 @@ function rubricValues({ name, code, evaluationTarget, expectedSubjectType, activ
     evaluationTarget: target,
     expectedSubjectType: subjectType,
     active: boolean(active, "active"),
+    rubricKind: rubricKind(kind),
   };
 }
 
@@ -42,11 +50,11 @@ export async function createRubric({ client = getPool(), eventId, ...input }) {
   await requireConfiguringEvent({ client, eventId });
   const values = rubricValues(input);
   const { rows } = await client.query(
-    `INSERT INTO rubric(event_id,name,code,evaluation_target,expected_subject_type,active)
-     VALUES($1,$2,$3,$4,$5,$6)
+    `INSERT INTO rubric(event_id,name,code,evaluation_target,expected_subject_type,active,rubric_kind)
+     VALUES($1,$2,$3,$4,$5,$6,$7)
      RETURNING id,event_id AS "eventId",name,code,evaluation_target AS "evaluationTarget",
-               expected_subject_type AS "expectedSubjectType",active`,
-    [text(eventId, "eventId"), values.name, values.code, values.evaluationTarget, values.expectedSubjectType, values.active],
+               expected_subject_type AS "expectedSubjectType",active,rubric_kind AS "rubricKind"`,
+    [text(eventId, "eventId"), values.name, values.code, values.evaluationTarget, values.expectedSubjectType, values.active, values.rubricKind],
   );
   return rows[0];
 }
@@ -55,7 +63,7 @@ export async function listRubrics({ client = getPool(), eventId }) {
   await requireEventExists({ client, eventId });
   const { rows } = await client.query(
     `SELECT id, event_id AS "eventId", name, code, evaluation_target AS "evaluationTarget",
-            expected_subject_type AS "expectedSubjectType", active
+            expected_subject_type AS "expectedSubjectType", active, rubric_kind AS "rubricKind"
        FROM rubric
       WHERE event_id = $1
       ORDER BY code`,
@@ -69,7 +77,7 @@ export async function listRubrics({ client = getPool(), eventId }) {
 export async function getRubric({ client = getPool(), rubricId }) {
   const { rows } = await client.query(
     `SELECT id, event_id AS "eventId", name, code, evaluation_target AS "evaluationTarget",
-            expected_subject_type AS "expectedSubjectType", active
+            expected_subject_type AS "expectedSubjectType", active, rubric_kind AS "rubricKind"
        FROM rubric WHERE id=$1`,
     [text(rubricId, "rubricId")],
   );
@@ -104,7 +112,7 @@ export async function updateRubric({ client = null, rubricId, ...input }) {
   }
   const { rows } = await client.query(
     `SELECT id,event_id AS "eventId",name,code,evaluation_target AS "evaluationTarget",
-            expected_subject_type AS "expectedSubjectType",active
+            expected_subject_type AS "expectedSubjectType",active,rubric_kind AS "rubricKind"
        FROM rubric WHERE id=$1 FOR UPDATE`,
     [text(rubricId, "rubricId")],
   );
@@ -119,14 +127,15 @@ export async function updateRubric({ client = null, rubricId, ...input }) {
       ? null
       : input.expectedSubjectType === undefined ? current.expectedSubjectType : input.expectedSubjectType,
     active: input.active === undefined ? current.active : input.active,
+    rubricKind: input.rubricKind === undefined ? current.rubricKind : input.rubricKind,
   });
   const { rows: updatedRows } = await client.query(
-    `UPDATE rubric SET name=$2,code=$3,evaluation_target=$4,expected_subject_type=$5,active=$6,
+    `UPDATE rubric SET name=$2,code=$3,evaluation_target=$4,expected_subject_type=$5,active=$6,rubric_kind=$7,
                        updated_at=CURRENT_TIMESTAMP
       WHERE id=$1
       RETURNING id,event_id AS "eventId",name,code,evaluation_target AS "evaluationTarget",
-                expected_subject_type AS "expectedSubjectType",active`,
-    [rubricId, values.name, values.code, values.evaluationTarget, values.expectedSubjectType, values.active],
+                expected_subject_type AS "expectedSubjectType",active,rubric_kind AS "rubricKind"`,
+    [rubricId, values.name, values.code, values.evaluationTarget, values.expectedSubjectType, values.active, values.rubricKind],
   );
   return updatedRows[0];
 }
