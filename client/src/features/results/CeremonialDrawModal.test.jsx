@@ -15,7 +15,6 @@ vi.mock("./useCeremonialDraw.js", () => ({
 const props = {
   eventId: "event-1",
   remainingTroupeIds: ["troupe-a", "troupe-b"],
-  appliedCriteria: ["WON_NOMINATIVE_RUBRICS_COUNT", "BATTERY_RUBRIC_WINNER"],
   tiedTroupeNames: [
     { id: "troupe-a", name: "Comparsa A" },
     { id: "troupe-b", name: "Comparsa B" },
@@ -58,7 +57,6 @@ describe("CeremonialDrawModal", () => {
     expect(executeMock).toHaveBeenCalledWith({
       eventId: "event-1",
       remainingTroupeIds: ["troupe-a", "troupe-b"],
-      appliedCriteria: ["WON_NOMINATIVE_RUBRICS_COUNT", "BATTERY_RUBRIC_WINNER"],
     });
     expect(getByText(/Comparsa B/)).toBeVisible();
     expect(props.onResolved).toHaveBeenCalledWith(draw);

@@ -128,6 +128,14 @@ test("ADMIN emite y un invitado acepta un acceso operativo seguro", {
     assert.equal(forbiddenResponse.status, 400);
     assert.deepEqual(await forbiddenResponse.json(), { code: "INVALID_OPERATIONAL_ROLE" });
 
+    const escribanoResponse = await fetch(`${base}/api/v1/users/invitations`, {
+      method: "POST",
+      headers: adminHeaders,
+      body: JSON.stringify({ email: `escribano-${randomUUID()}@example.test`, roleCode: "ESCRIBANO" }),
+    });
+    assert.equal(escribanoResponse.status, 201);
+    assert.equal((await escribanoResponse.json()).roleCode, "ESCRIBANO");
+
     const expiredResponse = await fetch(`${base}/api/v1/users/invitations`, {
       method: "POST",
       headers: adminHeaders,

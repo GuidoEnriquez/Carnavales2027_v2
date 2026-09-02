@@ -2,7 +2,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { auditEvent } from "../../audit/audit-service.js";
 import { getPool } from "../../db/pool.js";
 
-const operationalRoles = new Set(["VEEDOR", "COMISARIO", "SCRUTINEER"]);
+const operationalRoles = new Set(["VEEDOR", "COMISARIO", "SCRUTINEER", "ESCRIBANO"]);
 const invitationLockKey = "carnavales2027_v2_operational_invitation";
 
 function normalizeEmail(value) {
@@ -48,7 +48,7 @@ export const listOperationalUsers = async () => {
     SELECT u.id, u.name, u.email, array_agg(ur.role_code) as roles
     FROM "user" u
     JOIN user_role ur ON u.id = ur.user_id
-     WHERE ur.role_code IN ('VEEDOR', 'COMISARIO', 'SCRUTINEER')
+      WHERE ur.role_code IN ('VEEDOR', 'COMISARIO', 'SCRUTINEER', 'ESCRIBANO')
     GROUP BY u.id, u.name, u.email
     ORDER BY u.name ASC
   `);

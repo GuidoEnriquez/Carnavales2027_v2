@@ -6,8 +6,11 @@
 
 - I1/I1-C: configuración operativa, validado.
 - I2-A/I2-B: padrón, invitaciones, cupos, asignaciones y reemplazos, validados.
-- I3 + Spec 004 + Spec 006: planillas, puntuaciones, secreto, completitud y cierre sin reapertura, implementados y validados automáticamente y manualmente en Chrome de escritorio con emulación responsive.
-- Diferido: penalizaciones, resultados, escrutinio, actas y conexión/sincronización Offline-First. Spec 005 conserva código exploratorio, pero no es una capacidad operativa aceptada.
+- I3 + Specs 004, 006 y 007: planillas, puntuaciones, secreto, completitud, cierre sin reapertura e inmutabilidad por ítem, implementados y validados.
+- Spec 010: resultados, rankings y desempate por criterios 1 y 2 implementados; reabierta para guardias de liberación íntegra.
+- Spec 011: sorteo ceremonial implementado y pendiente de comprobación manual.
+- Spec 012: cliente online únicamente implementado y pendiente de comprobación manual.
+- Diferido: penalizaciones, actas, publicación externa y Offline-First operativo. Spec 005 conserva compatibilidad exploratoria, no capacidad aceptada.
 - Spec 004 implementa prevención de omisiones: las nuevas planillas exigen `SCORED` (1 a 10) o `NOT_PRESENTED` (0 por acción explícita) antes de confirmar o cerrar. `PENDING` bloquea ambas operaciones.
 - Decisión de producto del 2026-09-01: el `5 por equidad` es nulo para planillas digitales. La completitud obligatoria evita la omisión humana que buscaba subsanar; no existe flujo, cálculo ni ajuste operativo asociado.
 - I4-A Offline-First (Spec 005) conserva código exploratorio. Por decisión de producto del 2026-09-01, conexión y sincronización son una funcionalidad futura; su activación, modificación o retiro requiere un nuevo ciclo SDD.

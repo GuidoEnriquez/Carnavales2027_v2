@@ -1,7 +1,7 @@
 /**
  * Verifica que el usuario autenticado tenga uno de los roles permitidos.
  * Usado por el endpoint de sorteo ceremonial (Spec 011) que admite
- * SCRUTINEER exclusivamente. En la UI se presenta como "Escrutador / Escribano".
+ * SCRUTINEER, ESCRIBANO o ADMIN.
  *
  * Comportamiento idéntico al de `requireResultsAccess`: setea `request.roles`
  * con la lista de roles del usuario y delega al siguiente middleware si pasa.
@@ -9,7 +9,7 @@
 
 import { getPool } from "../db/pool.js";
 
-const ALLOWED_ROLES = ["SCRUTINEER"];
+const ALLOWED_ROLES = ["ADMIN", "SCRUTINEER", "ESCRIBANO"];
 
 export async function requireCeremonialDrawAccess(request, response, next) {
   try {

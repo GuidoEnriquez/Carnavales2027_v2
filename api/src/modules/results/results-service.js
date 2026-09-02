@@ -246,6 +246,7 @@ export function resolveTieBreaker({ tiedTroupeIds, rubricRankings, overallRankin
   const error = new Error("TIE_BREAKER_REQUIRES_MANUAL_DRAW");
   error.code = "TIE_BREAKER_REQUIRES_MANUAL_DRAW";
   error.remainingTroupeIds = afterCriterion1;
+  error.appliedCriteria = ["WON_NOMINATIVE_RUBRICS_COUNT", "BATTERY_RUBRIC_WINNER"];
   error.tieBreakerContext = {
     wonRubricsCounts: counts,
     batteryRubricWinnerId: batteryWinner,
@@ -297,6 +298,26 @@ export async function releaseResults({ eventId, actorUserId, client: injectedCli
       [id],
     );
     if (!events[0]) throw new Error("EVENT_NOT_FOUND");
+
+    const { rows: incomplete } = await client.query(
+      `SELECT 1
+       FROM night n
+       LEFT JOIN voting_window vw ON vw.night_id = n.id
+       WHERE n.event_id = $1
+         AND n.kind = 'COMPETITION'
+         AND (vw.night_id IS NULL OR vw.status <> 'CLOSED')
+       UNION ALL
+       SELECT 1 FROM ballot WHERE event_id = $1 AND status <> 'SUBMITTED'
+       UNION ALL
+       SELECT 1 FROM ballot_score WHERE event_id = $1 AND evaluation_state = 'PENDING'
+       LIMIT 1`,
+      [id],
+    );
+    if (incomplete.length > 0) {
+      const error = new Error("RESULTS_NOT_READY");
+      error.code = "RESULTS_NOT_READY";
+      throw error;
+    }
 
     const { rows: existing } = await client.query(
       "SELECT event_id FROM results_release WHERE event_id = $1",

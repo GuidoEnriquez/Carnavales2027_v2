@@ -2,7 +2,7 @@
 
 ## Estado
 
-- **Fase SDD:** funcionalidad futura. Existe código exploratorio, pero conexión y sincronización no están aceptadas para operación; su activación, modificación o retiro requiere un nuevo ciclo SDD.
+- **Fase SDD:** funcionalidad futura. Spec 012 retiró su uso del cliente actual; la outbox y `/sync` permanecen solo como compatibilidad transitoria para clientes antiguos, no como capacidad operativa aceptada.
 - **Fuentes:** RF-13, RF-14 y RNF-01 a RNF-05 de Spec 001; Jira SVC2-38; `docs/source-map.md`.
 - **Dependencias:** I3 y Spec 004 implementadas y validadas.
 - **Decisión de alcance:** el core Offline-First es independiente del `5 por equidad`, nulo para planillas digitales por decisión de producto del 2026-09-01; no crea, interpreta ni resuelve subsanaciones.

@@ -12,17 +12,18 @@ function getTroupeName(troupes, id) {
 export function CeremonialDrawModal({
   eventId,
   remainingTroupeIds,
-  appliedCriteria = [],
   tiedTroupeNames = [],
   onClose,
   onResolved,
   triggerRef,
 }) {
   const startButtonRef = useRef(null);
+  const dialogRef = useRef(null);
   const [phase, setPhase] = useState("IDLE");
   const [resolvedDraw, setResolvedDraw] = useState(null);
   const { execute, error } = useCeremonialDraw();
   const countdownRunningRef = useRef(false);
+  const phaseRef = useRef("IDLE");
 
   const close = useCallback(() => {
     if (triggerRef?.current instanceof HTMLElement) triggerRef.current.focus();
@@ -32,26 +33,44 @@ export function CeremonialDrawModal({
   const handleComplete = useCallback(async () => {
     setPhase("REVEALING");
     try {
-      const result = await execute({ eventId, remainingTroupeIds, appliedCriteria });
+      const result = await execute({ eventId, remainingTroupeIds });
       setResolvedDraw(result);
       setPhase("DONE");
       onResolved?.(result);
     } catch {
       setPhase("IDLE");
     }
-  }, [appliedCriteria, eventId, execute, onResolved, remainingTroupeIds]);
+  }, [eventId, execute, onResolved, remainingTroupeIds]);
 
   const countdown = useCountdown(COUNTDOWN_SECONDS, { onComplete: handleComplete });
 
   countdownRunningRef.current = countdown.isRunning;
+  phaseRef.current = phase;
 
   useEffect(() => {
     startButtonRef.current?.focus();
     const onKeyDown = (event) => {
-      if (event.key !== "Escape") return;
-      event.preventDefault();
-      if (countdownRunningRef.current) countdown.cancel();
-      close();
+      if (event.key === "Escape") {
+        event.preventDefault();
+        if (phaseRef.current === "REVEALING") return;
+        if (countdownRunningRef.current) countdown.cancel();
+        close();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = Array.from(dialogRef.current?.querySelectorAll(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ) ?? []);
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
@@ -77,6 +96,7 @@ export function CeremonialDrawModal({
     <div className="ceremonial-draw-overlay" role="presentation">
       <section
         className="ceremonial-draw-modal"
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="ceremonial-draw-title"

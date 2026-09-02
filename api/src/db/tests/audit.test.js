@@ -1,12 +1,21 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
-import { auditEvent } from "../../audit/audit-service.js";
+import { auditEvent, canonicalizeJson, hashCeremonialDraw } from "../../audit/audit-service.js";
 import { grantRole } from "../../auth/role-service.js";
 import { closePool, getPool } from "../pool.js";
 import { migrate } from "../migrate.js";
 
 const originalDatabaseUrl = process.env.DATABASE_URL;
+
+test("la cadena ceremonial canoniza objetos y enlaza hashes", () => {
+  assert.equal(canonicalizeJson({ z: [true, null], a: "valor" }), '{"a":"valor","z":[true,null]}');
+  const first = hashCeremonialDraw({ previousHash: "0".repeat(64), payload: { b: 2, a: 1 } });
+  const second = hashCeremonialDraw({ previousHash: first, payload: { a: 1, b: 2 } });
+  assert.match(first, /^[0-9a-f]{64}$/);
+  assert.match(second, /^[0-9a-f]{64}$/);
+  assert.notEqual(first, second);
+});
 
 function restoreDatabaseUrl() {
   if (originalDatabaseUrl === undefined) {

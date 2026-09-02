@@ -6,16 +6,16 @@
 
 **Alcance:** crear `api/src/modules/results/ceremonial-draw-service.js` con funciones puras.
 
-- `buildSeed()` → número seguro derivado de `Date.now() ^ crypto.randomBytes(8).readBigUInt64BE()` para trazabilidad del sorteo.
+- `buildSeed()` → nonce hexadecimal generado con `crypto.randomBytes(16)` para trazabilidad del sorteo.
 - `selectCeremonialWinner({ pool, seed })`:
   - Si `pool.length === 0` → `throw { code: 'TIE_BREAKER_EMPTY_DRAW_POOL' }`.
   - Si `pool.length === 1` → retorna `{ winnerTroupeId: pool[0], seed, randomValue: 0, method: 'POOL_SINGLETON' }`.
-  - Caso normal → `Math.floor(Math.random() * pool.length)` con `seed` documentado en el evento, `method: 'MATH_RANDOM_TRACEABLE'`.
+- Caso normal → `crypto.randomInt(pool.length)` con nonce documentado, `method: 'CRYPTO_RANDOM_INT'`.
 - `composeAuditEvent({ eventId, tiedTroupeIds, appliedCriteria, seed, randomValue, winnerTroupeId, actor, occurredAt, correlationId })` → payload listo para `audit_event` (sin tocar la BD).
 
 **RF cubierto:** RF-99 (validación de pool), RF-101 (selección aleatoria seedeada), RF-102 (estructura del evento de auditoría).
 
-**Estado (2026-09-01):** ✅ COMPLETADO.
+**Estado (2026-09-02):** ✅ COMPLETADO y actualizado al contrato aprobado.
 
 **Hecho cuando:**
 - ✅ Archivo creado: `api/src/modules/results/ceremonial-draw-service.js`.
@@ -25,8 +25,7 @@
 - ✅ Suite cliente: 53/53 passed (sin cambios).
 
 **Notas de implementación:**
-- `buildSeed()` no alimenta `Math.random()` (no acepta seed en Node); es un entero registrado para futura migración a PRNG seedeable.
-- `selectCeremonialWinner` acepta un parámetro opcional `random` (default `Math.random`) que permite inyectar stubs en tests y deja preparada la migración a `crypto.randomInt()` sin cambiar la firma.
+- El nonce no alimenta la selección ni afirma reproducibilidad; `randomIntFn` permite inyectar un índice en tests.
 - `composeAuditEvent` permite `tiedTroupeIds.length === 1` solo cuando `method === 'POOL_SINGLETON'` (caso degenerado). En la ruta HTTP de T02 esto se valida antes para no persistir auditoría sin empate real.
 
 ## T02 — Endpoint HTTP y autorización
@@ -34,13 +33,13 @@
 **Alcance:** agregar ruta en `api/src/routes/results.routes.js`.
 
 - `POST /api/v1/events/{eventId}/tie-breaker/ceremonial-draw`:
-  - Valida `eventId` y body `{ remainingTroupeIds: string[], appliedCriteria: string[] }`.
-  - Verifica 2FA y rol exclusivo `ESCRIBANO`.
+  - Valida `eventId` y body `{ remainingTroupeIds: string[] }`.
+  - Verifica 2FA y rol `ADMIN`, `SCRUTINEER` o `ESCRIBANO`.
   - Verifica `results_release` para el evento (RF-94 + Spec 010).
   - Verifica que el empate siga vigente llamando a `determineBestTroupe` con los mismos rankings (mitiga `TIE_BREAKER_STALE`).
   - Verifica que `remainingTroupeIds` coincida exactamente con el pool vigente (RF-99).
   - Verifica que no exista ya un `RESULTS_TIE_BREAKER_CEREMONIAL_DRAW` para ese empate (RF-104, `TIE_BREAKER_ALREADY_DRAWN`).
-  - Llama a `selectCeremonialWinner` (T01), compone el evento de auditoría (T01), lo persiste en `audit_event` (RF-102), y retorna `{ winnerTroupeId, seed, randomValue, method, auditEventId }`.
+  - Deriva criterios y pool final del servidor, llama a T01 y persiste una auditoría SHA-256 encadenada.
 - Errores: 403 (rol/2FA), 409 (`RESULTS_NOT_RELEASED`, `TIE_BREAKER_NOT_REQUIRED`, `TIE_BREAKER_ALREADY_DRAWN`, `TIE_BREAKER_STALE`), 422 (`TIE_BREAKER_EMPTY_DRAW_POOL`, `TIE_BREAKER_INVALID_DRAW_INPUT`).
 
 **RF cubierto:** RF-98 (endpoint), RF-103 (autorización), RF-104 (idempotencia).
@@ -50,7 +49,7 @@
 - Tests de integración `results-ceremonial-draw.test.js` cubren: éxito, rol no autorizado (403), resultado no liberado (409), `troupeId` inválido (422), doble sorteo (409), pool vacío (422).
 - Suite API completa pasa.
 
-**Estado (2026-09-01):** ✅ COMPLETADO.
+**Estado (2026-09-02):** ✅ COMPLETADO y actualizado al contrato aprobado.
 
 **Evidencia:** test de integración `api/src/tests/results-ceremonial-draw.test.js` pasa (1/1); suite API completa pasa (90/90); suite DB pasa (37/37). Migraciones 054 y 055 aplicadas en la base de test.
 

@@ -116,6 +116,7 @@ export function AdminJudgesPage() {
               <option value="VEEDOR">Veedor</option>
               <option value="COMISARIO">Comisario</option>
               <option value="SCRUTINEER">Escrutador</option>
+              <option value="ESCRIBANO">Escribano</option>
             </select>
           </label>
           {creationType === "JUDGE" && <label>Nombre completo<input name="name" autoComplete="name" required /></label>}

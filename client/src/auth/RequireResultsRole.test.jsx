@@ -5,19 +5,18 @@ import { RequireResultsRole } from "./RequireResultsRole.jsx";
 afterEach(() => cleanup());
 
 describe("RequireResultsRole", () => {
-  it("deniega la pantalla de escrutinio al ADMIN", () => {
-    const { getByText, queryByText } = render(
+  it("permite la pantalla de escrutinio al ADMIN", () => {
+    const { getByText } = render(
       <RequireResultsRole session={{ status: "authenticated", roles: ["ADMIN"] }}>
         <p>Escrutinio privado</p>
       </RequireResultsRole>,
     );
-    expect(getByText(/no tenés permisos/i)).toBeVisible();
-    expect(queryByText("Escrutinio privado")).not.toBeInTheDocument();
+    expect(getByText("Escrutinio privado")).toBeVisible();
   });
 
-  it("permite la pantalla de escrutinio al SCRUTINEER (Escrutador / Escribano)", () => {
+  it("permite la pantalla de escrutinio al ESCRIBANO", () => {
     const { getByText } = render(
-      <RequireResultsRole session={{ status: "authenticated", roles: ["SCRUTINEER"] }}>
+      <RequireResultsRole session={{ status: "authenticated", roles: ["ESCRIBANO"] }}>
         <p>Escrutinio privado</p>
       </RequireResultsRole>,
     );

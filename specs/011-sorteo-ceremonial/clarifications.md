@@ -2,16 +2,17 @@
 
 QA de Spec 011. Detecta ambigüedades y huecos previo a la implementación.
 
-## Ambigüedad de implementación — pendiente de revisión
+## Decisiones aprobadas — 2026-09-02
 
-- **Seed del `Math.random()`:** generado en el servidor por defecto. Documentado en `spec.md` §Dudas; si el responsable prefiere cliente-first, se ajustará el flujo antes de implementar T02.
-- **Paso de confirmación verbal pre-registro:** mencionado en `spec.md` §Dudas. La versión inicial no lo incluye; queda como decisión del responsable.
-- **`RESULTS_TIE_BREAKER_CORRECTION`:** fuera de alcance de Spec 011 (ver RF-104). Si el operador necesita corregir un sorteo ceremonial ya registrado, se deberá redactar una spec posterior específica.
+- La selección se genera en el servidor con `crypto.randomInt()`. Un nonce criptográfico se conserva para trazabilidad, no para reproducir el resultado.
+- El pool efectivo y los criterios aplicados se recalculan en el servidor; el cliente solo propone el pool que visualiza.
+- El hash ceremonial usa JCS (RFC 8785), SHA-256, hash génesis de 64 ceros y una cadena nueva sin reescritura del historial previo.
+- `ESCRIBANO` se incorpora al circuito de invitaciones operativas existente y requiere 2FA para ejecutar el sorteo.
 
 ## Decisiones registradas
 
-- **RF-101 (generador aleatorio):** `Math.random()` con seed determinístico (`Date.now() ^ crypto.randomBytes(8)` al inicio del request). Documentado en `spec.md` §Migración futura: el camino de reemplazo a `crypto.randomInt()` está previsto y no requiere cambio de contrato.
-- **RF-99 (entrada válida):** el endpoint valida que los `troupeId` solicitados coincidan exactamente con `remainingTroupeIds` del empate. Si la COC exige aceptar también nuevas comparsas (por ejemplo, si aparece un empate no detectado antes), se necesitará un nuevo endpoint o una variante — fuera de alcance.
+- **RF-101 (generador aleatorio):** `crypto.randomInt()` selecciona el índice; no se emplea un PRNG seedeable.
+- **RF-99 (entrada válida):** el endpoint valida que el pool solicitado coincida exactamente con los `remainingTroupeIds` posteriores a criterios 1 y 2.
 - **RF-103 (roles):** `SCRUTINEER` exclusivo, mostrado como **Escrutador / Escribano**, con 2FA verificado. Decisión del responsable: ADMIN no debe ver ni operar el escrutinio; se aplica mínimo privilegio y separación de funciones.
 - **RF-104 (reversibilidad cero):** no se permite rehacer un sorteo ceremonial ya registrado. Cualquier corrección posterior genera un nuevo evento de auditoría; el resultado original permanece en el log append-only. Decisión alineada con el invariante de inmutabilidad del proyecto (ver AGENTS.md §Invariantes de ingeniería).
 

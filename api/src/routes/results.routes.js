@@ -48,7 +48,7 @@ export function createResultsRouter({ requireSession }) {
   });
 
   // Spec 011 — Sorteo ceremonial con conteo regresivo (criterio 3 de desempate).
-  // Rol: SCRUTINEER (visible como Escrutador / Escribano). 2FA obligatorio.
+  // Roles: ADMIN, SCRUTINEER o ESCRIBANO. 2FA obligatorio.
   const ceremonialAuthorized = [
     requireSession,
     requireTwoFactor,
@@ -64,9 +64,8 @@ export function createResultsRouter({ requireSession }) {
         const result = await executeCeremonialDraw({
           eventId: request.params.eventId,
           remainingTroupeIds: body.remainingTroupeIds,
-          appliedCriteria: body.appliedCriteria ?? [],
           actorUserId: request.user.id,
-          correlationId: body.correlationId ?? null,
+          actorRole: request.roles?.[0] ?? null,
         });
         response.status(201).json(result);
       } catch (error) {

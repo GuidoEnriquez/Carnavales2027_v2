@@ -4,18 +4,14 @@
 
 - Implementar una sola tarea por vez y verificarla antes de avanzar.
 - No modificar voto/planilla ni ampliar penalizaciones, actas u offline.
-- El criterio 1 de desempate está marcado `[NECESITA ACLARACIÓN]`; su lógica debe quedar aislada y señalada para confirmación del responsable.
+- El criterio 1 de desempate está confirmado por Confluence C2. No modificar el alcance del sorteo ceremonial, que pertenece a Spec 011.
 
 ## Estado
 
 | Tarea | Estado | Evidencia |
 |---|---|---|
-| T01 | Pendiente | — |
-| T02 | Pendiente | — |
-| T03 | Pendiente | — |
-| T04 | Pendiente | — |
-| T05 | Pendiente | — |
-| T06 | Pendiente | — |
+| T01–T06 | Completadas históricamente | Evidencia en `validation.md`; el cierre queda reabierto por T07. |
+| T07 | Pendiente | Guardia de integridad de liberación (RF-94a). |
 
 ## T01 — Servicio de consolidación de puntajes
 
@@ -67,3 +63,12 @@
 - Confirmar ausencia de penalizaciones, actas u offline.
 
 **Hecho cuando:** la matriz cubre RF-89 a RF-97 con evidencia real y no hay errores de diff.
+
+## T07 — Integridad de liberación
+
+**RF:** RF-94a.
+- Antes de crear `results_release`, verificar en la misma transacción que no existen ventanas competitivas abiertas, planillas no confirmadas ni scores `PENDING` del evento.
+- Responder `409 RESULTS_NOT_READY` sin revelar puntajes, jurados ni decisiones.
+- Cubrir cada precondición y el camino exitoso en DB/API; repetir las suites y actualizar `validation.md`.
+
+**Hecho cuando:** no es posible liberar ni consultar resultados parciales.

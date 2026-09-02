@@ -42,6 +42,10 @@ async function setupResultFixtures({ withRandomRubric = false, scoreOverrides = 
     "INSERT INTO night(event_id, name, display_order, kind, status) VALUES($1,$2,$3,$4,$5) RETURNING id",
     [event.id, "Noche 1", 1, "COMPETITION", "OPEN"],
   );
+  await client.query(
+    "INSERT INTO voting_window(event_id, night_id, status, closed_at) VALUES($1,$2,'CLOSED',CURRENT_TIMESTAMP)",
+    [event.id, night.id],
+  );
   const { rows: [specialty] } = await client.query(
     "INSERT INTO event_specialty(event_id, name, code, display_order) VALUES($1,$2,$3,$4) RETURNING id",
     [event.id, "Baile", "BAILE", 1],

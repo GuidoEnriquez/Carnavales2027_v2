@@ -61,15 +61,16 @@ async function createPersistentTie(pool) {
   }
   const adminId = randomUUID();
   const scrutineerId = `scrutineer-${randomUUID()}`;
+  const escribanoId = `escribano-${randomUUID()}`;
   const veedorId = randomUUID();
   const judgeUserId = randomUUID();
   await pool.query(
     `INSERT INTO "user"(id,name,email,"emailVerified") VALUES
-      ($1,'Admin',$5,true),($2,'Scrutineer',$6,true),($3,'Veedor',$7,true),($4,'Judge',$8,true)`,
-    [adminId, scrutineerId, veedorId, judgeUserId,
-      `${adminId}@test.local`, `${scrutineerId}@test.local`, `${veedorId}@test.local`, `${judgeUserId}@test.local`],
+      ($1,'Admin',$6,true),($2,'Scrutineer',$7,true),($3,'Escribano',$8,true),($4,'Veedor',$9,true),($5,'Judge',$10,true)`,
+    [adminId, scrutineerId, escribanoId, veedorId, judgeUserId,
+      `${adminId}@test.local`, `${scrutineerId}@test.local`, `${escribanoId}@test.local`, `${veedorId}@test.local`, `${judgeUserId}@test.local`],
   );
-  for (const [id, role] of [[adminId, "ADMIN"], [scrutineerId, "SCRUTINEER"], [veedorId, "VEEDOR"]]) {
+  for (const [id, role] of [[adminId, "ADMIN"], [scrutineerId, "SCRUTINEER"], [escribanoId, "ESCRIBANO"], [veedorId, "VEEDOR"]]) {
     await pool.query("INSERT INTO user_role(user_id, role_code) VALUES($1,$2)", [id, role]);
   }
   const { rows: [profile] } = await pool.query(
@@ -115,7 +116,7 @@ async function createPersistentTie(pool) {
     await pool.query("UPDATE ballot_score SET status='LOCKED', locked_at=CURRENT_TIMESTAMP WHERE ballot_id=$1", [ballot.id]);
   }
   await pool.query("INSERT INTO results_release(event_id,released_by) VALUES($1,$2)", [event.id, adminId]);
-  return { eventId: event.id, adminId, scrutineerId, veedorId, troupeIds: troupes.map((t) => t.id) };
+  return { eventId: event.id, adminId, scrutineerId, escribanoId, veedorId, troupeIds: troupes.map((t) => t.id) };
 }
 
 test("API sorteo ceremonial: autoriza, sortea y audita; impide duplicado y pool inválido", {
@@ -136,6 +137,7 @@ test("API sorteo ceremonial: autoriza, sortea y audita; impide duplicado y pool 
       const ids = {
         admin: data.adminId,
         scrutineer: data.scrutineerId,
+        escribano: data.escribanoId,
         veedor: data.veedorId,
       };
       return ids[session] ? { user: { id: ids[session], twoFactorEnabled: true } } : null;
@@ -151,7 +153,7 @@ test("API sorteo ceremonial: autoriza, sortea y audita; impide duplicado y pool 
     assert.equal(listedTroupes.status, 200);
     assert.equal((await listedTroupes.json()).length, 2);
 
-    const body = { remainingTroupeIds: data.troupeIds, appliedCriteria: ["WON_NOMINATIVE_RUBRICS_COUNT"] };
+    const body = { remainingTroupeIds: data.troupeIds };
     const denied = await fetch(path, { method: "POST", headers: jsonHeaders("veedor"), body: JSON.stringify(body) });
     assert.equal(denied.status, 403);
     assert.equal((await denied.json()).code, "RESULTS_ACCESS_DENIED");
@@ -168,25 +170,28 @@ test("API sorteo ceremonial: autoriza, sortea y audita; impide duplicado y pool 
     assert.equal(invalid.status, 409);
     assert.equal((await invalid.json()).code, "TIE_BREAKER_STALE");
 
-    const success = await fetch(path, { method: "POST", headers: jsonHeaders("scrutineer"), body: JSON.stringify(body) });
+    const success = await fetch(path, { method: "POST", headers: jsonHeaders("escribano"), body: JSON.stringify(body) });
     assert.equal(success.status, 201);
     const result = await success.json();
     assert.ok(data.troupeIds.includes(result.winnerTroupeId));
-    assert.equal(result.method, "MATH_RANDOM_TRACEABLE");
+    assert.equal(result.method, "CRYPTO_RANDOM_INT");
     assert.ok(result.auditEventId);
 
-    const adminDenied = await fetch(path, { method: "POST", headers: jsonHeaders("admin"), body: JSON.stringify(body) });
-    assert.equal(adminDenied.status, 403);
-    assert.equal((await adminDenied.json()).code, "RESULTS_ACCESS_DENIED");
+    const adminDuplicate = await fetch(path, { method: "POST", headers: jsonHeaders("admin"), body: JSON.stringify(body) });
+    assert.equal(adminDuplicate.status, 409);
+    assert.equal((await adminDuplicate.json()).code, "TIE_BREAKER_ALREADY_DRAWN");
 
     const duplicate = await fetch(path, { method: "POST", headers: jsonHeaders("scrutineer"), body: JSON.stringify(body) });
     assert.equal(duplicate.status, 409);
     assert.equal((await duplicate.json()).code, "TIE_BREAKER_ALREADY_DRAWN");
 
     const { rows: [audit] } = await pool.query(
-      "SELECT action, after_data->>'winnerTroupeId' AS winner FROM audit_event WHERE id = $1",
+      "SELECT action, after_data->>'winnerTroupeId' AS winner, previous_hash, event_hash FROM audit_event WHERE id = $1",
       [result.auditEventId],
     );
-    assert.deepEqual(audit, { action: "RESULTS_TIE_BREAKER_CEREMONIAL_DRAW", winner: result.winnerTroupeId });
+    assert.equal(audit.action, "RESULTS_TIE_BREAKER_CEREMONIAL_DRAW");
+    assert.equal(audit.winner, result.winnerTroupeId);
+    assert.match(audit.previous_hash.trim(), /^[0-9a-f]{64}$/);
+    assert.match(audit.event_hash.trim(), /^[0-9a-f]{64}$/);
   });
 });

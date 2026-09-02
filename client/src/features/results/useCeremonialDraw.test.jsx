@@ -25,7 +25,7 @@ describe("useCeremonialDraw", () => {
       eventId: "event-1",
       winnerTroupeId: "troupe-a",
       auditEventId: "audit-1",
-      method: "MATH_RANDOM_TRACEABLE",
+      method: "CRYPTO_RANDOM_INT",
     };
     apiRequestMock.mockResolvedValue(result);
     let hook;
@@ -36,7 +36,6 @@ describe("useCeremonialDraw", () => {
       promise = hook.execute({
         eventId: "event-1",
         remainingTroupeIds: ["troupe-a", "troupe-b"],
-        appliedCriteria: ["WON_NOMINATIVE_RUBRICS_COUNT"],
       });
       await promise;
     });
@@ -46,10 +45,7 @@ describe("useCeremonialDraw", () => {
       "/api/v1/events/event-1/tie-breaker/ceremonial-draw",
       {
         method: "POST",
-        body: JSON.stringify({
-          remainingTroupeIds: ["troupe-a", "troupe-b"],
-          appliedCriteria: ["WON_NOMINATIVE_RUBRICS_COUNT"],
-        }),
+        body: JSON.stringify({ remainingTroupeIds: ["troupe-a", "troupe-b"] }),
       },
     );
     expect(hook.draw).toEqual(result);

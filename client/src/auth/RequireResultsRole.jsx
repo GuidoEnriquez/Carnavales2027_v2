@@ -7,7 +7,7 @@ export function RequireResultsRole({ session, children }) {
     return <p>Completá la verificación en dos pasos. <a href="#/login">Verificar identidad</a></p>;
   }
   if (session.status === "error") return <p>No se pudo verificar la sesión. Intentá nuevamente.</p>;
-  if (!session.roles?.includes("SCRUTINEER")) {
+  if (!["ADMIN", "SCRUTINEER", "ESCRIBANO"].some((role) => session.roles?.includes(role))) {
     return <p>No tenés permisos para acceder a esta sección.</p>;
   }
   return children;

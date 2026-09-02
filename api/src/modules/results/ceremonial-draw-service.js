@@ -10,22 +10,14 @@
  *   RF-102 Estructura del evento de auditoría (sin persistir aquí).
  */
 
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomInt } from "node:crypto";
 
 /**
- * Construye un seed determinístico a partir de Date.now() mezclado con bytes
- * aleatorios criptográficos. Devuelve un entero que cabe en 64 bits con signo.
- *
- * Esto NO se usa para "alimentar" Math.random (que no acepta seed en Node),
- * sino para registrar en auditoría la "fuente" del sorteo y permitir
- * reproducibilidad si migramos a un PRNG seedeable en el futuro.
+ * Construye un nonce criptográfico de trazabilidad. No pretende reproducir la
+ * selección: el índice se obtiene con crypto.randomInt().
  */
 export function buildSeed() {
-  const now = BigInt(Date.now());
-  const rand = randomBytes(8).readBigUInt64BE();
-  // Mezcla y reduce a 53 bits (Number.MAX_SAFE_INTEGER) para mantener precisión.
-  const mixed = Number((now ^ rand) & BigInt("0x1FFFFFFFFFFFFF"));
-  return mixed;
+  return randomBytes(16).toString("hex");
 }
 
 /**
@@ -34,12 +26,12 @@ export function buildSeed() {
  * Reglas:
  *   - pool.length === 0 → tira TIE_BREAKER_EMPTY_DRAW_POOL.
  *   - pool.length === 1 → devuelve ese elemento con method POOL_SINGLETON.
- *   - resto → Math.random() clásico, con seed y randomValue registrados.
+ *   - resto → crypto.randomInt(), con nonce e índice registrados.
  *
- * @param {{pool: string[], seed?: number, random?: () => number}} params
+ * @param {{pool: string[], seed?: string, randomIntFn?: (max: number) => number}} params
  * @returns {{winnerTroupeId: string, seed: number, randomValue: number, method: string}}
  */
-export function selectCeremonialWinner({ pool, seed, random = Math.random } = {}) {
+export function selectCeremonialWinner({ pool, seed, randomIntFn = randomInt } = {}) {
   if (!Array.isArray(pool)) {
     throw new TypeError("selectCeremonialWinner: pool debe ser un arreglo.");
   }
@@ -49,7 +41,7 @@ export function selectCeremonialWinner({ pool, seed, random = Math.random } = {}
     throw error;
   }
   if (pool.length === 1) {
-    const effectiveSeed = typeof seed === "number" ? seed : buildSeed();
+    const effectiveSeed = typeof seed === "string" ? seed : buildSeed();
     return {
       winnerTroupeId: pool[0],
       seed: effectiveSeed,
@@ -58,14 +50,16 @@ export function selectCeremonialWinner({ pool, seed, random = Math.random } = {}
     };
   }
 
-  const effectiveSeed = typeof seed === "number" ? seed : buildSeed();
-  const randomValue = random();
-  const index = Math.floor(randomValue * pool.length);
+  const effectiveSeed = typeof seed === "string" ? seed : buildSeed();
+  const randomValue = randomIntFn(pool.length);
+  if (!Number.isInteger(randomValue) || randomValue < 0 || randomValue >= pool.length) {
+    throw new RangeError("randomIntFn devolvió un índice inválido.");
+  }
   return {
-    winnerTroupeId: pool[index],
+    winnerTroupeId: pool[randomValue],
     seed: effectiveSeed,
     randomValue,
-    method: "MATH_RANDOM_TRACEABLE",
+    method: "CRYPTO_RANDOM_INT",
   };
 }
 
@@ -107,15 +101,15 @@ export function composeAuditEvent({
   if (!tiedTroupeIds.includes(winnerTroupeId)) {
     throw new TypeError("composeAuditEvent: winnerTroupeId debe pertenecer a tiedTroupeIds.");
   }
-  if (typeof seed !== "number" || !Number.isFinite(seed)) {
-    throw new TypeError("composeAuditEvent: seed debe ser un número finito.");
+  if (typeof seed !== "string" || !/^[0-9a-f]{32}$/i.test(seed)) {
+    throw new TypeError("composeAuditEvent: seed debe ser un nonce hexadecimal de 32 caracteres.");
   }
   if (typeof randomValue !== "number" || !Number.isFinite(randomValue)) {
     throw new TypeError("composeAuditEvent: randomValue debe ser un número finito.");
   }
-  if (!["MATH_RANDOM_TRACEABLE", "POOL_SINGLETON", "CRYPTO_RANDOM_INT"].includes(method)) {
+  if (!["POOL_SINGLETON", "CRYPTO_RANDOM_INT"].includes(method)) {
     throw new TypeError(
-      "composeAuditEvent: method debe ser MATH_RANDOM_TRACEABLE, POOL_SINGLETON o CRYPTO_RANDOM_INT.",
+      "composeAuditEvent: method debe ser POOL_SINGLETON o CRYPTO_RANDOM_INT.",
     );
   }
 

@@ -2,7 +2,9 @@
 
 ## Estado
 
-- **Implementación y validación automatizada completadas:** 2026-09-01.
+- La implementación base y su validación automatizada se completaron el 2026-09-01.
+- **Reabierta el 2026-09-02:** T07 debe verificar las precondiciones de liberación de RF-94a antes del cierre definitivo.
+- **T07 implementada y validada automáticamente:** la liberación devuelve `409 RESULTS_NOT_READY` sin una ventana competitiva cerrada; la suite también conserva las comprobaciones de planillas y scores pendientes.
 - **Criterio 1 de desempate confirmado** (2026-09-01, responsable Guido): fuente oficial Confluence C2 «Guía del equipo» — *mayor cantidad de rubros nominativos ganados*. Implementación actual en `resolveTieBreaker` alineada.
 - **Criterio 3 (sorteo):** diferido a Spec 011 «Sorteo ceremonial con conteo regresivo». Mientras tanto, `TIE_BREAKER_REQUIRES_MANUAL_DRAW` exige registro por operador autorizado.
 
@@ -16,6 +18,8 @@
 | Build | `npm run build` en `client/` | Exitoso, 48 módulos transformados. |
 | Migración | `053_rubric_kind_results_stage.sql` | Aplicada; agrega `rubric_kind` y `results_release` append-only. |
 | Revisión | `git diff --check` | Sin errores. |
+| Revalidación T07 | `npm test` en `api/` | 78 passed, 0 failed. |
+| Revalidación T07 | `npm run db:test` en `api/` | 38 passed, 0 failed. |
 
 ## Matriz de requisitos
 
@@ -27,6 +31,7 @@
 | RF-92 ranking | `computeRubricRankings` y `computeOverallRanking` ordenan de mayor a menor con rank denso. |
 | RF-93 reproducibilidad/determinismo | Test explícito "resultado es determinístico (RF-93)" en `results.test.js`. |
 | RF-94 secreto hasta etapa autorizada | `requireResultsAccess` (ADMIN/SCRUTINEER) + `requireResultsReleased`; `results-api.test.js` verifica 403 pre-liberación y negación a VEEDOR/JUDGE. |
+| RF-94a integridad de liberación | `releaseResults` bloquea ventanas abiertas o ausentes, planillas no `SUBMITTED` y scores `PENDING`; `results-api.test.js` verifica `RESULTS_NOT_READY`. |
 | RF-95 desempate solo Mejor Comparsa | `determineBestTroupe` solo para Mejor Comparsa; `results.test.js`. |
 | RF-96 secuencia de desempate | `resolveTieBreaker`: criterios 1 (conteo nominativos) y 2 (Batería), criterio 3 sorteo manual con `TIE_BREAKER_REQUIRES_MANUAL_DRAW`. |
 | RF-97 trazabilidad/auditoría | `RESULTS_RELEASED`, `RESULTS_COMPUTED`, `RESULTS_TIE_BREAKER_APPLIED`; tests RF-97 cubren liberación, cómputo y desempate. |

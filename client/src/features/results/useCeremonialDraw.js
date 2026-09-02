@@ -6,7 +6,7 @@ export function useCeremonialDraw() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const execute = useCallback(async ({ eventId, remainingTroupeIds, appliedCriteria = [] }) => {
+  const execute = useCallback(async ({ eventId, remainingTroupeIds }) => {
     setLoading(true);
     setError(null);
     setDraw(null);
@@ -15,7 +15,7 @@ export function useCeremonialDraw() {
         `/api/v1/events/${eventId}/tie-breaker/ceremonial-draw`,
         {
           method: "POST",
-          body: JSON.stringify({ remainingTroupeIds, appliedCriteria }),
+           body: JSON.stringify({ remainingTroupeIds }),
         },
       );
       setDraw(result);

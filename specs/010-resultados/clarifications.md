@@ -16,11 +16,11 @@ Revisión QA de la Spec 010, sin resolver ni codificar. Detecta ambigüedades, c
 - **Autoría del sorteo:** mientras Spec 011 no esté aprobada, el sistema NO genera aleatoriedad. Cuando criterios 1 y 2 no alcanzan, `resolveTieBreaker` arroja `TIE_BREAKER_REQUIRES_MANUAL_DRAW` para que un operador (rol `SCRUTINEER`/`ESCRIBANO`/`ADMIN`) registre el resultado manualmente en la etapa autorizada. Spec 011 reemplazará esta salida por un sorteo ceremonial automatizado (countdown 5→0 + `Math.random()` seedeado, con migración futura a `crypto.randomInt()` cuando el reglamento lo exija).
 - **Exposición en «etapa autorizada»:** Spec 010 entrega el resultado consolidado al endpoint de escrutinio para el rol `SCRUTINEER` (más `ESCRIBANO` y `ADMIN`); un reporte descargable es alcance de la spec de actas, diferida.
 
-## Huecos
+## Decisiones de integridad — 2026-09-02
 
-- Definir comportamiento cuando un rubro no tiene ninguna puntuación (sin ganador de rubro / indefinido).
-- Definir qué ocurre si una comparsa no tiene planillas confirmadas en alguna de las noches puntuables (participa o no en el cómputo de su rubro).
-- Confirmar si el ranking debe ser consultable por rubro individual además del general.
+- La liberación no es una acción administrativa discrecional: requiere que todas las jornadas competitivas estén cerradas y que las planillas y scores ya creados estén completos y confirmados. Esta condición se formaliza en RF-94a.
+- Un rubro sin puntuaciones no genera ganadora ni altera el ranking general. Una comparsa sin planilla confirmada no aporta puntaje: la liberación queda bloqueada por RF-94a mientras esa planilla exista y no esté `SUBMITTED`.
+- El endpoint autorizado mantiene la consulta de ranking por rubro y general; no hay publicación externa ni actas en este incremento.
 
 ## Fuera de alcance confirmado
 

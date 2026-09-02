@@ -12,13 +12,16 @@ Implementado y validado:
 - **I3/Spec 004/Spec 006:** apertura y cierre de votación, planillas por jurado, puntuaciones por comparsa, confirmación inmutable sin nuevas reaperturas, secreto de puntajes, supervisión por `VEEDOR` y completitud obligatoria por ítem. El cierre con pendientes abre un modal administrativo con jurado, comparsa, rubro e ítem.
 - **Spec 007:** confirmación e inmutabilidad inmediata por ítem, con modal de decisión y controles bloqueados tras confirmar. Validada automáticamente y con comprobación manual responsive.
 - **Spec 008:** invitaciones de un solo uso para `VEEDOR`, `COMISARIO` y `SCRUTINEER`, persistidas solo como hash. La emisión, inspección, aceptación, login real, 2FA y la UI responsive están validados. Las altas se gestionan desde Personas.
-- **Spec 009:** rediseño operativo oscuro del jurado, con login institucional, home por comparsa, navegación contextual de planilla y controles táctiles. La suite de cliente y el build pasan; queda pendiente la comprobación manual de 390x844, 768x1024 y 1440x900 con teclado y emulación táctil.
+- **Spec 009:** rediseño operativo oscuro del jurado, validado automáticamente y manualmente.
+- **Spec 010:** consolidación de resultados, rankings y desempate por criterios 1 y 2; reabierta para reforzar la liberación íntegra de resultados.
+- **Spec 011:** sorteo ceremonial con `crypto.randomInt()`, auditoría encadenada e interfaz de escrutinio; pendiente comprobación manual.
+- **Spec 012:** planilla online únicamente; retira el uso operativo de outbox y cache local en el cliente actual, pendiente comprobación manual.
 
-Todavía fuera de alcance: penalizaciones, consolidación de resultados, rankings, escrutinio de resultados, actas y conexión/sincronización Offline-First. Spec 005 conserva código exploratorio, pero es una funcionalidad futura y no una capacidad operativa aceptada.
+Todavía fuera de alcance: penalizaciones, actas, publicación externa de resultados y conexión/sincronización Offline-First. Spec 005 conserva compatibilidad exploratoria para clientes antiguos, pero no es una capacidad operativa aceptada.
 
 ## Incremento vigente
 
-Spec 009 - Experiencia operativa del jurado es el incremento vigente. No puede marcarse como validado por completo hasta registrar la comprobación manual de sus viewports y recorridos de teclado/tacto en [`specs/009-experiencia-operativa-jurado/validation.md`](specs/009-experiencia-operativa-jurado/validation.md).
+Los incrementos abiertos son Specs 010, 011 y 012. La evidencia y los pendientes manuales se registran en sus respectivos `validation.md`.
 
 ## Próxima puerta SDD
 

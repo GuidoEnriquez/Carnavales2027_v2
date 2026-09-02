@@ -4,19 +4,19 @@
 
 - **Backend (`api/`):**
   - Nuevo servicio `CeremonialDrawService` en `api/src/modules/results/ceremonial-draw-service.js`.
-  - Funciones puras: `buildSeed()`, `selectCeremonialWinner({ pool, seed })`, `composeAuditEvent()`.
+  - Funciones puras: `buildSeed()`, `selectCeremonialWinner({ pool })`, `composeAuditEvent()`.
   - Endpoint `POST /api/v1/events/{eventId}/tie-breaker/ceremonial-draw` en `api/src/routes/results.routes.js`.
-  - Reutiliza `requireResultsReleased` y 2FA; autorización exclusiva para `SCRUTINEER` (nombre visible: Escrutador / Escribano; mínimo privilegio).
+  - Reutiliza `requireResultsReleased` y 2FA; autorización para `ADMIN`, `SCRUTINEER` y `ESCRIBANO`.
   - Auditoría vía tabla `audit_event` existente (RF-97), nuevo `action = 'RESULTS_TIE_BREAKER_CEREMONIAL_DRAW'`.
-  - Migraciones `054_tie_breaker_ceremonial_draw_unique.sql` (unicidad por evento), `055_add_escribano_role.sql` (compatibilidad histórica) y `056_consolidate_escribano_into_scrutineer.sql` (rol técnico canónico).
-  - `Math.random()` con seed de trazabilidad; resultado guardado para auditoría. El seed no vuelve reproducible a `Math.random()` de Node.
+  - Migraciones `054`, `055`, `057_restore_escribano_role.sql` y `058_ceremonial_draw_audit_hash_chain.sql`.
+  - `crypto.randomInt()` selecciona el índice; la auditoría ceremonial usa JCS y SHA-256 encadenado.
 
 - **Cliente (`client/`):**
   - Nuevo componente `<CeremonialDrawModal>` en `client/src/features/results/CeremonialDrawModal.jsx`.
   - Hook `useCeremonialDraw()` en `client/src/features/results/useCeremonialDraw.js` que llama al endpoint.
   - Hook `useCountdown(seconds)` reutilizable en `client/src/features/results/useCountdown.js` (encapsula el conteo 5→0).
   - CSS adicional en `client/src/index.css` siguiendo los tokens del rediseño Spec 009 (dark mode, surface elevada, border radius consistente).
-  - Sin estado global nuevo: el modal se monta localmente desde la vista de escrutinio.
+  - Sin estado global nuevo: el modal se monta localmente desde la vista de escrutinio y conserva la revelación hasta su cierre explícito.
 
 - **Persistencia:** migraciones `054_tie_breaker_ceremonial_draw_unique.sql` y `055_add_escribano_role.sql`: unicidad del sorteo por evento y rol `ESCRIBANO`.
 
@@ -41,7 +41,7 @@
 ## Estrategia de pruebas
 
 - **Unit API (`vitest`):**
-  - `selectCeremonialWinner` con seed fijo debe devolver siempre el mismo ganador (reproducibilidad).
+  - `selectCeremonialWinner` usa un índice inyectable solo para pruebas; la operación usa `crypto.randomInt()`.
   - Pool vacío → lanza `TIE_BREAKER_EMPTY_DRAW_POOL`.
   - Pool con un solo elemento → devuelve ese elemento.
   - Distintos seeds producen distintos ganadores (con pool de ≥3 elementos).
@@ -64,8 +64,8 @@
 ## Compatibilidad e invariantes
 
 - **Inmutabilidad:** Spec 011 NO modifica votos ni planillas; solo consume resultados ya calculados por Spec 010. RF-104 garantiza que el sorteo ceremonial tampoco es editable.
-- **Auditoría:** nuevo evento `RESULTS_TIE_BREAKER_CEREMONIAL_DRAW` encadena en el hash append-only (sin inventar formato; se reusa `voting-integrity` skill).
-- **Roles:** sin cambios respecto a Spec 010.
+- **Auditoría:** el evento ceremonial inicia una cadena v1 desde hash génesis de 64 ceros, con JCS y SHA-256; no reescribe historial previo.
+- **Roles:** `ADMIN`, `SCRUTINEER` y `ESCRIBANO` requieren 2FA; Escribano usa invitaciones operativas.
 - **Offline-first:** sin impacto; Spec 011 sigue siendo una capacidad online (diferida por Spec 005).
 - **Sin breaking changes:** Spec 010 sigue emitiendo `TIE_BREAKER_REQUIRES_MANUAL_DRAW` cuando el operador elige la ruta manual. El nuevo endpoint es **opt-in**: el operador debe invocarlo explícitamente.
 
@@ -73,7 +73,7 @@
 
 - **Riesgo:** el operador inicia el sorteo y se va la luz antes de que termine el countdown. **Mitigación:** el modal muestra estado "Cancelar" durante todo el countdown; el `POST` solo se hace al final, y no se persiste nada si el operador aborta.
 - **Riesgo:** la comparsa ganadora cambia entre la pantalla y el `POST` si se recalculan resultados entremedio. **Mitigación:** el endpoint valida que el empate siga vigente (mismo `totalScore` de los `remainingTroupeIds`) antes de aceptar el sorteo; si cambió, devuelve `409 TIE_BREAKER_STALE`.
-- **Riesgo:** seed predecible → resultado del sorteo predecible. **Mitigación:** documentado en `spec.md` §Migración futura; Spec 011 acepta `Math.random()` como punto de partida, pero la migración a `crypto.randomInt()` queda planificada y rastreable.
+- **Riesgo:** sospecha sobre la aleatoriedad. **Mitigación:** `crypto.randomInt()`, nonce de trazabilidad y cadena inmutable de auditoría.
 
 ## Hecho cuando
 

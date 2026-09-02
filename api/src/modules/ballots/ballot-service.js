@@ -513,7 +513,7 @@ export async function saveScore({ actorUserId, ballotId, scoreId, evaluationStat
 
   return inTransaction(async (client) => {
     const ballot = await lockJudgeBallot(client, { ballotId: bid, actorUserId });
-    const { revision, ...saved } = await saveScoreLocked(client, {
+    const saved = await saveScoreLocked(client, {
       ballot,
       actorUserId,
       ballotId: bid,

@@ -91,7 +91,7 @@ async function setupEventWithScores(pool) {
   await pool.query("UPDATE ballot SET status='SUBMITTED', submitted_at=CURRENT_TIMESTAMP WHERE id=$1", [ballot.id]);
   await pool.query("UPDATE ballot_score SET status='LOCKED', locked_at=CURRENT_TIMESTAMP WHERE ballot_id=$1", [ballot.id]);
 
-  return { eventId: event.id, adminId, judgeUserId, scrutineerId, veedorId, troupeId: troupe.id, rubricId: rubric.id };
+  return { eventId: event.id, nightId: night.id, adminId, judgeUserId, scrutineerId, veedorId, troupeId: troupe.id, rubricId: rubric.id };
 }
 
 test("API resultados: solo ADMIN/SCRUTINEER pueden liberar y consultar resultados", {
@@ -142,24 +142,36 @@ test("API resultados: solo ADMIN/SCRUTINEER pueden liberar y consultar resultado
     assert.equal(judgeGet.status, 403);
     assert.equal((await judgeGet.json()).code, "RESULTS_ACCESS_DENIED");
 
-    // 4. Scrutineer libera resultados.
+    // 4. Sin una ventana cerrada, la liberación no expone resultados parciales.
     const releaseRes = await fetch(`${baseUrl}/api/v1/events/${data.eventId}/results/release`, {
       method: "POST", headers: scrutineerHeaders,
     });
-    assert.equal(releaseRes.status, 201);
-    const releaseData = await releaseRes.json();
+    assert.equal(releaseRes.status, 409);
+    assert.equal((await releaseRes.json()).code, "RESULTS_NOT_READY");
+
+    await pool.query(
+      "INSERT INTO voting_window(event_id, night_id, status, closed_at) VALUES($1,$2,'CLOSED',CURRENT_TIMESTAMP)",
+      [data.eventId, data.nightId],
+    );
+
+    // 5. Con la jornada cerrada y planilla completa, Scrutineer libera resultados.
+    const completedRelease = await fetch(`${baseUrl}/api/v1/events/${data.eventId}/results/release`, {
+      method: "POST", headers: scrutineerHeaders,
+    });
+    assert.equal(completedRelease.status, 201);
+    const releaseData = await completedRelease.json();
     assert.equal(releaseData.eventId, data.eventId);
     assert.equal(releaseData.alreadyReleased, false);
     assert.ok(releaseData.releasedAt);
 
-    // 5. Liberar de nuevo es idempotente.
+    // 6. Liberar de nuevo es idempotente.
     const duplicateRelease = await fetch(`${baseUrl}/api/v1/events/${data.eventId}/results/release`, {
       method: "POST", headers: adminHeaders,
     });
     assert.equal(duplicateRelease.status, 201);
     assert.equal((await duplicateRelease.json()).alreadyReleased, true);
 
-    // 6. Admin consulta resultados liberados.
+    // 7. Admin consulta resultados liberados.
     const resultsRes = await fetch(`${baseUrl}/api/v1/events/${data.eventId}/results`, { headers: adminHeaders });
     assert.equal(resultsRes.status, 200);
     const results = await resultsRes.json();
@@ -169,7 +181,7 @@ test("API resultados: solo ADMIN/SCRUTINEER pueden liberar y consultar resultado
     assert.equal(results.overallRanking[0].totalScore, 8);
     assert.equal(results.bestTroupe.winnerTroupeId, data.troupeId);
 
-    // 7. Audit registra la liberación.
+    // 8. Audit registra la liberación.
     const { rows: [audit] } = await pool.query(
       "SELECT action, after_data->>'releasedAt' AS released FROM audit_event WHERE entity_id = $1 AND action = 'RESULTS_RELEASED'",
       [data.eventId],

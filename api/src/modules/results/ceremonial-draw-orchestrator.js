@@ -17,9 +17,8 @@ import {
   composeAuditEvent,
   selectCeremonialWinner,
 } from "./ceremonial-draw-service.js";
-import {
-  auditEvent,
-} from "../../audit/audit-service.js";
+import { auditCeremonialDraw } from "../../audit/audit-service.js";
+import { randomUUID } from "node:crypto";
 import {
   fetchConsolidatedScores,
   computeRubricRankings,
@@ -32,8 +31,8 @@ import {
  * @param {{
  *   eventId: string,
  *   remainingTroupeIds: string[],
- *   appliedCriteria: string[],
  *   actorUserId: string,
+ *   actorRole: string,
  *   correlationId?: string|null,
  * }} params
  * @returns {Promise<{
@@ -50,8 +49,8 @@ import {
 export async function executeCeremonialDraw({
   eventId,
   remainingTroupeIds,
-  appliedCriteria,
   actorUserId,
+  actorRole,
   correlationId = null,
 }) {
   if (!Array.isArray(remainingTroupeIds) || remainingTroupeIds.length < 2) {
@@ -68,11 +67,6 @@ export async function executeCeremonialDraw({
     error.code = "TIE_BREAKER_INVALID_DRAW_INPUT";
     throw error;
   }
-  if (!Array.isArray(appliedCriteria)) {
-    const error = new TypeError("appliedCriteria debe ser un arreglo.");
-    throw error;
-  }
-
   return runTransaction(null, async (client) => {
     // 1. Bloquear el evento para serializar el check y la inserción del draw.
     const { rows: eventRows } = await client.query(
@@ -108,16 +102,19 @@ export async function executeCeremonialDraw({
     const tied = overallRanking.filter((t) => t.totalScore === topScore);
     if (tied.length < 2) throw new Error("TIE_BREAKER_NOT_REQUIRED");
 
-    // 5. Criterios 1 y 2 deben seguir sin resolver el empate.
+    // 5. Criterios 1 y 2 deben seguir sin resolver el empate. El pool válido
+    // es el que queda después de ambos criterios, no el empate inicial.
+    let tieBreaker;
     try {
       const bestTroupe = determineBestTroupe({ overallRanking, rubricRankings });
       if (bestTroupe?.winnerTroupeId) throw new Error("TIE_BREAKER_NOT_REQUIRED");
     } catch (error) {
       if (error.message !== "TIE_BREAKER_REQUIRES_MANUAL_DRAW") throw error;
+      tieBreaker = error;
     }
 
     // 6. El pool solicitado debe ser exactamente el pool vigente (RF-99).
-    const currentPool = tied.map((t) => t.troupeId).sort();
+    const currentPool = [...tieBreaker.remainingTroupeIds].sort();
     const requestedPool = [...remainingTroupeIds].sort();
     if (
       currentPool.length !== requestedPool.length ||
@@ -133,30 +130,19 @@ export async function executeCeremonialDraw({
     const draw = selectCeremonialWinner({ pool: remainingTroupeIds });
     const auditPayload = composeAuditEvent({
       eventId,
-      tiedTroupeIds: tied.map((t) => t.troupeId),
-      appliedCriteria,
+      tiedTroupeIds: currentPool,
+      appliedCriteria: tieBreaker.appliedCriteria,
       seed: draw.seed,
       randomValue: draw.randomValue,
       method: draw.method,
       winnerTroupeId: draw.winnerTroupeId,
-      actor: { id: actorUserId, role: null },
-      correlationId,
+      actor: { id: actorUserId, role: actorRole },
+      correlationId: correlationId ?? randomUUID(),
     });
-    const inserted = await auditEvent(client, {
+    const inserted = await auditCeremonialDraw(client, {
       actorUserId,
-      action: auditPayload.eventType,
-      entityType: "results",
-      entityId: eventId,
-      after: {
-        tiedTroupeIds: auditPayload.tiedTroupeIds,
-        appliedCriteria: auditPayload.appliedCriteria,
-        seed: auditPayload.seed,
-        randomValue: auditPayload.randomValue,
-        method: auditPayload.method,
-        winnerTroupeId: auditPayload.winnerTroupeId,
-        correlationId: auditPayload.correlationId,
-        occurredAt: auditPayload.occurredAt,
-      },
+      eventId,
+      payload: auditPayload,
     });
 
     return {
@@ -166,8 +152,8 @@ export async function executeCeremonialDraw({
       randomValue: draw.randomValue,
       method: draw.method,
       auditEventId: inserted.id,
-      correlationId,
-      appliedCriteria,
+      correlationId: auditPayload.correlationId,
+      appliedCriteria: tieBreaker.appliedCriteria,
     };
   });
 }

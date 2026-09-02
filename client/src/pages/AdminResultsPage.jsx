@@ -134,11 +134,10 @@ export function AdminResultsPage() {
       {modalOpen && tie && <CeremonialDrawModal
         eventId={eventId}
         remainingTroupeIds={tie.remainingTroupeIds}
-        appliedCriteria={["WON_NOMINATIVE_RUBRICS_COUNT", "BATTERY_RUBRIC_WINNER"]}
         tiedTroupeNames={tiedNames}
         triggerRef={drawTriggerRef}
         onClose={() => setModalOpen(false)}
-        onResolved={(draw) => { setDrawResult(draw); setModalOpen(false); }}
+        onResolved={setDrawResult}
       />}
     </main>
   );

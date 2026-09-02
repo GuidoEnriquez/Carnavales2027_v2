@@ -81,7 +81,8 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
      || filename === "053_rubric_kind_results_stage.sql"
      || filename === "054_tie_breaker_ceremonial_draw_unique.sql"
      || filename === "055_add_escribano_role.sql"
-     || filename === "056_consolidate_escribano_into_scrutineer.sql"
+      || filename === "057_restore_escribano_role.sql"
+      || filename === "058_ceremonial_draw_audit_hash_chain.sql"
   )));
 
   const status = await getMigrationStatus();
@@ -364,6 +365,16 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
     {
       filename: "056_consolidate_escribano_into_scrutineer.sql",
       version: "056",
+      applied: true,
+    },
+    {
+      filename: "057_restore_escribano_role.sql",
+      version: "057",
+      applied: true,
+    },
+    {
+      filename: "058_ceremonial_draw_audit_hash_chain.sql",
+      version: "058",
       applied: true,
     },
   ]);

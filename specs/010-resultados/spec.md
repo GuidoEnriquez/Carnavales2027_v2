@@ -2,7 +2,7 @@
 
 ## Estado
 
-- **Fase SDD:** en preparación para aprobación.
+- **Fase SDD:** reabierta para corrección de integridad el 2026-09-02. La consolidación, rankings y criterios 1 y 2 están implementados; la liberación de resultados requiere precondiciones operativas explícitas antes del cierre definitivo.
 - **Fuentes normativas:** Confluence C2 «Guía del equipo» (secciones 6, 8, 9, 10 y 11), Obsidian `Areas/07 - Reglamento y Reglas de Negocio`, `Skills/carnival-domain.md` y `Areas/04 - Negocio y Producto`; reglamento de Goya 2027.
 - **Dependencias:** requiere planillas confirmadas (Specs 003/004), cierre de votación (Spec 006), inmutabilidad por ítem (Spec 007) e invariancia de los roles operativos (Spec 008).
 
@@ -26,6 +26,7 @@ Calcular y exponer los resultados oficiales de una edición de Carnaval de forma
 - **RF-92 (ranking).** EL SISTEMA DEBE poder exponer un ranking ordenado por comparsa (de mayor a menor puntaje) para cada rubro y para el cómputo general de Mejor Comparsa.
 - **RF-93 (inmutabilidad del resultado).** MIENTRAS los votos confirmados no cambien, EL SISTEMA DEBE producir el mismo resultado (reproducibilidad determinística). Los cálculos no modifican ni el voto ni la planilla originales.
 - **RF-94 (secreto hasta la etapa autorizada).** ANTES de la etapa autorizada de escrutinio/resultados, EL SISTEMA DEBE mantener ocultos puntajes consolidados, rankings y resultados para todo rol que no esté autorizado (equivalente al sobre cerrado). La exposición pública de resultados solo ocurre cuando la etapa lo autoriza.
+- **RF-94a (integridad de liberación).** EL SISTEMA DEBE rechazar la liberación de resultados mientras exista una jornada competitiva del evento con ventana de votación abierta, una planilla creada que no esté `SUBMITTED`, o un score `PENDING`. La respuesta debe identificar que el evento no está listo sin exponer puntajes ni decisiones de jurados.
 - **RF-95 (desempate solo Mejor Comparsa).** SI al calcular la Mejor Comparsa dos o más comparsas quedan empatadas, EL SISTEMA DEBE aplicar la secuencia reglamentaria de desempate, y SOLO para el premio de Mejor Comparsa.
 - **RF-96 (orden de desempate).** CUANDO existe empate en Mejor Comparsa, EL SISTEMA DEBE resolver en este orden: (1) mayor cantidad de rubros nominativos ganados; (2) si el empate persiste, la que resultó ganadora en Mejor Batería; (3) si persiste, sorteo con registro auditado.
 - **RF-97 (trazabilidad).** EL SISTEMA DEBE registrar en auditoría cada consolidación, cálculo de ranking, resultado y desempate, sin exponer secretos y conservando la trazabilidad de actor, acción, entidad y evento/correlation id.
@@ -46,6 +47,7 @@ Calcular y exponer los resultados oficiales de una edición de Carnaval de forma
 - Criterio 1 de desempate oficial: **mayor cantidad de rubros nominativos ganados** (fuente normativa Confluence C2 «Guía del equipo», sección «Desempate (solo Mejor Comparsa)»). Confirmado por el responsable el 2026-09-01. La nota de Obsidian `Skills/carnival-domain.md` queda como referencia complementaria, no normativa, ante cualquier conflicto.
 - Los cálculos son determinísticos y reproducibles.
 - Los resultados solo se exponen en la etapa autorizada.
+- La liberación exige las precondiciones de integridad de RF-94a.
 - El desempate aplica exclusivamente a Mejor Comparsa.
 - Auditoría presente en consolidación, ranking, resultado y desempate.
 

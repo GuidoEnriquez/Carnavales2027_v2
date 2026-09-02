@@ -1,6 +1,6 @@
 # Estado SDD — Carnavales2027_v2
 
-> Estado actualizado: 2026-09-01. Esta nota distingue implementación, validación automatizada y validación manual; las specs y validaciones son la evidencia detallada.
+> Estado actualizado: 2026-09-02. Esta nota distingue implementación, validación automatizada y validación manual; las specs y validaciones son la evidencia detallada.
 
 ## Incrementos completados
 
@@ -16,20 +16,21 @@
 | Spec 007 | Aprobada, implementada y validada automáticamente y de forma manual en Chrome de escritorio con emulación responsive 320px, 768px y escritorio. | `specs/007-inmutabilidad-por-item/validation.md` |
 | Spec 008 | Emisión, inspección y aceptación de accesos auxiliares validadas: token hasheado, exclusión de `ADMIN`, login/2FA, altas unificadas con Jurados y UI manualmente comprobada en Chrome responsive. | `specs/008-gestion-accesos/validation.md` |
 | Spec 009 | Implementación, validación automática y **comprobación manual** completadas el 2026-09-01 (390x844, 768x1024, 1440x900, teclado y emulación táctil). Aceptada y cerrada. | `specs/009-experiencia-operativa-jurado/validation.md` |
-| Spec 010 | Implementación, validación automática y criterio 1 de desempate confirmados el 2026-09-01 (fuente oficial Confluence C2). Criterio 3 (sorteo) diferido a Spec 011. **Aceptada y cerrada.** | `specs/010-resultados/validation.md` |
 
 ## Incremento vigente
 
 | Incremento | Estado | Evidencia principal |
 |---|---|---|
-| Spec 011 | T01–T05 implementados y validados automáticamente; vista `#/admin/results` integrada. Pendientes T06–T07: validación manual y cierre final. | `specs/011-sorteo-ceremonial/` |
+| Spec 010 | Reabierta: T07 implementa guardias de liberación contra resultados parciales; falta cierre documental final. | `specs/010-resultados/validation.md` |
+| Spec 011 | T01–T05 implementados y validados automáticamente; pendientes T06–T07 manuales. | `specs/011-sorteo-ceremonial/` |
+| Spec 012 | Cliente online únicamente implementado y validado automáticamente; falta comprobación manual. | `specs/012-planilla-online-unicamente/` |
 
 ## Diferido explícitamente
 
 - Penalizaciones.
-- Consolidación de resultados, rankings y desempate.
+- Penalizaciones, actas y publicación externa de resultados.
 - Escrutinio operativo y actas.
-- Conexión y sincronización Offline-First (Spec 005): funcionalidad futura; el código exploratorio no está aceptado para operación.
+- Conexión y sincronización Offline-First (Spec 005): funcionalidad futura; Spec 012 retiró su uso del cliente actual.
 
 ## Estado reglamentario actualizado
 
@@ -38,7 +39,7 @@
 
 ## Próxima puerta SDD
 
-El incremento vigente es Spec 011 — Sorteo ceremonial con conteo regresivo (criterio 3 del desempate de Mejor Comparsa). Offline-First, penalizaciones, escrutinio y actas continúan requiriendo sus propias specs aprobadas.
+Los incrementos abiertos son Spec 010 (cierre documental), Spec 011 (validación manual del sorteo) y Spec 012 (validación manual online-only). Offline-First, penalizaciones y actas continúan requiriendo sus propias specs aprobadas.
 
 Antes de iniciar cualquier incremento posterior (como Escrutinio, Resultados o Penalizaciones), se debe redactar y aprobar su especificación e iniciar un nuevo ciclo:
 
@@ -52,6 +53,4 @@ Toda spec que modifique una pantalla operativa debe declarar el criterio de uso 
 
 ## Verificación de referencia
 
-Al 2026-09-01, Specs 009 y 010 quedaron cerradas con validación manual aceptada.
-
-Las últimas evidencias automatizadas aceptadas permanecen en Spec 009 (cliente 53 passed y build OK) y Spec 010 (DB 37, API 71, cliente 53, build OK).
+Al 2026-09-02, las últimas evidencias automatizadas son API 78, DB 38, cliente 67 y build exitoso. Las validaciones manuales abiertas se registran en Specs 011 y 012.

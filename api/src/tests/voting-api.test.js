@@ -284,6 +284,7 @@ test("API votación: ciclo completo de planilla", {
       score: 0,
       evaluationState: "NOT_PRESENTED",
       status: "DRAFT",
+      revision: 2,
     });
     const { rows: [scoreAudit] } = await pool.query(
       "SELECT details FROM ballot_audit_log WHERE ballot_id = $1 AND action = 'SCORE_DECISION_SAVED' ORDER BY created_at DESC LIMIT 1",

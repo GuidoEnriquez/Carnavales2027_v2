@@ -11,6 +11,10 @@ export function sendKnownError(response, error) {
     response.status(403).json({ code: error.message });
     return true;
   }
+  if (error.message === "RESULTS_NOT_READY") {
+    response.status(409).json({ code: error.message });
+    return true;
+  }
   if (error.message === "TIE_BREAKER_REQUIRES_MANUAL_DRAW") {
     response.status(409).json({
       code: error.message,
