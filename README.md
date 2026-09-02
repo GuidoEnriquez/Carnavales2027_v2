@@ -151,6 +151,23 @@ npm run dev
 
 El seed ADMIN usa `SEED_ADMIN_EMAIL`, `SEED_ADMIN_NAME` y `SEED_ADMIN_PASSWORD`. El seed de Goya crea solo datos iniciales sugeridos: evento, noches, categoría y especialidades; no crea comparsas, rubros ni ítems completos.
 
+### Usuarios de demostracion local
+
+El fixture local `Carnaval de Fantasia 2027 - Noche Unica` contiene los siguientes usuarios. Todos usan el valor local de `SEED_ADMIN_PASSWORD` en `api/.env`; la contrasena no se versiona ni se documenta en texto plano.
+
+| Rol | Nombre | Email |
+| --- | --- | --- |
+| JUDGE (titular) | Alba Acosta | `demo.alba.acosta@carnaval.local` |
+| JUDGE (titular) | Clara Cabral | `demo.clara.cabral@carnaval.local` |
+| JUDGE (titular) | Esteban Escobar | `demo.esteban.escobar@carnaval.local` |
+| JUDGE (suplente) | Bruno Benitez | `demo.bruno.benitez@carnaval.local` |
+| JUDGE (suplente) | Diana Duarte | `demo.diana.duarte@carnaval.local` |
+| JUDGE (suplente) | Florencia Fernandez | `demo.florencia.fernandez@carnaval.local` |
+| ESCRIBANO | Escribano demo | `demo.escribano@carnaval.local` |
+| COMISARIO | Comisario demo | `demo.comisario@carnaval.local` |
+
+Cada cuenta debe completar 2FA antes de usar rutas protegidas.
+
 En otra terminal, desde `client/`:
 
 ```bash
