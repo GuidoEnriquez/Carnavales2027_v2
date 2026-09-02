@@ -31,7 +31,7 @@ export async function apiRequest(path, options = {}) {
       status: response.status,
       code: error.code,
       message: error.message,
-      details: error.details,
+      details: error.details ?? error,
     });
   }
   return response.status === 204 ? null : response.json();

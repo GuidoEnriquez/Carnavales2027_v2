@@ -16,7 +16,7 @@ function requireUuid(value, name) {
   return text;
 }
 
-async function runTransaction(clientOrNull, operation) {
+export async function runTransaction(clientOrNull, operation) {
   if (clientOrNull) {
     return operation(clientOrNull);
   }
@@ -169,9 +169,10 @@ export function computeOverallRanking(scores) {
 
 /**
  * Criterio 1 de desempate: mayor cantidad de rubros nominativos ganados.
- * [NECESITA ACLARACIÓN]: Confluence dice "cantidad de rubros nominativos ganados";
- * Obsidian `carnival-domain.md` dice "suma de rubros nominativos". Esta función
- * implementa la interpretación de Confluence (conteo) hasta confirmación oficial.
+ * Fuente normativa: Confluence C2 «Guía del equipo» (sección «Desempate (solo Mejor Comparsa)»),
+ * confirmado por el responsable el 2026-09-01 (ver specs/010-resultados/clarifications.md).
+ * La nota de Obsidian `Skills/carnival-domain.md` («suma de rubros nominativos») queda
+ * como referencia complementaria, no normativa.
  */
 function countWonNominativeRubrics(troupeId, rubricRankings) {
   let count = 0;
@@ -202,9 +203,11 @@ function findBatteryWinner(rubricRankings) {
  * Resuelve el desempate para Mejor Comparsa.
  * RF-95, RF-96.
  *
- * Criterio 1: mayor cantidad de rubros nominativos ganados [NECESITA ACLARACIÓN].
+ * Criterio 1: mayor cantidad de rubros nominativos ganados (Confluence, oficial 2026-09-01).
  * Criterio 2: ganadora en Mejor Batería.
- * Criterio 3: sorteo manual [NECESITA ACLARACIÓN] → arroja error para registro manual.
+ * Criterio 3: sorteo — ver Spec 011 «Sorteo ceremonial con conteo regresivo». Mientras tanto,
+ * se exige registro manual mediante `TIE_BREAKER_REQUIRES_MANUAL_DRAW` para no generar
+ * aleatoriedad sin flujo ceremonial aprobado.
  */
 export function resolveTieBreaker({ tiedTroupeIds, rubricRankings, overallRanking }) {
   if (!Array.isArray(tiedTroupeIds) || tiedTroupeIds.length < 2) {
@@ -287,7 +290,7 @@ async function requireResultsReleased(client, eventId) {
 
 export async function releaseResults({ eventId, actorUserId, client: injectedClient = null }) {
   const id = requireUuid(eventId, "eventId");
-  const actor = requireUuid(actorUserId, "actorUserId");
+  const actor = requireText(actorUserId, "actorUserId");
   return runTransaction(injectedClient, async (client) => {
     const { rows: events } = await client.query(
       "SELECT id FROM carnival_event WHERE id = $1 FOR UPDATE",
@@ -327,7 +330,7 @@ export async function releaseResults({ eventId, actorUserId, client: injectedCli
  */
 export async function computeResults({ eventId, actorUserId, client: injectedClient = null }) {
   const id = requireUuid(eventId, "eventId");
-  const actor = actorUserId ? requireUuid(actorUserId, "actorUserId") : null;
+  const actor = actorUserId ? requireText(actorUserId, "actorUserId") : null;
   return runTransaction(injectedClient, async (client) => {
     await requireResultsReleased(client, id);
     const scores = await fetchConsolidatedScores({ eventId: id, client });

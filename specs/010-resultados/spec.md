@@ -43,7 +43,7 @@ Calcular y exponer los resultados oficiales de una edición de Carnaval de forma
 
 ## Criterios de finalización
 
-- [NECESITA ACLARACIÓN]: la fuente de Confluence define el criterio 1 de desempate como «mayor cantidad de rubros nominativos ganados», mientras que la nota `carnival-domain` de Obsidian lo describe como «suma de rubros nominativos». Ambas llevan a resultados distintos. Se debe confirmar cuál es el criterio oficial antes de implementar RF-96.
+- Criterio 1 de desempate oficial: **mayor cantidad de rubros nominativos ganados** (fuente normativa Confluence C2 «Guía del equipo», sección «Desempate (solo Mejor Comparsa)»). Confirmado por el responsable el 2026-09-01. La nota de Obsidian `Skills/carnival-domain.md` queda como referencia complementaria, no normativa, ante cualquier conflicto.
 - Los cálculos son determinísticos y reproducibles.
 - Los resultados solo se exponen en la etapa autorizada.
 - El desempate aplica exclusivamente a Mejor Comparsa.
@@ -51,6 +51,5 @@ Calcular y exponer los resultados oficiales de una edición de Carnaval de forma
 
 ## Dudas
 
-- `[NECESITA ACLARACIÓN]` Criterio 1 de desempate: ¿«cantidad de rubros nominativos ganados» (Confluence) o «suma de rubros nominativos» (Obsidian)?
-- ¿El sorteo se ejecuta por el sistema (generación aleatoria auditada) o lo realiza un operador y el sistema solo lo registra? La spec `carnival-domain` dice «con registro auditado»; falta confirmar quién ejecuta el sorteo.
+- **Sorteo del criterio 3:** se difiere a Spec 011 — "Sorteo ceremonial con conteo regresivo". Mientras tanto, el código conserva el error `TIE_BREAKER_REQUIRES_MANUAL_DRAW` para forzar registro manual por el operador autorizado.
 - ¿Dónde se expone el resultado «etapa autorizada»: solo una vista de escrutinio (rol SCRUTINEER/Escribano/Admin) o también un reporte descargable? (las actas se difieren).

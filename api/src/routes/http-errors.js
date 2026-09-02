@@ -19,6 +19,28 @@ export function sendKnownError(response, error) {
     });
     return true;
   }
+  if (
+    [
+      "TIE_BREAKER_NOT_REQUIRED",
+      "TIE_BREAKER_ALREADY_DRAWN",
+      "TIE_BREAKER_STALE",
+    ].includes(error.message)
+  ) {
+    response.status(409).json({
+      code: error.message,
+      expectedTroupeIds: error.expectedTroupeIds,
+      receivedTroupeIds: error.receivedTroupeIds,
+    });
+    return true;
+  }
+  if (
+    ["TIE_BREAKER_EMPTY_DRAW_POOL", "TIE_BREAKER_INVALID_DRAW_INPUT"].includes(
+      error.message,
+    )
+  ) {
+    response.status(422).json({ code: error.message });
+    return true;
+  }
   if (error.message === "EVENT_LOCKED" || error.message === "LAST_ADMIN_REQUIRED") {
     response.status(409).json({ code: error.message });
     return true;

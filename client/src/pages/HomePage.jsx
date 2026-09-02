@@ -8,6 +8,7 @@ export function HomePage({ session }) {
           {session.roles?.includes("ADMIN") && <a className="button-link" href="#/admin/events">Administrar eventos</a>}
           {session.roles?.includes("ADMIN") && <a className="button-link" href="#/admin/judges">Administrar jurados</a>}
           {session.roles?.includes("JUDGE") && <a className="button-link" href="#/judge">Mi panel de jurado</a>}
+          {session.roles?.includes("SCRUTINEER") && <a className="button-link" href="#/admin/results">Abrir escrutinio</a>}
           {session.roles?.length === 0 && <p>Tu cuenta no tiene un rol operativo asignado.</p>}
         </div>
       </div>

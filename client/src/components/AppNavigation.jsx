@@ -44,6 +44,7 @@ export function AppNavigation({ session }) {
         {session.roles?.includes("ADMIN") && <a href="#/admin/judges" aria-current={currentRoute === "#/admin/judges" ? "page" : undefined}>Personas</a>}
         {session.roles?.includes("ADMIN") && <a href="#/admin/assignments" aria-current={currentRoute === "#/admin/assignments" ? "page" : undefined}>Asignaciones</a>}
         {session.roles?.includes("ADMIN") && <a href="#/admin/voting" aria-current={currentRoute === "#/admin/voting" ? "page" : undefined}>Votación</a>}
+        {session.roles?.includes("SCRUTINEER") && <a href="#/admin/results" aria-current={currentRoute === "#/admin/results" ? "page" : undefined}>Escrutinio</a>}
         {session.roles?.includes("JUDGE") && <a href="#/judge" aria-current={currentRoute === "#/judge" ? "page" : undefined}>Mi panel</a>}
       </nav>
       <div className="session-actions">

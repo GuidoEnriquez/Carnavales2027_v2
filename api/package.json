@@ -15,6 +15,7 @@
     "bootstrap:admin": "node src/scripts/bootstrap-admin.js",
     "db:seed": "node src/db/seed.js",
     "db:seed:goya": "node src/scripts/seed-goya-2027.js",
+    "db:seed:test": "node src/scripts/seed-test-prueba.js",
     "db:test": "node --import=dotenv/config --test src/db/tests/**/*.test.js"
   },
   "dependencies": {

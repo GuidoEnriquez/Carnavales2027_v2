@@ -79,6 +79,9 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
      || filename === "051_operational_invitations.sql"
      || filename === "052_harden_operational_invitations.sql"
      || filename === "053_rubric_kind_results_stage.sql"
+     || filename === "054_tie_breaker_ceremonial_draw_unique.sql"
+     || filename === "055_add_escribano_role.sql"
+     || filename === "056_consolidate_escribano_into_scrutineer.sql"
   )));
 
   const status = await getMigrationStatus();
@@ -347,7 +350,22 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
       filename: "053_rubric_kind_results_stage.sql",
       version: "053",
       applied: true,
-    }
+    },
+    {
+      filename: "054_tie_breaker_ceremonial_draw_unique.sql",
+      version: "054",
+      applied: true,
+    },
+    {
+      filename: "055_add_escribano_role.sql",
+      version: "055",
+      applied: true,
+    },
+    {
+      filename: "056_consolidate_escribano_into_scrutineer.sql",
+      version: "056",
+      applied: true,
+    },
   ]);
 
   const secondRun = await migrate();

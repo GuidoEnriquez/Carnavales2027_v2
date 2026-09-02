@@ -15,13 +15,14 @@
 | Spec 006 | Implementada y validada automáticamente y de forma manual en Chrome de escritorio con emulación responsive 320px, 768px y escritorio. | `specs/006-cierre-sin-reapertura/validation.md` |
 | Spec 007 | Aprobada, implementada y validada automáticamente y de forma manual en Chrome de escritorio con emulación responsive 320px, 768px y escritorio. | `specs/007-inmutabilidad-por-item/validation.md` |
 | Spec 008 | Emisión, inspección y aceptación de accesos auxiliares validadas: token hasheado, exclusión de `ADMIN`, login/2FA, altas unificadas con Jurados y UI manualmente comprobada en Chrome responsive. | `specs/008-gestion-accesos/validation.md` |
+| Spec 009 | Implementación, validación automática y **comprobación manual** completadas el 2026-09-01 (390x844, 768x1024, 1440x900, teclado y emulación táctil). Aceptada y cerrada. | `specs/009-experiencia-operativa-jurado/validation.md` |
+| Spec 010 | Implementación, validación automática y criterio 1 de desempate confirmados el 2026-09-01 (fuente oficial Confluence C2). Criterio 3 (sorteo) diferido a Spec 011. **Aceptada y cerrada.** | `specs/010-resultados/validation.md` |
 
 ## Incremento vigente
 
 | Incremento | Estado | Evidencia principal |
 |---|---|---|
-| Spec 009 | Implementación y validación automática completadas. **Pendiente comprobación manual** de responsive, teclado y emulación táctil en 390x844, 768x1024 y 1440x900 (la realiza el responsable). | `specs/009-experiencia-operativa-jurado/validation.md` |
-| Spec 010 | Implementada y validada automáticamente (DB 37, API 71, cliente 53, build OK). Pendiente confirmación del criterio 1 de desempate y autoría del sorteo. | `specs/010-resultados/validation.md` |
+| Spec 011 | T01–T05 implementados y validados automáticamente; vista `#/admin/results` integrada. Pendientes T06–T07: validación manual y cierre final. | `specs/011-sorteo-ceremonial/` |
 
 ## Diferido explícitamente
 
@@ -37,7 +38,7 @@
 
 ## Próxima puerta SDD
 
-El incremento vigente es Spec 009 - Experiencia operativa del jurado. Offline-First, penalizaciones, escrutinio, resultados y actas continúan requiriendo sus propias specs aprobadas.
+El incremento vigente es Spec 011 — Sorteo ceremonial con conteo regresivo (criterio 3 del desempate de Mejor Comparsa). Offline-First, penalizaciones, escrutinio y actas continúan requiriendo sus propias specs aprobadas.
 
 Antes de iniciar cualquier incremento posterior (como Escrutinio, Resultados o Penalizaciones), se debe redactar y aprobar su especificación e iniciar un nuevo ciclo:
 
@@ -51,9 +52,6 @@ Toda spec que modifique una pantalla operativa debe declarar el criterio de uso 
 
 ## Verificación de referencia
 
-Al 2026-09-01, la última ejecución registrada para Spec 009 reportó:
+Al 2026-09-01, Specs 009 y 010 quedaron cerradas con validación manual aceptada.
 
-- Cliente: 53 passed.
-- Build de cliente: exitoso.
-
-Las últimas evidencias aceptadas de API y persistencia permanecen en las validaciones de Specs 007 y 008: API 60 passed y DB 27 passed.
+Las últimas evidencias automatizadas aceptadas permanecen en Spec 009 (cliente 53 passed y build OK) y Spec 010 (DB 37, API 71, cliente 53, build OK).

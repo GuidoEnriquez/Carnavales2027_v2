@@ -3,7 +3,8 @@
 ## Estado
 
 - **Implementación y validación automatizada completadas:** 2026-09-01.
-- Pendiente: confirmación por el responsable del criterio 1 de desempate `[NECESITA ACLARACIÓN]` y de la autoría del sorteo (criterio 3).
+- **Criterio 1 de desempate confirmado** (2026-09-01, responsable Guido): fuente oficial Confluence C2 «Guía del equipo» — *mayor cantidad de rubros nominativos ganados*. Implementación actual en `resolveTieBreaker` alineada.
+- **Criterio 3 (sorteo):** diferido a Spec 011 «Sorteo ceremonial con conteo regresivo». Mientras tanto, `TIE_BREAKER_REQUIRES_MANUAL_DRAW` exige registro por operador autorizado.
 
 ## Evidencia ejecutada
 
@@ -30,10 +31,10 @@
 | RF-96 secuencia de desempate | `resolveTieBreaker`: criterios 1 (conteo nominativos) y 2 (Batería), criterio 3 sorteo manual con `TIE_BREAKER_REQUIRES_MANUAL_DRAW`. |
 | RF-97 trazabilidad/auditoría | `RESULTS_RELEASED`, `RESULTS_COMPUTED`, `RESULTS_TIE_BREAKER_APPLIED`; tests RF-97 cubren liberación, cómputo y desempate. |
 
-## Dudas pendientes de confirmación
+## Dudas resueltas
 
-- **Criterio 1 de desempate:** implementada la interpretación de Confluence ("cantidad de rubros nominativos ganados"). Si el oficial es el de Obsidian ("suma de rubros nominativos"), ajustar `resolveTieBreaker`.
-- **Sorteo (criterio 3):** implementado como error `TIE_BREAKER_REQUIRES_MANUAL_DRAW` para registro manual, sin generar aleatoriedad por sistema. Si el oficial es sorteo automático auditable, implementarlo en un ajuste.
+- **Criterio 1 de desempate:** oficial = "mayor cantidad de rubros nominativos ganados" (Confluence). Implementación actual en `countWonNominativeRubrics` confirmada.
+- **Sorteo (criterio 3):** se difiere a Spec 011 «Sorteo ceremonial con conteo regresivo». Hasta su aprobación, `resolveTieBreaker` arroja `TIE_BREAKER_REQUIRES_MANUAL_DRAW` y exige registro por el operador autorizado; el sistema no genera aleatoriedad.
 
 ## Límites de validación
 

@@ -3,7 +3,8 @@
 ## Estado
 
 - Implementación y validación automatizada completadas el 2026-09-01.
-- Pendiente: comprobación manual en 390x844, 768x1024 y 1440x900 con teclado y emulación táctil.
+- **Comprobación manual completada el 2026-09-01** (responsable: Guido): recorridas login, home del jurado y planilla en 390x844, 768x1024 y 1440x900; controles de nota ≥ 48 px verificados; emulación táctil sin hover operativa; teclado (foco inicial, Tab, Escape y retorno de foco) verificado en los tres diálogos (pendientes, confirmación Spec 007 y acción); conexión, progreso, comparsa y especialidad permanecen legibles durante la carga.
+- Incremento aceptado y cerrado.
 
 ## Evidencia ejecutada
 
@@ -25,9 +26,11 @@
 | RF-86 | `JudgeBallotPage.test.jsx` conserva el diálogo de pendientes, cierre por `cancel` y retorno de foco al disparador. |
 | RF-88 | `App.test.jsx`, `LoginPage.test.jsx`, `JudgeHomePage.test.jsx` y `JudgeBallotPage.test.jsx` verifican identidad de login, cards derivadas por comparsa y su navegación hacia la planilla, sin introducir edición de decisiones confirmadas. |
 
-## Comprobación manual pendiente
+## Comprobación manual
 
-1. Abrir login, home y planilla en 390x844, 768x1024 y 1440x900.
-2. Verificar controles de nota de al menos 48 px y operación con emulación táctil sin hover.
-3. Recorrer los tres diálogos con teclado: foco inicial, Tab, Escape y retorno de foco.
-4. Confirmar que conexión, progreso, comparsa y especialidad permanecen legibles durante la carga.
+1. ✅ Abrir login, home y planilla en 390x844, 768x1024 y 1440x900.
+2. ✅ Verificar controles de nota de al menos 48 px y operación con emulación táctil sin hover.
+3. ✅ Recorrer los tres diálogos con teclado: foco inicial, Tab, Escape y retorno de foco.
+4. ✅ Confirmar que conexión, progreso, comparsa y especialidad permanecen legibles durante la carga.
+
+> Resultado: sin hallazgos. Spec 009 aceptada.
