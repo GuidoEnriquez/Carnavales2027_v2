@@ -34,4 +34,28 @@ describe("AdminAssignmentsPage", () => {
     ));
     expect(screen.queryByText(/puntuar/i)).not.toBeInTheDocument();
   });
+
+  it("activa solo el suplente reservado con un motivo", async () => {
+    const assignments = [
+      { id: "primary-1", judgeName: "Titular", judgeProfileId: "judge-1", nightName: "Noche 1", specialtyName: "Baile", assignmentType: "PRIMARY", status: "ACTIVE", nightStatus: "OPEN" },
+      { id: "standby-1", judgeName: "Suplente", judgeProfileId: "judge-2", nightName: "Noche 1", specialtyName: "Baile", assignmentType: "SUBSTITUTE", standbyForAssignmentId: "primary-1", status: "ACTIVE", nightStatus: "OPEN" },
+    ];
+    apiRequest.mockImplementation((path) => {
+      if (path === "/api/v1/events") return Promise.resolve([{ id: "event-1", name: "Carnaval", status: "OPEN" }]);
+      if (path === "/api/v1/judges") return Promise.resolve([{ id: "judge-1", name: "Titular", registrationStatus: "REGISTERED" }, { id: "judge-2", name: "Suplente", registrationStatus: "REGISTERED" }]);
+      if (path.endsWith("/nights")) return Promise.resolve([{ id: "night-1", name: "Noche 1", kind: "COMPETITION", status: "OPEN" }]);
+      if (path.endsWith("/specialties")) return Promise.resolve([{ id: "specialty-1", name: "Baile", active: true }]);
+      if (path.endsWith("/judge-assignments")) return Promise.resolve({ quotas: [], assignments });
+      return Promise.resolve({});
+    });
+    render(<AdminAssignmentsPage />);
+    const button = await screen.findByRole("button", { name: "Activar suplente" });
+    const form = button.closest("form");
+    fireEvent.change(form.querySelector("input[name='reason']"), { target: { value: "Titular no finalizo" } });
+    fireEvent.submit(form);
+    await waitFor(() => expect(apiRequest).toHaveBeenCalledWith(
+      "/api/v1/judge-assignments/primary-1/activate-substitute",
+      { method: "POST", body: JSON.stringify({ reason: "Titular no finalizo" }) },
+    ));
+  });
 });

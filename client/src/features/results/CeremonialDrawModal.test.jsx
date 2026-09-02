@@ -3,12 +3,15 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { CeremonialDrawModal } from "./CeremonialDrawModal.jsx";
 
 const executeMock = vi.hoisted(() => vi.fn());
+const errorMock = vi.hoisted(() => vi.fn());
+const loadRecordedMock = vi.hoisted(() => vi.fn());
 vi.mock("./useCeremonialDraw.js", () => ({
   useCeremonialDraw: () => ({
     draw: null,
     loading: false,
-    error: null,
+    error: errorMock(),
     execute: executeMock,
+    loadRecorded: loadRecordedMock,
   }),
 }));
 
@@ -28,6 +31,7 @@ describe("CeremonialDrawModal", () => {
     cleanup();
     vi.useRealTimers();
     vi.clearAllMocks();
+    errorMock.mockReturnValue(null);
   });
 
   it("muestra las comparsas empatadas y enfoca iniciar", () => {
@@ -59,6 +63,7 @@ describe("CeremonialDrawModal", () => {
       remainingTroupeIds: ["troupe-a", "troupe-b"],
     });
     expect(getByText(/Comparsa B/)).toBeVisible();
+    expect(getByText("La ganadora de Mejor Comparsa es")).toBeVisible();
     expect(props.onResolved).toHaveBeenCalledWith(draw);
   });
 
@@ -85,5 +90,27 @@ describe("CeremonialDrawModal", () => {
     const { getByRole } = render(<CeremonialDrawModal {...props} />);
     act(() => getByRole("dialog").dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
     expect(props.onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("explica que no se puede repetir un sorteo ya registrado", () => {
+    errorMock.mockReturnValue({ code: "TIE_BREAKER_ALREADY_DRAWN" });
+    const { getByRole } = render(<CeremonialDrawModal {...props} />);
+
+    expect(getByRole("alert")).toHaveTextContent("El sorteo ya fue registrado");
+  });
+
+  it("recupera y revela la ganadora si el sorteo ya estaba registrado", async () => {
+    vi.useFakeTimers();
+    executeMock.mockRejectedValue(Object.assign(new Error("TIE_BREAKER_ALREADY_DRAWN"), { code: "TIE_BREAKER_ALREADY_DRAWN" }));
+    loadRecordedMock.mockResolvedValue({ eventId: "event-1", winnerTroupeId: "troupe-a", auditEventId: "audit-1" });
+    const { getByRole, getByText } = render(<CeremonialDrawModal {...props} />);
+
+    act(() => getByRole("button", { name: /iniciar sorteo/i }).click());
+    act(() => vi.advanceTimersByTime(5000));
+    await act(async () => { await Promise.resolve(); });
+
+    expect(loadRecordedMock).toHaveBeenCalledWith("event-1");
+    expect(getByText("La ganadora de Mejor Comparsa es")).toBeVisible();
+    expect(getByText("Comparsa A")).toBeVisible();
   });
 });

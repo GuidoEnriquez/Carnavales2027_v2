@@ -211,7 +211,7 @@ test("los cupos y asignaciones preservan integridad, capacidad e historia", {
     const replacementId = randomUUID();
     await client.query(
       `INSERT INTO judge_assignment(id,event_id,night_id,specialty_id,judge_profile_id,assignment_type,reason,replaced_assignment_id)
-       VALUES($1,$2,$3,$4,$5,'SUBSTITUTE','Cambio operativo',$6)`,
+       VALUES($1,$2,$3,$4,$5,'PRIMARY','Cambio operativo',$6)`,
       [replacementId, eventId, nightId, specialtyId, profileIds[1], assignmentId],
     );
     await client.query("SAVEPOINT history");

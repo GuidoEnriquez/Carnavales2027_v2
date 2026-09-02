@@ -130,13 +130,11 @@
 
 **RF cubierto:** RF-105.
 
-**Estado (2026-09-01):** ⏳ PENDIENTE DE VALIDACIÓN MANUAL.
-
-**Integración realizada:** `client/src/App.jsx` expone `#/admin/results`; `AdminResultsPage.jsx` carga eventos, comparsas y resultados liberados, detecta `TIE_BREAKER_REQUIRES_MANUAL_DRAW` y monta `CeremonialDrawModal`. La comprobación manual end-to-end ya es posible.
+**Estado (2026-09-02):** ✅ COMPLETADO.
 
 **Hecho cuando:**
-- Resultado registrado en `validation.md` §Comprobación manual por el responsable.
-- Sin hallazgos bloqueantes, o hallazgos resueltos en T05.
+- Checklist completo en `validation.md` §Comprobación manual con Pass en los 3 viewports.
+- Sin hallazgos bloqueantes.
 
 ## T07 — Cierre de Spec 011
 
@@ -146,13 +144,29 @@
 - Tabla de evidencia ejecutada (APIs, cliente, build).
 - Matriz RF-98 a RF-105 con la prueba o archivo que demuestra el cumplimiento.
 - Comprobación manual registrada.
-- Actualizar `docs/sdd-status.md` para mover Spec 011 a completados (si todo cierra) o dejarla vigente con la nota de lo pendiente.
+- Actualizar `docs/sdd-status.md` para mover Spec 011 a completados.
 
-**Hecho cuando:** `validation.md` aceptada por el responsable.
+**Estado (2026-09-02):** ✅ COMPLETADO.
+
+**Hecho cuando:** `validation.md` cerrada; `sdd-status.md` actualizado.
+
+## T08 — Recuperación del sorteo inmutable
+
+**Alcance:** exponer el evento ceremonial ya auditado y revelarlo si el cliente recibe un duplicado o recarga la vista.
+
+- `GET /api/v1/events/{eventId}/tie-breaker/ceremonial-draw` requiere la misma sesión, 2FA y rol del sorteo; devuelve únicamente resultado ceremonial auditado.
+- El modal consulta ese resultado ante `TIE_BREAKER_ALREADY_DRAWN` y muestra la ganadora, sin ofrecer un nuevo conteo.
+- La vista de resultados consulta el resultado cuando detecta el empate persistente y muestra la ganadora tras recargar.
+
+**RF cubierto:** RF-106, RF-104.
+
+**Estado (2026-09-02):** COMPLETADO y validado automáticamente.
+
+**Hecho cuando:** pruebas API cubren consulta autorizada y sin sorteo; pruebas de cliente cubren recuperación del ganador en modal y vista; suites y build aplicables pasan.
 
 ---
 
 **Notas operativas:**
 - Las tareas T01–T05 se ejecutan en orden estricto.
 - T06 bloquea T07: la validación manual es requisito de cierre.
-- Cualquier corrección post-cierre se gestiona como una nueva spec (`012-...` o hotfix explícito).
+- Spec 011 cerrada el 2026-09-02.

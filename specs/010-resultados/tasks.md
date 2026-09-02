@@ -10,8 +10,10 @@
 
 | Tarea | Estado | Evidencia |
 |---|---|---|
-| T01–T06 | Completadas históricamente | Evidencia en `validation.md`; el cierre queda reabierto por T07. |
-| T07 | Pendiente | Guardia de integridad de liberación (RF-94a). |
+| T01–T06 | Completadas | Evidencia en `validation.md`. |
+| T07 | Completada | Guardia de integridad de liberación, incluidas planillas `REPLACED` no votantes. |
+
+**Spec 010 cerrada el 2026-09-02.**
 
 ## T01 — Servicio de consolidación de puntajes
 

@@ -82,7 +82,10 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
      || filename === "054_tie_breaker_ceremonial_draw_unique.sql"
      || filename === "055_add_escribano_role.sql"
       || filename === "057_restore_escribano_role.sql"
-      || filename === "058_ceremonial_draw_audit_hash_chain.sql"
+       || filename === "058_ceremonial_draw_audit_hash_chain.sql"
+       || filename === "059_prioritized_substitutes.sql"
+       || filename === "060_preserve_ballot_reopen_error.sql"
+       || filename === "061_allow_standby_history.sql"
   )));
 
   const status = await getMigrationStatus();
@@ -375,6 +378,21 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
     {
       filename: "058_ceremonial_draw_audit_hash_chain.sql",
       version: "058",
+      applied: true,
+    },
+    {
+      filename: "059_prioritized_substitutes.sql",
+      version: "059",
+      applied: true,
+    },
+    {
+      filename: "060_preserve_ballot_reopen_error.sql",
+      version: "060",
+      applied: true,
+    },
+    {
+      filename: "061_allow_standby_history.sql",
+      version: "061",
       applied: true,
     },
   ]);

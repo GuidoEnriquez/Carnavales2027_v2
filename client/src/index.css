@@ -1046,28 +1046,38 @@ label { color: #cbd5e1; }
   position: sticky;
   z-index: 10;
   inset-block-start: 0;
-  max-inline-size: 1240px;
-  margin-block: 0 1.25rem;
-  border: 1px solid rgba(41, 53, 72, 0.9);
-  border-radius: 1rem;
-  padding: 0.75rem 1rem;
-  background: rgba(9, 13, 22, 0.92);
-  backdrop-filter: blur(1rem);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.55rem 1rem;
+  border-block-end: 1px solid rgba(41, 53, 72, 0.6);
+  background: rgba(9, 13, 22, 0.85);
+  backdrop-filter: blur(0.5rem);
 }
 .app-navigation .brand {
   color: var(--text-color);
   font-family: Inter, ui-sans-serif, sans-serif;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 800;
   letter-spacing: 0.02em;
 }
 .app-navigation .brand span { color: var(--muted-color); font-weight: 650; }
-.app-navigation nav { border-color: var(--line-color); background: #0d1523; }
-.app-navigation nav a { color: #cbd5e1; }
-.app-navigation nav a:hover { background: rgba(59, 130, 246, 0.16); }
-.app-navigation nav a[aria-current="page"] { background: var(--primary-color); }
-.nav-section-label { color: #64748b; }
-.session-actions { margin-inline-start: auto; color: var(--muted-color); font-size: 0.875rem; }
+.app-navigation nav { display: flex; flex-wrap: wrap; align-items: center; gap: 0.15rem; border: none; background: none; }
+.app-navigation nav a {
+  min-block-size: 2rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.4rem;
+  color: #94a3b8;
+  font-size: 0.82rem;
+  font-weight: 650;
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+}
+.app-navigation nav a:hover { color: #e2e8f0; background: rgba(148, 163, 184, 0.1); }
+.app-navigation nav a[aria-current="page"] { color: #f8fafc; background: rgba(148, 163, 184, 0.12); }
+.nav-section-label { padding-inline: 0.3rem 0.5rem; color: #4b5563; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.session-actions { margin-inline-start: auto; display: flex; align-items: center; gap: 0.5rem; color: #64748b; font-size: 0.8rem; }
 .connection-badge,
 .judge-status-badge,
 .status-pill {
@@ -1164,12 +1174,14 @@ label { color: #cbd5e1; }
 .judge-section-heading h2 { margin: 0; font-size: clamp(1.45rem, 3vw, 2rem); }
 .judge-section-heading > span { color: var(--muted-color); font-size: 0.85rem; }
 .judge-ballot-grid { display: grid; gap: 1rem; }
-.judge-ballot-card { display: grid; gap: 1rem; min-block-size: 19rem; border: 2px solid rgba(148, 163, 184, .36); border-radius: 1rem; padding: 1.6rem; background: var(--surface); box-shadow: 0 1rem 2rem rgba(0,0,0,.14); }
+.judge-ballot-card { position: relative; display: grid; gap: 1rem; min-block-size: 19rem; border: 2px solid rgba(148, 163, 184, .36); border-radius: 1rem; padding: 1.6rem; background: var(--surface); box-shadow: 0 1rem 2rem rgba(0,0,0,.14); }
 .judge-ballot-card.is-progress { border-inline-start: 5px solid var(--primary-color); }
 .judge-ballot-card.is-pending { border-inline-start: 5px solid #64748b; }
 .judge-ballot-card.is-ready { border-inline-start: 5px solid var(--accent-color); }
 .judge-ballot-card.is-closed { border-inline-start: 5px solid var(--success-color); background: linear-gradient(145deg, #111827, #102217); }
+.judge-ballot-card .judge-status-badge { position: absolute; inset-block-start: 1rem; inset-inline-end: 1rem; }
 .judge-ballot-card-header { display: flex; justify-content: space-between; gap: 0.75rem; }
+.judge-ballot-card-header > div { min-inline-size: 0; }
 .judge-ballot-card h3 { margin: 0; color: #dbe7ff; font-size: clamp(1.7rem, 5vw, 2.65rem); letter-spacing: -.04em; text-transform: uppercase; }
 .judge-status-badge.is-ready { color: #fde68a; }
 .judge-status-badge.is-progress { color: #93c5fd; }
@@ -1265,7 +1277,7 @@ label { color: #cbd5e1; }
 
 @media (max-width: 36rem) {
   body { padding: .65rem; }
-  .app-navigation { position: static; padding: .65rem .75rem; }
+  .app-navigation { position: static; padding: .55rem .75rem; }
   .session-actions { margin-inline-start: 0; }
   .session-actions > span:not(.connection-badge) { display: none; }
   .judge-ballot-card-header,

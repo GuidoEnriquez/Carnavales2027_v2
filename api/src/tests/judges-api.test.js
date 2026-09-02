@@ -385,7 +385,7 @@ test("ADMIN gestiona cupos y asignaciones, y JUDGE consulta solo las propias", {
     });
     assert.deepEqual({ status: duplicateNight.status, body: await duplicateNight.json() }, { status: 409, body: { code: "JUDGE_QUOTA_FULL" } });
     const replacement = await fetch(`${base}/api/v1/judge-assignments/${assignmentBody.id}/replace`, {
-      method: "POST", headers: adminHeaders, body: JSON.stringify({ replacementJudgeProfileId: secondProfileId, assignmentType: "SUBSTITUTE", reason: "Reemplazo operativo" }),
+      method: "POST", headers: adminHeaders, body: JSON.stringify({ replacementJudgeProfileId: secondProfileId, assignmentType: "PRIMARY", reason: "Reemplazo operativo" }),
     });
     assert.equal(replacement.status, 201);
     const replacementBody = await replacement.json();

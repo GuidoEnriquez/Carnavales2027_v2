@@ -9,6 +9,13 @@ function getTroupeName(troupes, id) {
   return troupe?.name ?? id;
 }
 
+function drawErrorMessage(error) {
+  if (error?.code === "TIE_BREAKER_ALREADY_DRAWN") return "El sorteo ya fue registrado. Cerrá este cuadro para consultar el resultado.";
+  if (error?.code === "TIE_BREAKER_STALE") return "El empate cambió. Cerrá y volvé a cargar los resultados antes de sortear.";
+  if (error?.code === "RESULTS_NOT_RELEASED") return "Los resultados todavía no fueron liberados.";
+  return "No se pudo registrar el sorteo. Reintentá.";
+}
+
 export function CeremonialDrawModal({
   eventId,
   remainingTroupeIds,
@@ -21,7 +28,7 @@ export function CeremonialDrawModal({
   const dialogRef = useRef(null);
   const [phase, setPhase] = useState("IDLE");
   const [resolvedDraw, setResolvedDraw] = useState(null);
-  const { execute, error } = useCeremonialDraw();
+  const { execute, error, loadRecorded } = useCeremonialDraw();
   const countdownRunningRef = useRef(false);
   const phaseRef = useRef("IDLE");
 
@@ -37,10 +44,21 @@ export function CeremonialDrawModal({
       setResolvedDraw(result);
       setPhase("DONE");
       onResolved?.(result);
-    } catch {
+    } catch (nextError) {
+      if (nextError.code === "TIE_BREAKER_ALREADY_DRAWN") {
+        try {
+          const result = await loadRecorded(eventId);
+          setResolvedDraw(result);
+          setPhase("DONE");
+          onResolved?.(result);
+          return;
+        } catch {
+          // Preserve the duplicate error when the recorded result cannot load.
+        }
+      }
       setPhase("IDLE");
     }
-  }, [eventId, execute, onResolved, remainingTroupeIds]);
+  }, [eventId, execute, loadRecorded, onResolved, remainingTroupeIds]);
 
   const countdown = useCountdown(COUNTDOWN_SECONDS, { onComplete: handleComplete });
 
@@ -117,7 +135,7 @@ export function CeremonialDrawModal({
                   <li key={id}>{getTroupeName(tiedTroupeNames, id)}</li>
                 ))}
               </ul>
-              {error && <p className="ceremonial-draw-error" role="alert">No se pudo registrar el sorteo. Reintentá.</p>}
+              {error && <p className="ceremonial-draw-error" role="alert">{drawErrorMessage(error)}</p>}
               <div className="ceremonial-draw-actions">
                 <button ref={startButtonRef} type="button" onClick={start}>
                   Iniciar sorteo ceremonial
@@ -144,7 +162,7 @@ export function CeremonialDrawModal({
           {phase === "DONE" && resolvedDraw && (
             <div className="winner-reveal" aria-live="assertive">
               <p id="ceremonial-draw-description">Resultado registrado en auditoría</p>
-              <span className="winner-reveal-label">Ganadora</span>
+              <span className="winner-reveal-label">La ganadora de Mejor Comparsa es</span>
               <strong>{winnerName}</strong>
               <small>Método: {resolvedDraw.method ?? "MATH_RANDOM_TRACEABLE"}</small>
               <button ref={startButtonRef} type="button" onClick={close}>Cerrar resultado</button>

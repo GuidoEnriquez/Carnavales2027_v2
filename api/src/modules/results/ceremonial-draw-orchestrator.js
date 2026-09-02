@@ -157,3 +157,26 @@ export async function executeCeremonialDraw({
     };
   });
 }
+
+/**
+ * Recupera el único sorteo ceremonial auditado para el evento, sin alterar la
+ * cadena de auditoría ni recalcular el resultado.
+ */
+export async function getRecordedCeremonialDraw({ eventId }) {
+  return runTransaction(null, async (client) => {
+    const { rows } = await client.query(
+      `SELECT id AS "auditEventId",
+              after_data->>'winnerTroupeId' AS "winnerTroupeId",
+              after_data->>'method' AS method,
+              created_at AS "recordedAt"
+         FROM audit_event
+        WHERE entity_type = 'results'
+          AND entity_id = $1
+          AND action = 'RESULTS_TIE_BREAKER_CEREMONIAL_DRAW'
+        LIMIT 1`,
+      [eventId],
+    );
+    if (!rows[0]) throw new Error("TIE_BREAKER_DRAW_NOT_FOUND");
+    return { eventId, ...rows[0] };
+  });
+}

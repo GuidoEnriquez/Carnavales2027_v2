@@ -10,6 +10,7 @@ export function AdminAssignmentsPage() {
   const [specialties, setSpecialties] = useState([]);
   const [data, setData] = useState({ quotas: [], assignments: [] });
   const [eventId, setEventId] = useState("");
+  const [assignmentType, setAssignmentType] = useState("PRIMARY");
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
   const selectedEvent = events.find((event) => event.id === eventId);
@@ -60,6 +61,8 @@ export function AdminAssignmentsPage() {
         EVENT_LOCKED: "El evento ya no permite modificar esa configuración.",
         NIGHT_CLOSED: "La noche ya está cerrada.",
         JUDGE_NOT_ASSIGNABLE: "El jurado no está registrado o está suspendido.",
+        PRIMARY_BALLOT_SUBMITTED: "El titular ya presentó su planilla y no puede ser reemplazado.",
+        STANDBY_NOT_FOUND: "Esta asignación no tiene un suplente activo vinculado.",
       };
       setMessage(messages[error.code] ?? "No se pudo completar la operación.");
     } finally {
@@ -86,6 +89,7 @@ export function AdminAssignmentsPage() {
       body: JSON.stringify({
         nightId: values.get("nightId"), specialtyId: values.get("specialtyId"),
         judgeProfileId: values.get("judgeProfileId"), assignmentType: values.get("assignmentType"),
+        standbyForAssignmentId: values.get("standbyForAssignmentId") || undefined,
       }),
     }), "Asignación creada.");
     form.reset();
@@ -102,8 +106,15 @@ export function AdminAssignmentsPage() {
     const values = new FormData(form);
     await action(`replace-${assignmentId}`, () => apiRequest(`/api/v1/judge-assignments/${assignmentId}/replace`, {
       method: "POST",
-      body: JSON.stringify({ replacementJudgeProfileId: values.get("replacementJudgeProfileId"), assignmentType: values.get("assignmentType"), reason: values.get("reason") }),
+      body: JSON.stringify({ replacementJudgeProfileId: values.get("replacementJudgeProfileId"), assignmentType: "PRIMARY", reason: values.get("reason") }),
     }), "Asignación reemplazada.");
+  };
+
+  const activateSubstitute = async (assignmentId, form) => {
+    const values = new FormData(form);
+    await action(`activate-${assignmentId}`, () => apiRequest(`/api/v1/judge-assignments/${assignmentId}/activate-substitute`, {
+      method: "POST", body: JSON.stringify({ reason: values.get("reason") }),
+    }), "Suplente activado; su planilla ya está disponible.");
   };
 
   return (
@@ -133,20 +144,27 @@ export function AdminAssignmentsPage() {
             <label>Noche<select name="nightId" required><option value="">Elegir noche</option>{availableNights.map((night) => <option key={night.id} value={night.id}>{night.name}</option>)}</select></label>
             <label>Especialidad<select name="specialtyId" required><option value="">Elegir especialidad</option>{specialties.map((specialty) => <option key={specialty.id} value={specialty.id}>{specialty.name}</option>)}</select></label>
             <label>Jurado<select name="judgeProfileId" required><option value="">Elegir jurado</option>{judges.map((judge) => <option key={judge.id} value={judge.id}>{judge.name}</option>)}</select></label>
-            <label>Tipo<select name="assignmentType"><option value="PRIMARY">Titular</option><option value="SUBSTITUTE">Suplente</option></select></label>
+            <label>Tipo<select name="assignmentType" value={assignmentType} onChange={(event) => setAssignmentType(event.target.value)}><option value="PRIMARY">Titular</option><option value="SUBSTITUTE">Suplente</option></select></label>
+            {assignmentType === "SUBSTITUTE" && <label>Titular asignado<select name="standbyForAssignmentId" required><option value="">Elegir titular</option>{data.assignments.filter((assignment) => assignment.status === "ACTIVE" && assignment.assignmentType === "PRIMARY").map((assignment) => <option key={assignment.id} value={assignment.id}>{assignment.judgeName} · {assignment.nightName} · {assignment.specialtyName}</option>)}</select></label>}
             <button disabled={Boolean(busy) || !canConfigure}>Asignar</button>
           </form>
         </section>
         <section className="assignment-grid" aria-label="Historial de asignaciones">
           {data.assignments.length === 0 && <p className="empty-state">Todavía no hay asignaciones para este evento.</p>}
-          {data.assignments.map((assignment) => <article className={`assignment-card assignment-${assignment.status.toLowerCase()}`} key={assignment.id}>
+          {data.assignments.map((assignment) => {
+            const standby = data.assignments.find((candidate) => candidate.status === "ACTIVE" && candidate.standbyForAssignmentId === assignment.id);
+            return <article className={`assignment-card assignment-${assignment.status.toLowerCase()}`} key={assignment.id}>
             <div className="judge-card-heading"><div><p className="eyebrow">{assignment.nightName} · {assignment.specialtyName}</p><h2>{assignment.judgeName}</h2><p>{typeLabels[assignment.assignmentType]}</p></div><span className="status-pill">{assignment.status === "ACTIVE" ? "Activa" : "Revocada"}</span></div>
             {assignment.replacedAssignmentId && <p>Reemplaza una asignación anterior.</p>}
+            {assignment.assignmentType === "SUBSTITUTE" && assignment.status === "ACTIVE" && <p>En espera del titular asignado.</p>}
+            {standby && <p>Suplente reservado: <strong>{standby.judgeName}</strong>.</p>}
             {assignment.status === "ACTIVE" && <div className="assignment-actions">
               <form onSubmit={(event) => { event.preventDefault(); void revoke(assignment.id, event.currentTarget); }}><label>Motivo de revocación<input name="reason" required /></label><button className="danger-action" disabled={Boolean(busy) || assignment.nightStatus === "CLOSED"}>Revocar</button></form>
-              <form onSubmit={(event) => { event.preventDefault(); void replace(assignment.id, event.currentTarget); }}><label>Reemplazar por<select name="replacementJudgeProfileId" required><option value="">Elegir jurado</option>{judges.filter((judge) => judge.id !== assignment.judgeProfileId).map((judge) => <option key={judge.id} value={judge.id}>{judge.name}</option>)}</select></label><label>Tipo<select name="assignmentType"><option value="PRIMARY">Titular</option><option value="SUBSTITUTE">Suplente</option></select></label><label>Motivo<input name="reason" required /></label><button disabled={Boolean(busy) || assignment.nightStatus === "CLOSED"}>Reemplazar</button></form>
+              {standby && <form onSubmit={(event) => { event.preventDefault(); void activateSubstitute(assignment.id, event.currentTarget); }}><label>Motivo de activación<input name="reason" required /></label><button disabled={Boolean(busy) || assignment.nightStatus === "CLOSED"}>Activar suplente</button></form>}
+              <form onSubmit={(event) => { event.preventDefault(); void replace(assignment.id, event.currentTarget); }}><label>Reemplazar por<select name="replacementJudgeProfileId" required><option value="">Elegir jurado</option>{judges.filter((judge) => judge.id !== assignment.judgeProfileId).map((judge) => <option key={judge.id} value={judge.id}>{judge.name}</option>)}</select></label><label>Motivo<input name="reason" required /></label><button disabled={Boolean(busy) || assignment.nightStatus === "CLOSED"}>Reemplazar</button></form>
             </div>}
-          </article>)}
+          </article>;
+          })}
         </section>
       </>}
     </main>

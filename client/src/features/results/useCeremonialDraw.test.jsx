@@ -71,4 +71,14 @@ describe("useCeremonialDraw", () => {
     expect(hook.error).toBe(error);
     expect(hook.loading).toBe(false);
   });
+
+  it("recupera el resultado ceremonial auditado", async () => {
+    const result = { eventId: "event-1", winnerTroupeId: "troupe-a", auditEventId: "audit-1" };
+    apiRequestMock.mockResolvedValue(result);
+    let hook;
+    render(<HookHarness onReady={(value) => { hook = value; }} />);
+
+    await expect(hook.loadRecorded("event-1")).resolves.toEqual(result);
+    expect(apiRequestMock).toHaveBeenCalledWith("/api/v1/events/event-1/tie-breaker/ceremonial-draw");
+  });
 });

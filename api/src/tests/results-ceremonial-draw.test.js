@@ -154,6 +154,10 @@ test("API sorteo ceremonial: autoriza, sortea y audita; impide duplicado y pool 
     assert.equal((await listedTroupes.json()).length, 2);
 
     const body = { remainingTroupeIds: data.troupeIds };
+    const beforeDraw = await fetch(path, { headers: jsonHeaders("scrutineer") });
+    assert.equal(beforeDraw.status, 404);
+    assert.equal((await beforeDraw.json()).code, "TIE_BREAKER_DRAW_NOT_FOUND");
+
     const denied = await fetch(path, { method: "POST", headers: jsonHeaders("veedor"), body: JSON.stringify(body) });
     assert.equal(denied.status, 403);
     assert.equal((await denied.json()).code, "RESULTS_ACCESS_DENIED");
@@ -176,6 +180,15 @@ test("API sorteo ceremonial: autoriza, sortea y audita; impide duplicado y pool 
     assert.ok(data.troupeIds.includes(result.winnerTroupeId));
     assert.equal(result.method, "CRYPTO_RANDOM_INT");
     assert.ok(result.auditEventId);
+
+    const recorded = await fetch(path, { headers: jsonHeaders("escribano") });
+    assert.equal(recorded.status, 200);
+    const recordedResult = await recorded.json();
+    assert.equal(recordedResult.eventId, data.eventId);
+    assert.equal(recordedResult.winnerTroupeId, result.winnerTroupeId);
+    assert.equal(recordedResult.method, result.method);
+    assert.equal(recordedResult.auditEventId, result.auditEventId);
+    assert.ok(recordedResult.recordedAt);
 
     const adminDuplicate = await fetch(path, { method: "POST", headers: jsonHeaders("admin"), body: JSON.stringify(body) });
     assert.equal(adminDuplicate.status, 409);

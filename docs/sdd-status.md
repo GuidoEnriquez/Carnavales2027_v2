@@ -16,19 +16,14 @@
 | Spec 007 | Aprobada, implementada y validada automáticamente y de forma manual en Chrome de escritorio con emulación responsive 320px, 768px y escritorio. | `specs/007-inmutabilidad-por-item/validation.md` |
 | Spec 008 | Emisión, inspección y aceptación de accesos auxiliares validadas: token hasheado, exclusión de `ADMIN`, login/2FA, altas unificadas con Jurados y UI manualmente comprobada en Chrome responsive. | `specs/008-gestion-accesos/validation.md` |
 | Spec 009 | Implementación, validación automática y **comprobación manual** completadas el 2026-09-01 (390x844, 768x1024, 1440x900, teclado y emulación táctil). Aceptada y cerrada. | `specs/009-experiencia-operativa-jurado/validation.md` |
-
-## Incremento vigente
-
-| Incremento | Estado | Evidencia principal |
-|---|---|---|
-| Spec 010 | Reabierta: T07 implementa guardias de liberación contra resultados parciales; falta cierre documental final. | `specs/010-resultados/validation.md` |
-| Spec 011 | T01–T05 implementados y validados automáticamente; pendientes T06–T07 manuales. | `specs/011-sorteo-ceremonial/` |
-| Spec 012 | Cliente online únicamente implementado y validado automáticamente; falta comprobación manual. | `specs/012-planilla-online-unicamente/` |
+| Spec 010 | Consolidación de puntajes, rankings, desempate (criterios 1–2), trazabilidad y guardia de integridad de liberación (RF-94a). Cerrada el 2026-09-02. | `specs/010-resultados/validation.md` |
+| Spec 011 | Sorteo ceremonial: servicio backend, endpoint HTTP, hook countdown, modal accesible, estilos CSS, recuperación inmutable y validación manual (12 criterios × 3 viewports). Cerrada el 2026-09-02. | `specs/011-sorteo-ceremonial/validation.md` |
+| Spec 012 | Planilla online únicamente: simplificación a operación 100% online, eliminación de persistencia local y controles de sync, validación manual responsive (12 criterios × 3 viewports). Cerrada el 2026-09-02. | `specs/012-planilla-online-unicamente/validation.md` |
+| Spec 013 | Suplencias priorizadas: pares fijos titular/suplente, activación ADMIN+2FA, transición `REPLACED`, cierre y liberación. Validada automáticamente y manualmente (Asignaciones). Cerrada el 2026-09-02. | `specs/013-suplencias-priorizadas/validation.md` |
 
 ## Diferido explícitamente
 
 - Penalizaciones.
-- Penalizaciones, actas y publicación externa de resultados.
 - Escrutinio operativo y actas.
 - Conexión y sincronización Offline-First (Spec 005): funcionalidad futura; Spec 012 retiró su uso del cliente actual.
 
@@ -39,9 +34,9 @@
 
 ## Próxima puerta SDD
 
-Los incrementos abiertos son Spec 010 (cierre documental), Spec 011 (validación manual del sorteo) y Spec 012 (validación manual online-only). Offline-First, penalizaciones y actas continúan requiriendo sus propias specs aprobadas.
+No hay incrementos activos. Todos los specs 001–013 están cerrados.
 
-Antes de iniciar cualquier incremento posterior (como Escrutinio, Resultados o Penalizaciones), se debe redactar y aprobar su especificación e iniciar un nuevo ciclo:
+Offline-First, penalizaciones, escrutinio y actas continúan requiriendo sus propias specs aprobadas. Antes de iniciar cualquier incremento posterior, se debe redactar y aprobar su especificación e iniciar un nuevo ciclo:
 
 ```text
 spec → clarificaciones → plan → tareas → implementación → validación
@@ -53,4 +48,4 @@ Toda spec que modifique una pantalla operativa debe declarar el criterio de uso 
 
 ## Verificación de referencia
 
-Al 2026-09-02, las últimas evidencias automatizadas son API 78, DB 38, cliente 67 y build exitoso. Las validaciones manuales abiertas se registran en Specs 011 y 012.
+Al 2026-09-02, las evidencias automatizadas son API 80, DB 38, cliente 73 y build exitoso. Specs 011 y 012 cerradas; todos los incrementos (001–013) completados.

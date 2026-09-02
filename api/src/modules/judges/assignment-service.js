@@ -1,5 +1,6 @@
 import { auditEvent } from "../../audit/audit-service.js";
 import { getPool } from "../../db/pool.js";
+import { createBallotsForNight } from "../ballots/ballot-service.js";
 
 const assignmentTypes = new Set(["PRIMARY", "SUBSTITUTE"]);
 
@@ -103,6 +104,7 @@ function assignmentView(row) {
     assignmentType: row.assignmentType,
     status: row.status,
     reason: row.reason,
+    standbyForAssignmentId: row.standbyForAssignmentId,
     replacedAssignmentId: row.replacedAssignmentId,
     revokedAt: row.revokedAt,
     revokedBy: row.revokedBy,
@@ -134,7 +136,8 @@ export async function listEventAssignments({ eventId }) {
             a.night_id AS "nightId", n.name AS "nightName", n.status AS "nightStatus",
             a.specialty_id AS "specialtyId", s.name AS "specialtyName",
             a.judge_profile_id AS "judgeProfileId", jp.name AS "judgeName", jp.email AS "judgeEmail",
-            a.assignment_type AS "assignmentType", a.status, a.reason,
+             a.assignment_type AS "assignmentType", a.status, a.reason,
+             a.standby_for_assignment_id AS "standbyForAssignmentId",
             a.replaced_assignment_id AS "replacedAssignmentId", a.revoked_at AS "revokedAt",
             a.revoked_by AS "revokedBy", a.created_at AS "createdAt"
        FROM judge_assignment a
@@ -183,13 +186,25 @@ export async function createJudgeAssignment({
   specialtyId,
   judgeProfileId,
   assignmentType = "PRIMARY",
+  standbyForAssignmentId = null,
 }) {
   const type = requireAssignmentType(assignmentType);
+  const standbyId = type === "SUBSTITUTE" ? requireText(standbyForAssignmentId, "standbyForAssignmentId") : null;
   return inTransaction(async (client) => {
     const event = await lockEvent(client, eventId);
     if (event.status !== "CONFIGURING") throw new Error("JUDGE_ASSIGNMENT_OPEN_REQUIRES_REPLACEMENT");
     const context = await lockNightSpecialty(client, { eventId, nightId, specialtyId });
     const quota = await lockQuota(client, context);
+    if (standbyId) {
+      const { rows: primaries } = await client.query(
+        `SELECT id FROM judge_assignment
+          WHERE id = $1 AND event_id = $2 AND night_id = $3 AND specialty_id = $4
+            AND assignment_type = 'PRIMARY' AND status = 'ACTIVE'
+          FOR UPDATE`,
+        [standbyId, eventId, nightId, specialtyId],
+      );
+      if (!primaries[0]) throw new Error("INVALID_STANDBY_PRIMARY");
+    }
     const { rows: judges } = await client.query(
       `SELECT id, name, email FROM judge_profile
         WHERE id = $1 AND registration_status = 'REGISTERED'
@@ -205,11 +220,12 @@ export async function createJudgeAssignment({
     const count = await activeCount(client, context);
     if (count >= quota.maxAssignments) throw new Error("JUDGE_QUOTA_FULL");
     const { rows } = await client.query(
-      `INSERT INTO judge_assignment (event_id, night_id, specialty_id, judge_profile_id, assignment_type)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO judge_assignment (event_id, night_id, specialty_id, judge_profile_id, assignment_type, standby_for_assignment_id)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id, event_id AS "eventId", night_id AS "nightId", specialty_id AS "specialtyId",
-                 judge_profile_id AS "judgeProfileId", assignment_type AS "assignmentType", status, created_at AS "createdAt"`,
-      [eventId, nightId, specialtyId, judges[0].id, type],
+                 judge_profile_id AS "judgeProfileId", assignment_type AS "assignmentType",
+                 standby_for_assignment_id AS "standbyForAssignmentId", status, created_at AS "createdAt"`,
+      [eventId, nightId, specialtyId, judges[0].id, type, standbyId],
     );
     const result = rows[0];
     await auditEvent(client, {
@@ -278,6 +294,7 @@ export async function replaceJudgeAssignment({
   reason,
 }) {
   const type = requireAssignmentType(assignmentType);
+  if (type !== "PRIMARY") throw new Error("REPLACEMENT_MUST_BE_PRIMARY");
   const actionReason = requireReason(reason);
   return inTransaction(async (client) => {
     const assignment = await lockAssignmentContext(client, assignmentId);
@@ -333,6 +350,85 @@ export async function replaceJudgeAssignment({
       after: result,
     });
     return result;
+  });
+}
+
+export async function activateJudgeSubstitute({ actorUserId, primaryAssignmentId, reason }) {
+  const actionReason = requireReason(reason);
+  return inTransaction(async (client) => {
+    const primary = await lockAssignmentContext(client, primaryAssignmentId);
+    if (primary.assignment_type !== "PRIMARY") throw new Error("PRIMARY_ASSIGNMENT_REQUIRED");
+    await client.query("SELECT id FROM carnival_event WHERE id = $1 FOR UPDATE", [primary.event_id]);
+    ensureAssignmentChangeAllowed(primary);
+
+    const { rows: standbyRows } = await client.query(
+      `SELECT * FROM judge_assignment
+        WHERE standby_for_assignment_id = $1 AND status = 'ACTIVE'
+        FOR UPDATE`,
+      [primary.id],
+    );
+    const standby = standbyRows[0];
+    if (!standby) throw new Error("STANDBY_NOT_FOUND");
+
+    const { rows: ballots } = await client.query(
+      "SELECT id, status FROM ballot WHERE judge_assignment_id = $1 FOR UPDATE",
+      [primary.id],
+    );
+    const ballot = ballots[0];
+    if (ballot?.status === "SUBMITTED") throw new Error("PRIMARY_BALLOT_SUBMITTED");
+    if (ballot && ballot.status !== "REPLACED") {
+      await client.query(
+        `UPDATE ballot
+            SET status = 'REPLACED', replaced_at = clock_timestamp(), replaced_by = $2,
+                replacement_reason = $3
+          WHERE id = $1`,
+        [ballot.id, actorUserId, actionReason],
+      );
+      await client.query(
+        `INSERT INTO ballot_audit_log (ballot_id, event_id, action, actor_id, reason, details)
+         VALUES ($1, $2, 'BALLOT_REPLACED', $3, $4, $5)`,
+        [ballot.id, primary.event_id, actorUserId, actionReason, JSON.stringify({ primaryAssignmentId: primary.id, standbyAssignmentId: standby.id })],
+      );
+    }
+
+    await client.query(
+      `UPDATE judge_assignment
+          SET status = 'REVOKED', reason = $2, revoked_at = clock_timestamp(), revoked_by = $3
+        WHERE id = $1`,
+      [standby.id, `Activado como reemplazo: ${actionReason}`, actorUserId],
+    );
+    await client.query(
+      `UPDATE judge_assignment
+          SET status = 'REVOKED', reason = $2, revoked_at = clock_timestamp(), revoked_by = $3
+        WHERE id = $1`,
+      [primary.id, actionReason, actorUserId],
+    );
+    const { rows: replacements } = await client.query(
+      `INSERT INTO judge_assignment (
+         event_id, night_id, specialty_id, judge_profile_id, assignment_type, reason, replaced_assignment_id
+       ) VALUES ($1, $2, $3, $4, 'PRIMARY', $5, $6)
+       RETURNING id, event_id AS "eventId", night_id AS "nightId", specialty_id AS "specialtyId",
+                 judge_profile_id AS "judgeProfileId", assignment_type AS "assignmentType", status,
+                 reason, replaced_assignment_id AS "replacedAssignmentId", created_at AS "createdAt"`,
+      [primary.event_id, primary.night_id, primary.specialty_id, standby.judge_profile_id, actionReason, primary.id],
+    );
+    const replacement = replacements[0];
+    const { rows: windows } = await client.query(
+      "SELECT status FROM voting_window WHERE event_id = $1 AND night_id = $2 FOR UPDATE",
+      [primary.event_id, primary.night_id],
+    );
+    const created = windows[0]?.status === "OPEN"
+      ? await createBallotsForNight(client, { eventId: primary.event_id, nightId: primary.night_id, actorUserId })
+      : [];
+    await auditEvent(client, {
+      actorUserId,
+      action: "JUDGE_SUBSTITUTE_ACTIVATED",
+      entityType: "judge_assignment",
+      entityId: replacement.id,
+      before: { primaryAssignmentId: primary.id, standbyAssignmentId: standby.id },
+      after: { ...replacement, ballotsCreated: created.length },
+    });
+    return { ...replacement, ballotsCreated: created.length };
   });
 }
 

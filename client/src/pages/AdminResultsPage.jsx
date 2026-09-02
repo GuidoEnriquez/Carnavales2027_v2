@@ -16,6 +16,9 @@ export function AdminResultsPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
+  const [releaseAvailable, setReleaseAvailable] = useState(false);
+  const [refreshVersion, setRefreshVersion] = useState(0);
+  const [releasing, setReleasing] = useState(false);
   const drawTriggerRef = useRef(null);
 
   useEffect(() => {
@@ -43,18 +46,22 @@ export function AdminResultsPage() {
     setResult(null);
     setTie(null);
     setDrawResult(null);
+    setReleaseAvailable(false);
     setMessage("");
 
     void Promise.allSettled([
       apiRequest(`/api/v1/results/events/${eventId}/troupes`),
       apiRequest(`/api/v1/events/${eventId}/results`),
-    ]).then(([troupesResponse, resultsResponse]) => {
+    ]).then(async ([troupesResponse, resultsResponse]) => {
       if (!active) return;
       if (troupesResponse.status === "fulfilled") setTroupes(troupesResponse.value);
       else setTroupes([]);
       if (resultsResponse.status === "fulfilled") {
         setResult(resultsResponse.value);
         setTie(null);
+      } else if (resultsResponse.reason?.code === "RESULTS_NOT_RELEASED") {
+        setReleaseAvailable(true);
+        setMessage("Los resultados estan listos para liberar en la etapa de escrutinio.");
       } else if (resultsResponse.reason?.code === "TIE_BREAKER_REQUIRES_MANUAL_DRAW") {
         const details = resultsResponse.reason.details ?? {};
         setTie({
@@ -62,6 +69,14 @@ export function AdminResultsPage() {
           context: details.tieBreakerContext ?? {},
         });
         setMessage("Empate pendiente: los criterios 1 y 2 no definieron una ganadora.");
+        try {
+          const draw = await apiRequest(`/api/v1/events/${eventId}/tie-breaker/ceremonial-draw`);
+          if (active) setDrawResult(draw);
+        } catch (error) {
+          if (error.code !== "TIE_BREAKER_DRAW_NOT_FOUND" && active) {
+            setMessage("No se pudo recuperar el resultado del sorteo ceremonial.");
+          }
+        }
       } else {
         setMessage("No se pudieron cargar los resultados.");
       }
@@ -69,7 +84,23 @@ export function AdminResultsPage() {
       if (active) setLoading(false);
     });
     return () => { active = false; };
-  }, [eventId]);
+  }, [eventId, refreshVersion]);
+
+  const release = async () => {
+    if (!eventId || releasing) return;
+    setReleasing(true);
+    setMessage("");
+    try {
+      await apiRequest(`/api/v1/events/${eventId}/results/release`, { method: "POST" });
+      setRefreshVersion((version) => version + 1);
+    } catch (error) {
+      setMessage(error.code === "RESULTS_NOT_READY"
+        ? "No se pueden liberar: la votacion debe estar cerrada y todas las planillas votantes confirmadas."
+        : "No se pudieron liberar los resultados.");
+    } finally {
+      setReleasing(false);
+    }
+  };
 
   const tiedNames = useMemo(
     () => (tie?.remainingTroupeIds ?? []).map((id) => ({ id, name: nameFor(troupes, id) })),
@@ -99,6 +130,7 @@ export function AdminResultsPage() {
             <p className="eyebrow">{selectedEvent.name}</p>
             <h2>Mejor Comparsa</h2>
             <p>Resultados consolidados de rubros nominativos, liberados para escrutinio.</p>
+            {releaseAvailable && <button type="button" onClick={release} disabled={releasing}>{releasing ? "Liberando resultados..." : "Liberar resultados"}</button>}
           </section>
 
           {tie && (

@@ -4,6 +4,7 @@ import { requireJudge } from "../auth/require-judge.js";
 import { requireTwoFactor } from "../auth/two-factor.js";
 import {
   createJudgeAssignment,
+  activateJudgeSubstitute,
   listEventAssignments,
   listJudgeAssignments,
   replaceJudgeAssignment,
@@ -42,6 +43,7 @@ export function createAssignmentsRouter({ requireSession }) {
         specialtyId: request.body?.specialtyId,
         judgeProfileId: request.body?.judgeProfileId,
         assignmentType: request.body?.assignmentType,
+        standbyForAssignmentId: request.body?.standbyForAssignmentId,
       }));
     } catch (error) { return next(error); }
   });
@@ -63,6 +65,16 @@ export function createAssignmentsRouter({ requireSession }) {
         assignmentId: request.params.assignmentId,
         replacementJudgeProfileId: request.body?.replacementJudgeProfileId,
         assignmentType: request.body?.assignmentType,
+        reason: request.body?.reason,
+      }));
+    } catch (error) { return next(error); }
+  });
+
+  router.post("/judge-assignments/:assignmentId/activate-substitute", ...admin, async (request, response, next) => {
+    try {
+      return response.status(201).json(await activateJudgeSubstitute({
+        actorUserId: request.user.id,
+        primaryAssignmentId: request.params.assignmentId,
         reason: request.body?.reason,
       }));
     } catch (error) { return next(error); }

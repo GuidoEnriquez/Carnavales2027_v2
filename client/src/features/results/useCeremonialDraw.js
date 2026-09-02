@@ -28,5 +28,9 @@ export function useCeremonialDraw() {
     }
   }, []);
 
-  return { draw, loading, error, execute };
+  const loadRecorded = useCallback((eventId) => (
+    apiRequest(`/api/v1/events/${eventId}/tie-breaker/ceremonial-draw`)
+  ), []);
+
+  return { draw, loading, error, execute, loadRecorded };
 }

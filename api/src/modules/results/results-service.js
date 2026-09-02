@@ -307,9 +307,11 @@ export async function releaseResults({ eventId, actorUserId, client: injectedCli
          AND n.kind = 'COMPETITION'
          AND (vw.night_id IS NULL OR vw.status <> 'CLOSED')
        UNION ALL
-       SELECT 1 FROM ballot WHERE event_id = $1 AND status <> 'SUBMITTED'
+        SELECT 1 FROM ballot WHERE event_id = $1 AND status NOT IN ('SUBMITTED', 'REPLACED')
        UNION ALL
-       SELECT 1 FROM ballot_score WHERE event_id = $1 AND evaluation_state = 'PENDING'
+        SELECT 1 FROM ballot_score bs
+        JOIN ballot b ON b.id = bs.ballot_id
+        WHERE bs.event_id = $1 AND b.status <> 'REPLACED' AND bs.evaluation_state = 'PENDING'
        LIMIT 1`,
       [id],
     );

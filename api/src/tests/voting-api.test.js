@@ -430,7 +430,7 @@ test("API votación: juez no puede abrir votación", {
       nightId: night.id,
       nightStatus: "OPEN",
       votingStatus: "NOT_OPEN",
-      counts: { OPEN: 0, SUBMITTED: 0, REOPENED: 0 },
+      counts: { OPEN: 0, SUBMITTED: 0, REOPENED: 0, REPLACED: 0 },
       total: 0,
     });
   });

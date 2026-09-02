@@ -5,7 +5,7 @@
 - **Backend (`api/`):**
   - Nuevo servicio `CeremonialDrawService` en `api/src/modules/results/ceremonial-draw-service.js`.
   - Funciones puras: `buildSeed()`, `selectCeremonialWinner({ pool })`, `composeAuditEvent()`.
-  - Endpoint `POST /api/v1/events/{eventId}/tie-breaker/ceremonial-draw` en `api/src/routes/results.routes.js`.
+  - Endpoints `POST` y `GET /api/v1/events/{eventId}/tie-breaker/ceremonial-draw` en `api/src/routes/results.routes.js`; la lectura recupera exclusivamente el evento ya auditado.
   - Reutiliza `requireResultsReleased` y 2FA; autorización para `ADMIN`, `SCRUTINEER` y `ESCRIBANO`.
   - Auditoría vía tabla `audit_event` existente (RF-97), nuevo `action = 'RESULTS_TIE_BREAKER_CEREMONIAL_DRAW'`.
   - Migraciones `054`, `055`, `057_restore_escribano_role.sql` y `058_ceremonial_draw_audit_hash_chain.sql`.
@@ -13,7 +13,7 @@
 
 - **Cliente (`client/`):**
   - Nuevo componente `<CeremonialDrawModal>` en `client/src/features/results/CeremonialDrawModal.jsx`.
-  - Hook `useCeremonialDraw()` en `client/src/features/results/useCeremonialDraw.js` que llama al endpoint.
+  - Hook `useCeremonialDraw()` en `client/src/features/results/useCeremonialDraw.js` que ejecuta el sorteo o recupera el resultado auditado.
   - Hook `useCountdown(seconds)` reutilizable en `client/src/features/results/useCountdown.js` (encapsula el conteo 5→0).
   - CSS adicional en `client/src/index.css` siguiendo los tokens del rediseño Spec 009 (dark mode, surface elevada, border radius consistente).
   - Sin estado global nuevo: el modal se monta localmente desde la vista de escrutinio y conserva la revelación hasta su cierre explícito.
@@ -37,6 +37,7 @@
 | `client/src/pages/AdminResultsPage.jsx` | crear (`#/admin/results`) | RF-98, RF-100, RF-103, RF-105 |
 | `client/src/auth/RequireResultsRole.jsx` | crear | RF-103 |
 | `client/src/App.jsx`, `client/src/components/AppNavigation.jsx` | modificar (ruta y navegación) | RF-98, RF-103 |
+| `api/src/modules/results/ceremonial-draw-orchestrator.js` | modificar (lectura auditada) | RF-106 |
 
 ## Estrategia de pruebas
 
@@ -56,6 +57,7 @@
   - Modal muestra los comparsas empatadas y el ganador al llegar a 0.
   - Foco se devuelve al botón disparador al cerrar con Escape.
   - Tab cicla por los elementos focuseables.
+  - Un resultado ya registrado se recupera y se muestra sin permitir un segundo sorteo.
 - **Manual (responsable):**
   - Recorrido del modal en 390x844, 768x1024 y 1440x900.
   - Operación con teclado (Tab, Enter, Escape) sin mouse.

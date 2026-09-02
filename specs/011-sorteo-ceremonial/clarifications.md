@@ -15,6 +15,7 @@ QA de Spec 011. Detecta ambigüedades y huecos previo a la implementación.
 - **RF-99 (entrada válida):** el endpoint valida que el pool solicitado coincida exactamente con los `remainingTroupeIds` posteriores a criterios 1 y 2.
 - **RF-103 (roles):** `SCRUTINEER` exclusivo, mostrado como **Escrutador / Escribano**, con 2FA verificado. Decisión del responsable: ADMIN no debe ver ni operar el escrutinio; se aplica mínimo privilegio y separación de funciones.
 - **RF-104 (reversibilidad cero):** no se permite rehacer un sorteo ceremonial ya registrado. Cualquier corrección posterior genera un nuevo evento de auditoría; el resultado original permanece en el log append-only. Decisión alineada con el invariante de inmutabilidad del proyecto (ver AGENTS.md §Invariantes de ingeniería).
+- **RF-106 (recuperación):** un reintento puede recibir `TIE_BREAKER_ALREADY_DRAWN` si el primer `POST` fue persistido pero el cliente perdió la respuesta. La UI recupera y revela el ganador desde el evento de auditoría inmutable; esta lectura no constituye corrección ni repetición del sorteo.
 
 ## Huecos
 

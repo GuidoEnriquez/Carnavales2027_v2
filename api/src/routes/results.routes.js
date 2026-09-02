@@ -3,7 +3,7 @@ import { requireTwoFactor } from "../auth/two-factor.js";
 import { requireResultsAccess } from "../auth/require-results-access.js";
 import { releaseResults, computeResults } from "../modules/results/results-service.js";
 import { requireCeremonialDrawAccess } from "../auth/require-ceremonial-draw-access.js";
-import { executeCeremonialDraw } from "../modules/results/ceremonial-draw-orchestrator.js";
+import { executeCeremonialDraw, getRecordedCeremonialDraw } from "../modules/results/ceremonial-draw-orchestrator.js";
 import { listEvents } from "../modules/events/event-service.js";
 import { listTroupes } from "../modules/troupes/category-service.js";
 import { sendKnownError } from "./http-errors.js";
@@ -54,6 +54,19 @@ export function createResultsRouter({ requireSession }) {
     requireTwoFactor,
     requireCeremonialDrawAccess,
   ];
+
+  router.get(
+    "/events/:eventId/tie-breaker/ceremonial-draw",
+    ...ceremonialAuthorized,
+    async (request, response) => {
+      try {
+        response.json(await getRecordedCeremonialDraw({ eventId: request.params.eventId }));
+      } catch (error) {
+        if (sendKnownError(response, error)) return;
+        throw error;
+      }
+    },
+  );
 
   router.post(
     "/events/:eventId/tie-breaker/ceremonial-draw",

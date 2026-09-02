@@ -76,8 +76,9 @@ async function lockJudgeBallot(client, { ballotId, actorUserId }) {
             b.judge_profile_id AS "judgeProfileId", jp.user_id AS "userId"
        FROM ballot b
        JOIN judge_profile jp ON jp.id = b.judge_profile_id
-       JOIN judge_assignment ja ON ja.id = b.judge_assignment_id AND ja.status = 'ACTIVE'
-      WHERE b.id = $1 FOR UPDATE`,
+        JOIN judge_assignment ja ON ja.id = b.judge_assignment_id
+                                AND ja.status = 'ACTIVE' AND ja.assignment_type = 'PRIMARY'
+       WHERE b.id = $1 AND b.status <> 'REPLACED' FOR UPDATE`,
     [ballotId],
   );
   if (!ballots[0]) throw new Error("BALLOT_NOT_FOUND");
@@ -185,18 +186,19 @@ function operationHash(operation) {
   return createHash("sha256").update(JSON.stringify(operation)).digest("hex");
 }
 
-async function createBallotsForNight(client, { eventId, nightId, actorUserId }) {
+export async function createBallotsForNight(client, { eventId, nightId, actorUserId }) {
   const { rows: assignments } = await client.query(
     `SELECT a.id AS "assignmentId", a.judge_profile_id AS "judgeProfileId",
             a.specialty_id AS "specialtyId"
        FROM judge_assignment a
-      WHERE a.event_id = $1 AND a.night_id = $2 AND a.status = 'ACTIVE'`,
+       WHERE a.event_id = $1 AND a.night_id = $2
+         AND a.status = 'ACTIVE' AND a.assignment_type = 'PRIMARY'`,
     [eventId, nightId],
   );
   const created = [];
   for (const assignment of assignments) {
     const { rows: existing } = await client.query(
-      "SELECT id FROM ballot WHERE judge_profile_id = $1 AND night_id = $2",
+      "SELECT id FROM ballot WHERE judge_profile_id = $1 AND night_id = $2 AND status <> 'REPLACED'",
       [assignment.judgeProfileId, nightId],
     );
     if (existing.length > 0) continue;
@@ -400,7 +402,7 @@ export async function getVotingStatus({ eventId, nightId }) {
     "SELECT status FROM voting_window WHERE night_id = $1 AND event_id = $2",
     [nid, id],
   );
-  const counts = { OPEN: 0, SUBMITTED: 0, REOPENED: 0 };
+  const counts = { OPEN: 0, SUBMITTED: 0, REOPENED: 0, REPLACED: 0 };
   for (const row of rows) counts[row.status] = row.count;
   return {
     nightId: nid,
@@ -418,7 +420,8 @@ export async function listJudgeBallots({ userId }) {
             s.name AS "specialtyName"
        FROM ballot b
         JOIN judge_profile jp ON jp.id = b.judge_profile_id
-        JOIN judge_assignment ja ON ja.id = b.judge_assignment_id AND ja.status = 'ACTIVE'
+         JOIN judge_assignment ja ON ja.id = b.judge_assignment_id
+                                 AND ja.status = 'ACTIVE' AND ja.assignment_type = 'PRIMARY'
        JOIN carnival_event e ON e.id = b.event_id
        JOIN night n ON n.id = b.night_id
        JOIN event_specialty s ON s.id = b.specialty_id
@@ -440,7 +443,8 @@ export async function getBallot({ ballotId, userId }) {
             e.name AS "eventName", n.name AS "nightName", s.name AS "specialtyName"
        FROM ballot b
         JOIN judge_profile jp ON jp.id = b.judge_profile_id
-        JOIN judge_assignment ja ON ja.id = b.judge_assignment_id AND ja.status = 'ACTIVE'
+         JOIN judge_assignment ja ON ja.id = b.judge_assignment_id
+                                 AND ja.status = 'ACTIVE' AND ja.assignment_type = 'PRIMARY'
        JOIN carnival_event e ON e.id = b.event_id
        JOIN night n ON n.id = b.night_id
        JOIN event_specialty s ON s.id = b.specialty_id

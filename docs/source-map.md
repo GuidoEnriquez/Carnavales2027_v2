@@ -18,6 +18,7 @@
 - Spec 007: inmutabilidad por ítem aprobada formalmente el 2026-09-01; implementación validada automáticamente y manualmente en Chrome de escritorio con emulación responsive.
 - Spec 008: alta por invitación de `VEEDOR`, `COMISARIO` y `SCRUTINEER`; emisión, inspección, aceptación, login real, 2FA y UI validados. La decisión de producto 2026-09-01 revoca links existentes, elimina el token plano y unifica las altas con Jurados. No hay fuente Jira/Confluence identificada para este incremento. **[NECESITA ACLARACIÓN]**.
 - Spec 009: rediseño operativo del cliente de jurado basado en el brief y las referencias visuales de producto del 2026-09-01, preservando Specs 004, 006 y 007. La implementación y pruebas de cliente están completadas; la validación manual responsive, de teclado y táctil permanece pendiente. No habilita Offline-First ni módulos de resultados.
+- Decision de producto 2026-09-02: cada suplente queda reservado para un titular fijo por noche y especialidad. ADMIN con 2FA lo activa, con motivo, solo si el titular no presento la planilla o quedo incompleta. Esta regla se implementa en Spec 013.
 
 ## Visión funcional objetivo
 

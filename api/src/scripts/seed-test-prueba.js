@@ -3,7 +3,7 @@ import { closePool, getPool } from "../db/pool.js";
 import { migrate } from "../db/migrate.js";
 import { releaseResults } from "../modules/results/results-service.js";
 
-const EVENT_NAME = "test_prueba";
+const EVENT_NAME = process.env.TEST_EVENT_NAME ?? "test_prueba";
 
 async function getOrCreateEvent(client) {
   const { rows: existing } = await client.query(
@@ -136,21 +136,27 @@ async function seedTestCompetition() {
          RETURNING id`,
         [event.id, night.id, assignment.id, judge.profileId, specialty.id],
       );
-      const troupe = troupes[index];
-      const { rows: [schedule] } = await client.query(
-        "SELECT id FROM night_troupe_schedule WHERE night_id = $1 AND event_troupe_id = $2",
-        [night.id, troupe.id],
-      );
-      for (const rubric of rubrics) {
-        await client.query(
-          `INSERT INTO ballot_score(ballot_id,event_id,evaluation_item_id,rubric_id,night_schedule_id,score,evaluation_state,status)
-           VALUES($1,$2,$3,$4,$5,8,'SCORED','DRAFT')`,
-          [ballot.id, event.id, rubric.itemId, rubric.id, schedule.id],
+      for (const troupe of troupes) {
+        const { rows: [schedule] } = await client.query(
+          "SELECT id FROM night_troupe_schedule WHERE night_id = $1 AND event_troupe_id = $2",
+          [night.id, troupe.id],
         );
+        for (const rubric of rubrics) {
+          await client.query(
+            `INSERT INTO ballot_score(ballot_id,event_id,evaluation_item_id,rubric_id,night_schedule_id,score,evaluation_state,status)
+             VALUES($1,$2,$3,$4,$5,8,'SCORED','DRAFT')`,
+            [ballot.id, event.id, rubric.itemId, rubric.id, schedule.id],
+          );
+        }
       }
       await client.query("UPDATE ballot SET status='SUBMITTED', submitted_at=CURRENT_TIMESTAMP WHERE id=$1", [ballot.id]);
       await client.query("UPDATE ballot_score SET status='LOCKED', locked_at=CURRENT_TIMESTAMP WHERE ballot_id=$1", [ballot.id]);
     }
+    await client.query(
+      `INSERT INTO voting_window(night_id, event_id, status, closed_at)
+       VALUES($1, $2, 'CLOSED', CURRENT_TIMESTAMP)`,
+      [night.id, event.id],
+    );
     await client.query("SELECT set_config('app.allow_event_open','true',true)");
     await client.query("UPDATE carnival_event SET status='OPEN' WHERE id=$1", [event.id]);
     await client.query("COMMIT");
@@ -168,8 +174,8 @@ async function seedTestCompetition() {
       eventId: event.id,
       created: event.created,
       adminEmail: admin.email,
-      judgeEmail: judge.email,
-      judgeName: judge.name,
+      judgeEmail: judges[0].email,
+      judgeName: judges[0].name,
       routes: {
         adminEvents: `http://localhost:5173/#/admin/events`,
         resultsApi: `/api/v1/events/${event.id}/results`,
