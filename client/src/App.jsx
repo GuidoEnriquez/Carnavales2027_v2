@@ -10,6 +10,7 @@ import { AdminAssignmentsPage } from "./pages/AdminAssignmentsPage.jsx";
 import { AdminVotingPage } from "./pages/AdminVotingPage.jsx";
 import { AdminPenaltiesPage } from "./pages/AdminPenaltiesPage.jsx";
 import { AdminResultsPage } from "./pages/AdminResultsPage.jsx";
+import { OfficialRecordPage } from "./pages/OfficialRecordPage.jsx";
 import { AcceptedJudgeInvitationPage, AcceptJudgeInvitationPage } from "./pages/AcceptJudgeInvitationPage.jsx";
 import { AcceptRoleInvitationPage } from "./pages/AcceptRoleInvitationPage.jsx";
 import { HomePage } from "./pages/HomePage.jsx";
@@ -72,6 +73,12 @@ export default function App({ session: providedSession }) {
   }
   if (route === "#/admin/results") {
     const content = <RequireResultsRole session={session}><AdminResultsPage /></RequireResultsRole>;
+    return session.status === "authenticated"
+      ? <ProtectedShell session={session}>{content}</ProtectedShell>
+      : content;
+  }
+  if (route === "#/admin/record") {
+    const content = <RequireResultsRole session={session}><OfficialRecordPage /></RequireResultsRole>;
     return session.status === "authenticated"
       ? <ProtectedShell session={session}>{content}</ProtectedShell>
       : content;

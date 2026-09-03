@@ -12,6 +12,7 @@ import { sendKnownError } from "./routes/http-errors.js";
 import { requireTrustedOrigin } from "./auth/trusted-origin.js";
 import { createResultsRouter } from "./routes/results.routes.js";
 import { createPenaltiesRouter } from "./routes/penalties.routes.js";
+import { createScrutinyRecordsRouter } from "./routes/scrutiny-records.routes.js";
 
 export function createApp({
   authHandler,
@@ -50,6 +51,9 @@ export function createApp({
       requireSession: createRequireSession(getSession),
     }));
     app.use("/api/v1", createPenaltiesRouter({
+      requireSession: createRequireSession(getSession),
+    }));
+    app.use("/api/v1", createScrutinyRecordsRouter({
       requireSession: createRequireSession(getSession),
     }));
     app.use("/api/v1", createAssignmentsRouter({

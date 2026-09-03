@@ -10,9 +10,19 @@ export function sendKnownError(response, error) {
   if (
     error.message === "RESULTS_NOT_RELEASED" ||
     error.message === "RESULTS_ACCESS_DENIED" ||
-    error.message === "PENALTIES_ACCESS_DENIED"
+    error.message === "RESULTS_RELEASE_FORBIDDEN_FOR_ADMIN" ||
+    error.message === "PENALTIES_ACCESS_DENIED" ||
+    error.message === "OFFICIAL_RECORD_EMISSION_FORBIDDEN_FOR_ADMIN" ||
+    error.message === "CERTIFICATION_ROLE_UNAUTHORIZED"
   ) {
     response.status(403).json({ code: error.message });
+    return true;
+  }
+  if (
+    error.message === "OFFICIAL_RECORD_NOT_FOUND" ||
+    error.message === "EVENT_NOT_FOUND"
+  ) {
+    response.status(404).json({ code: error.message });
     return true;
   }
   if (
@@ -21,7 +31,9 @@ export function sendKnownError(response, error) {
     error.message === "PENALTY_REQUIRES_COMPETITION_NIGHT" ||
     error.message === "CANNOT_MUTATE_REVOKED_PENALTY" ||
     error.message === "CANNOT_DELETE_PENALTY" ||
-    error.message === "PENALTY_FIELDS_IMMUTABLE"
+    error.message === "PENALTY_FIELDS_IMMUTABLE" ||
+    error.message === "OFFICIAL_RECORD_IMMUTABLE" ||
+    error.message === "TIE_BREAKER_PENDING"
   ) {
     response.status(409).json({ code: error.message });
     return true;

@@ -341,7 +341,7 @@ export function determineBestTroupe({ overallRanking, rubricRankings }) {
   };
 }
 
-async function requireResultsReleased(client, eventId) {
+export async function requireResultsReleased(client, eventId) {
   const { rows } = await client.query(
     "SELECT 1 FROM results_release WHERE event_id = $1",
     [eventId],

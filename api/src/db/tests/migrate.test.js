@@ -87,6 +87,7 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
        || filename === "060_preserve_ballot_reopen_error.sql"
        || filename === "061_allow_standby_history.sql"
        || filename === "062_troupe_penalties.sql"
+       || filename === "063_official_scrutiny_record.sql"
   )));
 
   const status = await getMigrationStatus();
@@ -399,6 +400,11 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
     {
       filename: "062_troupe_penalties.sql",
       version: "062",
+      applied: true,
+    },
+    {
+      filename: "063_official_scrutiny_record.sql",
+      version: "063",
       applied: true,
     },
   ]);
