@@ -17,12 +17,14 @@ Implementado y validado:
 - **Spec 011:** sorteo ceremonial con `crypto.randomInt()`, auditoría encadenada e interfaz de escrutinio, con comprobación manual en 3 viewports. Cerrada.
 - **Spec 012:** planilla online únicamente; retira el uso operativo de outbox y cache local en el cliente actual, con comprobación manual. Cerrada.
 - **Spec 013:** suplencias priorizadas: pares fijos titular/suplente, activación ADMIN+2FA con motivo ante titular incompleto o ausente, transición `REPLACED` y preservación histórica sin bloqueo de cierre ni liberación. Cerrada.
+- **Spec 014:** gestión de penalizaciones (`troupe_penalty`): deducción reglamentaria en Mejor Comparsa con piso en cero, preservación de rubros artísticos (RF-118), panel accesible de Comisariato, revocación auditada y bloqueo tras liberación de resultados. Cerrada el 2026-09-03.
+- **Spec 015:** actas oficiales y certificación de escrutinio (`official_scrutiny_record`): sello criptográfico JCS/SHA-256 (RFC 8785), inmutabilidad estricta por triggers en BD, segregación estricta de funciones (ADMIN solo lectura; emisión exclusiva `SCRUTINEER`/`ESCRIBANO` con 2FA) y vista notarial imprimible (`@media print`). Cerrada el 2026-09-03.
 
-Todavía fuera de alcance: penalizaciones, actas, publicación externa de resultados y conexión/sincronización Offline-First. Spec 005 conserva compatibilidad exploratoria para clientes antiguos, pero no es una capacidad operativa aceptada.
+Todavía fuera de alcance: publicación externa de resultados (portal público) y conexión/sincronización Offline-First. Spec 005 conserva compatibilidad exploratoria para clientes antiguos, pero no es una capacidad operativa aceptada.
 
 ## Incremento vigente
 
-No hay incrementos activos abiertos. Todos los specs 001–013 están completados y cerrados. La evidencia detallada se registra en sus respectivos `validation.md`.
+No hay incrementos activos abiertos. Todos los specs 001–015 están completados y cerrados. La evidencia detallada se registra en sus respectivos `validation.md`.
 
 ## Próxima puerta SDD
 
@@ -43,7 +45,7 @@ La autorización real se verifica en la API: sesión, 2FA, rol y estado del perf
 
 ## Estructura de base de datos
 
-La persistencia usa PostgreSQL y está definida por las migraciones incrementales `001` a `061` en `api/src/db/migrations/`. Los estados se implementan con columnas `TEXT` y restricciones `CHECK`; no se usan tipos `ENUM` nativos. La tabla `"user"` pertenece a Better Auth y el modelo de dominio solo la referencia.
+La persistencia usa PostgreSQL y está definida por las migraciones incrementales `001` a `063` en `api/src/db/migrations/`. Los estados se implementan con columnas `TEXT` y restricciones `CHECK`; no se usan tipos `ENUM` nativos. La tabla `"user"` pertenece a Better Auth y el modelo de dominio solo la referencia.
 
 ### Relaciones principales
 
@@ -74,6 +76,12 @@ erDiagram
   night_troupe_schedule ||--o{ ballot_score : evalua
   night ||--o| voting_window : controla
   ballot ||--o{ ballot_audit_log : audita
+
+  carnival_event ||--o{ troupe_penalty : aplica_a
+  event_troupe ||--o{ troupe_penalty : sanciona
+  night ||--o{ troupe_penalty : ocurre_en
+  carnival_event ||--o| results_release : libera
+  carnival_event ||--o| official_scrutiny_record : certifica
 ```
 
 ### Tablas por dominio
@@ -86,6 +94,8 @@ erDiagram
 | Programación | `night_troupe_schedule`, `configuration_seed` | `night_troupe_schedule` relaciona jornada y comparsa, con orden de presentación único por jornada. `configuration_seed` registra la semilla inicial aplicada a un evento. |
 | Jurados | `judge_profile`, `judge_invitation`, `judge_quota`, `judge_assignment` | El perfil de jurado referencia opcionalmente al usuario autenticado. Las invitaciones preservan su historial. Las cuotas son por jornada y especialidad; las asignaciones relacionan jurado, evento, jornada y especialidad. |
 | Votación | `ballot`, `ballot_score`, `voting_window`, `ballot_audit_log`, `ballot_sync_operation` | Una planilla corresponde a una asignación de jurado. Cada score relaciona planilla, ítem evaluable y comparsa programada. La ventana controla la votación de una jornada. La auditoría y el ledger de sincronización son append-only. |
+| Comisariato y sanciones | `troupe_penalty` | Sanciones en puntos descontables de Mejor Comparsa. Con contexto de evento, comparsa y noche competitiva. Bloqueada contra mutación o revocación post-liberación. |
+| Escrutinio y actas | `results_release`, `official_scrutiny_record` | `results_release` registra la liberación oficial por SCRUTINEER/ESCRIBANO. `official_scrutiny_record` almacena el acta notarial sellada con hash JCS/SHA-256 e inmutable a nivel de base de datos. |
 | Histórico | `ballot_score_subsanation` | Conserva subsanaciones históricas de 5 puntos; no existe flujo operativo vigente que cree nuevas subsanaciones. |
 
 ### Estados y restricciones
@@ -101,6 +111,8 @@ erDiagram
 | `ballot` | `OPEN`, `SUBMITTED`; `REOPENED` solo para finalización de registros históricos |
 | `ballot_score.status` | `DRAFT`, `LOCKED` |
 | `ballot_score.evaluation_state` | `PENDING` con score `NULL`; `SCORED` con 1 a 10; `NOT_PRESENTED` con 0 |
+| `troupe_penalty.status` | `APPLIED`, `REVOKED` |
+| `official_scrutiny_record.certified_role` | `SCRUTINEER`, `ESCRIBANO` (inmutable tras inserción) |
 | `voting_window` | `OPEN`, `CLOSED` |
 
 ### Invariantes de integridad

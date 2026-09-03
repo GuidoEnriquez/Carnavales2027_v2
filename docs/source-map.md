@@ -11,7 +11,9 @@
 - Spec 011: sorteo ceremonial implementado y validado automáticamente y con comprobación manual (12 criterios × 3 viewports). Cerrada el 2026-09-02.
 - Spec 012: cliente online únicamente implementado y validado con comprobación manual responsive. Cerrada el 2026-09-02.
 - Spec 013: suplencias priorizadas con pares fijos titular/suplente y reemplazo seguro administrado con 2FA. Cerrada el 2026-09-02.
-- Diferido: penalizaciones, actas oficiales de escrutinio, publicación externa y Offline-First operativo. Spec 005 conserva compatibilidad exploratoria, no capacidad aceptada.
+- Spec 014: gestión de penalizaciones (`troupe_penalty`, migración 062): deducción en Mejor Comparsa con piso cero, panel accesible de Comisariato, revocación con motivo y bloqueo post-liberación. Cerrada el 2026-09-03.
+- Spec 015: actas oficiales y certificación de escrutinio (`official_scrutiny_record`, migración 063): sello criptográfico JCS/SHA-256 (RFC 8785), inmutabilidad estricta por triggers en BD, segregación estricta de funciones (ADMIN solo lectura; emisión exclusiva `SCRUTINEER`/`ESCRIBANO` con 2FA), vista notarial imprimible (`@media print`) y firmas hológrafas. Cerrada el 2026-09-03.
+- Diferido: publicación externa de resultados (portal público) y Offline-First operativo. Spec 005 conserva compatibilidad exploratoria, no capacidad aceptada.
 - Spec 004 implementa prevención de omisiones: las nuevas planillas exigen `SCORED` (1 a 10) o `NOT_PRESENTED` (0 por acción explícita) antes de confirmar o cerrar. `PENDING` bloquea ambas operaciones.
 - Decisión de producto del 2026-09-01: el `5 por equidad` es nulo para planillas digitales. La completitud obligatoria evita la omisión humana que buscaba subsanar; no existe flujo, cálculo ni ajuste operativo asociado.
 - I4-A Offline-First (Spec 005) conserva código exploratorio. Por decisión de producto del 2026-09-01, conexión y sincronización son una funcionalidad futura; su activación, modificación o retiro requiere un nuevo ciclo SDD.

@@ -18,7 +18,9 @@
 - Spec 011 implementa el sorteo ceremonial con countdown y cadena de auditoría, con comprobación manual en 3 viewports.
 - Spec 012 consolida la operación de planilla 100% online con comprobación manual.
 - Spec 013 implementa suplencias priorizadas, parejas fijas titular/suplente y activación con ADMIN+2FA.
-- Todas las specs 001 a 013 están cerradas y validadas; no hay incrementos abiertos activos.
+- Spec 014 implementa gestión de penalizaciones (`troupe_penalty`), deducción en Mejor Comparsa y panel de Comisariato.
+- Spec 015 implementa actas oficiales de escrutinio (`official_scrutiny_record`), hash JCS/SHA-256 (RFC 8785) e impresión notarial (@media print).
+- Todas las specs 001 a 015 están cerradas y validadas; no hay incrementos abiertos activos.
 
 ## Artefactos ejecutables
 

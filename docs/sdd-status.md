@@ -1,6 +1,6 @@
 # Estado SDD — Carnavales2027_v2
 
-> Estado actualizado: 2026-09-02. Esta nota distingue implementación, validación automatizada y validación manual; las specs y validaciones son la evidencia detallada.
+> Estado actualizado: 2026-09-03. Esta nota distingue implementación, validación automatizada y validación manual; las specs y validaciones son la evidencia detallada.
 
 ## Incrementos completados
 
@@ -20,14 +20,15 @@
 | Spec 011 | Sorteo ceremonial: servicio backend, endpoint HTTP, hook countdown, modal accesible, estilos CSS, recuperación inmutable y validación manual (12 criterios × 3 viewports). Cerrada el 2026-09-02. | `specs/011-sorteo-ceremonial/validation.md` |
 | Spec 012 | Planilla online únicamente: simplificación a operación 100% online, eliminación de persistencia local y controles de sync, validación manual responsive (12 criterios × 3 viewports). Cerrada el 2026-09-02. | `specs/012-planilla-online-unicamente/validation.md` |
 | Spec 013 | Suplencias priorizadas: pares fijos titular/suplente, activación ADMIN+2FA, transición `REPLACED`, cierre y liberación. Validada automáticamente y manualmente (Asignaciones). Cerrada el 2026-09-02. | `specs/013-suplencias-priorizadas/validation.md` |
+| Spec 014 | Gestión de penalizaciones: tabla `troupe_penalty`, deducción en Mejor Comparsa con piso cero, preservación de rubros artísticos, panel accesible de Comisariato y revocación auditada. Cerrada el 2026-09-03. | `specs/014-penalizaciones/validation.md` |
+| Spec 015 | Actas Oficiales y Certificación de Escrutinio: tabla inmutable `official_scrutiny_record`, hash JCS/SHA-256 (RFC 8785), segregación 2FA (ADMIN sólo lectura, emisión exclusiva SCRUTINEER/ESCRIBANO), vista notarial imprimible (@media print). Cerrada el 2026-09-03. | `specs/015-actas-escrutinio/validation.md` |
 
 ## Incremento activo
 
-- **Spec 014 — Gestión de Penalizaciones (Comisariato):** en fase de especificación, clarificaciones y plan (`specs/014-penalizaciones/`).
+- Ninguno activo en este momento. Módulos pendientes: Publicación externa de resultados / Portal público.
 
 ## Diferido explícitamente
 
-- Escrutinio operativo y actas oficiales con hash de integridad.
 - Publicación externa de resultados.
 - Conexión y sincronización Offline-First (Spec 005): funcionalidad futura; Spec 012 retiró su uso del cliente actual.
 
@@ -50,4 +51,4 @@ Toda spec que modifique una pantalla operativa debe declarar el criterio de uso 
 
 ## Verificación de referencia
 
-Al 2026-09-02, las evidencias automatizadas son API 80, DB 38, cliente 73 y build exitoso. Specs 011 y 012 cerradas; todos los incrementos (001–013) completados.
+Al 2026-09-03, las evidencias automatizadas son API 107, DB 62, cliente 99 y build exitoso. Specs 014 y 015 cerradas; todos los incrementos (001–015) completados.

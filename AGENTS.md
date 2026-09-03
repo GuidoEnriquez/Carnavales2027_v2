@@ -17,7 +17,10 @@ Carnavales2027_v2 es una plataforma configurable de gestión y votación para Ca
 * **Spec 011:** sorteo ceremonial (criterio 3 de desempate) con countdown accesible, selección aleatoria criptográfica y cadena de auditoría JCS/SHA-256; validada automáticamente y con comprobación manual en 3 viewports. Cerrada el 2026-09-02.
 * **Spec 012:** simplificación a planilla 100% online; retira el uso operativo de outbox y cache local en el cliente actual. Validada automáticamente y con comprobación manual. Cerrada el 2026-09-02.
 * **Spec 013:** suplencias priorizadas: pares fijos titular/suplente, activación ADMIN+2FA con motivo ante titular ausente o incompleto, transición `REPLACED` y preservación histórica sin bloqueo de cierre ni resultados. Validada y cerrada el 2026-09-02.
-* **Módulos diferidos:** penalizaciones (comisariato), escrutinio operativo y actas oficiales, publicación externa de resultados y Offline-First operativo. El `5 por equidad` es nulo para planillas digitales: la completitud obligatoria previene la omisión humana que buscaba subsanar.
+* **Spec 014:** gestión reglamentaria de penalizaciones (`troupe_penalty`): deducción en Mejor Comparsa con piso en cero, preservación de rubros artísticos individuales (RF-118), panel accesible de Comisariato, revocación auditada con motivo obligatorio y bloqueo inmutable post-liberación de resultados. Validada y cerrada el 2026-09-03.
+* **Spec 015:** actas oficiales y certificación de escrutinio (`official_scrutiny_record`): sello criptográfico JCS/SHA-256 (RFC 8785), inmutabilidad estricta por triggers en BD, segregación estricta de funciones (ADMIN solo lectura; emisión y firma exclusiva de `SCRUTINEER` y `ESCRIBANO` con 2FA), vista notarial imprimible (`@media print`) y firmas hológrafas. Validada y cerrada el 2026-09-03.
+* **Gobernanza y Segregación de Roles:** `ADMIN` administra, configura eventos, abre/cierra votación y asigna jurados, comisarios y escrutadores. `ADMIN` tiene estrictamente prohibido liberar resultados (`RESULTS_RELEASE_FORBIDDEN_FOR_ADMIN`) y emitir actas oficiales (`OFFICIAL_RECORD_EMISSION_FORBIDDEN_FOR_ADMIN`). La liberación de resultados y la emisión de actas corresponden con exclusividad a `SCRUTINEER` o `ESCRIBANO` con 2FA verificado.
+* **Módulos diferidos:** publicación externa de resultados y Offline-First operativo. El `5 por equidad` es nulo para planillas digitales: la completitud obligatoria previene la omisión humana que buscaba subsanar.
 
 ---
 
@@ -82,8 +85,8 @@ Antes de modificar código o artefactos SDD que afecten el comportamiento del si
 * Prohibido crear autoasignación pública del rol `ADMIN`.
 * Exigir 2FA/OTP verificado para rutas protegidas cuando el incremento lo requiera (sesión primaria no basta).
 * Prohibido eliminar o degradar al último `ADMIN` activo.
-* Prohibido ampliar módulos diferidos (*penalizaciones, escrutinio o actas*) sin un incremento SDD explícito. Las modificaciones a Offline-First deben ajustarse exclusivamente a Spec 005 o a una spec posterior aprobada.
-* El módulo de votación existente solo puede modificarse conforme a su spec vigente o una spec aprobada posterior.
+* Prohibido ampliar módulos diferidos (*publicación externa de resultados o portal público*) sin un incremento SDD explícito. Las modificaciones a Offline-First deben ajustarse exclusivamente a Spec 005 o a una spec posterior aprobada.
+* El módulo de votación, penalizaciones y actas existente solo puede modificarse conforme a su spec vigente o una spec aprobada posterior.
 
 ---
 
