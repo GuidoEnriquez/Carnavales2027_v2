@@ -94,7 +94,7 @@ async function setupEventWithScores(pool) {
   return { eventId: event.id, nightId: night.id, adminId, judgeUserId, scrutineerId, veedorId, troupeId: troupe.id, rubricId: rubric.id };
 }
 
-test("API resultados: solo ADMIN/SCRUTINEER pueden liberar y consultar resultados", {
+test("API resultados: solo SCRUTINEER/ESCRIBANO pueden liberar y ADMIN/SCRUTINEER consultar resultados", {
   skip: !process.env.TEST_DATABASE_URL,
 }, async (context) => {
   context.after(async () => {
@@ -130,7 +130,13 @@ test("API resultados: solo ADMIN/SCRUTINEER pueden liberar y consultar resultado
     assert.equal(unreleased.status, 403);
     assert.equal((await unreleased.json()).code, "RESULTS_NOT_RELEASED");
 
-    // 2. Veedor no puede liberar resultados.
+    // 2. Admin y Veedor no pueden liberar resultados (la liberación es exclusiva de SCRUTINEER / ESCRIBANO).
+    const adminRelease = await fetch(`${baseUrl}/api/v1/events/${data.eventId}/results/release`, {
+      method: "POST", headers: adminHeaders,
+    });
+    assert.equal(adminRelease.status, 403);
+    assert.equal((await adminRelease.json()).code, "RESULTS_RELEASE_FORBIDDEN_FOR_ADMIN");
+
     const veedorRelease = await fetch(`${baseUrl}/api/v1/events/${data.eventId}/results/release`, {
       method: "POST", headers: veedorHeaders,
     });
@@ -164,9 +170,9 @@ test("API resultados: solo ADMIN/SCRUTINEER pueden liberar y consultar resultado
     assert.equal(releaseData.alreadyReleased, false);
     assert.ok(releaseData.releasedAt);
 
-    // 6. Liberar de nuevo es idempotente.
+    // 6. Liberar de nuevo es idempotente para Scrutineer.
     const duplicateRelease = await fetch(`${baseUrl}/api/v1/events/${data.eventId}/results/release`, {
-      method: "POST", headers: adminHeaders,
+      method: "POST", headers: scrutineerHeaders,
     });
     assert.equal(duplicateRelease.status, 201);
     assert.equal((await duplicateRelease.json()).alreadyReleased, true);

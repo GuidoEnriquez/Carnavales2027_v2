@@ -5,6 +5,9 @@ import { AdminResultsPage } from "./AdminResultsPage.jsx";
 const apiRequestMock = vi.hoisted(() => vi.fn());
 vi.mock("../api/http.js", () => ({ apiRequest: apiRequestMock }));
 
+const useSessionMock = vi.hoisted(() => vi.fn(() => ({ roles: ["SCRUTINEER"] })));
+vi.mock("../auth/session-context.jsx", () => ({ useSession: useSessionMock }));
+
 const event = { id: "event-1", name: "test_prueba" };
 const tieError = Object.assign(new Error("TIE_BREAKER_REQUIRES_MANUAL_DRAW"), {
   code: "TIE_BREAKER_REQUIRES_MANUAL_DRAW",
@@ -26,6 +29,7 @@ describe("AdminResultsPage", () => {
   afterEach(() => {
     cleanup();
     apiRequestMock.mockReset();
+    useSessionMock.mockReturnValue({ roles: ["SCRUTINEER"] });
   });
 
   it("carga test_prueba y muestra el empate listo para sorteo ceremonial", async () => {
@@ -98,6 +102,20 @@ describe("AdminResultsPage", () => {
       "/api/v1/events/event-1/results/release", { method: "POST" },
     ));
     await waitFor(() => expect(resultCalls).toBe(2));
+  });
+
+  it("muestra nota explicativa y no muestra el botón de liberar si el usuario es ADMIN", async () => {
+    useSessionMock.mockReturnValue({ roles: ["ADMIN"] });
+    const notReleased = Object.assign(new Error("RESULTS_NOT_RELEASED"), { code: "RESULTS_NOT_RELEASED" });
+    apiRequestMock.mockImplementation((path) => {
+      if (path === "/api/v1/results/events") return Promise.resolve([event]);
+      if (path === "/api/v1/results/events/event-1/troupes") return Promise.resolve([]);
+      if (path === "/api/v1/events/event-1/results") return Promise.reject(notReleased);
+      return Promise.reject(new Error(`request inesperado: ${path}`));
+    });
+    const { getByRole, queryByRole } = render(<AdminResultsPage />);
+    await waitFor(() => expect(getByRole("note")).toHaveTextContent(/corresponde exclusivamente a Escrutinio o Escribanía/i));
+    expect(queryByRole("button", { name: "Liberar resultados" })).not.toBeInTheDocument();
   });
 
   it("muestra las tres columnas de puntaje bruto, penalizaciones y neto en el ranking general", async () => {

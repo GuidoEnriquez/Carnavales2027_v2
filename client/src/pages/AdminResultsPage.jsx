@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiRequest } from "../api/http.js";
 import { CeremonialDrawModal } from "../features/results/CeremonialDrawModal.jsx";
+import { useSession } from "../auth/session-context.jsx";
 
 function nameFor(troupes, id) {
   return troupes.find((troupe) => troupe.id === id)?.name ?? id;
 }
 
 export function AdminResultsPage() {
+  const session = useSession();
+  const canRelease = session?.roles?.some((role) => ["SCRUTINEER", "ESCRIBANO"].includes(role));
   const [events, setEvents] = useState([]);
   const [eventId, setEventId] = useState("");
   const [troupes, setTroupes] = useState([]);
@@ -94,9 +97,13 @@ export function AdminResultsPage() {
       await apiRequest(`/api/v1/events/${eventId}/results/release`, { method: "POST" });
       setRefreshVersion((version) => version + 1);
     } catch (error) {
-      setMessage(error.code === "RESULTS_NOT_READY"
-        ? "No se pueden liberar: la votacion debe estar cerrada y todas las planillas votantes confirmadas."
-        : "No se pudieron liberar los resultados.");
+      if (error?.code === "RESULTS_RELEASE_FORBIDDEN_FOR_ADMIN") {
+        setMessage("La liberación oficial de resultados corresponde a Escrutinio o Escribanía; el Administrador no puede liberarlos.");
+      } else if (error?.code === "RESULTS_NOT_READY") {
+        setMessage("No se pueden liberar: la votación debe estar cerrada y todas las planillas votantes confirmadas.");
+      } else {
+        setMessage("No se pudieron liberar los resultados.");
+      }
     } finally {
       setReleasing(false);
     }
@@ -130,7 +137,17 @@ export function AdminResultsPage() {
             <p className="eyebrow">{selectedEvent.name}</p>
             <h2>Mejor Comparsa</h2>
             <p>Resultados consolidados de rubros nominativos, liberados para escrutinio.</p>
-            {releaseAvailable && <button type="button" onClick={release} disabled={releasing}>{releasing ? "Liberando resultados..." : "Liberar resultados"}</button>}
+            {releaseAvailable && (
+              canRelease ? (
+                <button type="button" onClick={release} disabled={releasing}>
+                  {releasing ? "Liberando resultados..." : "Liberar resultados"}
+                </button>
+              ) : (
+                <p className="admin-release-notice" role="note">
+                  La liberación oficial de resultados corresponde exclusivamente a Escrutinio o Escribanía.
+                </p>
+              )
+            )}
           </section>
 
           {tie && (
@@ -184,6 +201,17 @@ export function AdminResultsPage() {
                   );
                 })}
               </div>
+            </section>
+          )}
+          {result && (
+            <section className="official-record-banner" aria-label="Acta Oficial">
+              <div>
+                <h3>Acta Notarial Oficial</h3>
+                <p>Emisión formal, sellado de integridad digital y firmas de autoridades y delegados.</p>
+              </div>
+              <a className="button-link" href={`#/admin/record?eventId=${encodeURIComponent(eventId)}`}>
+                📜 Ver / Emitir Acta Oficial →
+              </a>
             </section>
           )}
         </>
