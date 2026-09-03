@@ -99,4 +99,53 @@ describe("AdminResultsPage", () => {
     ));
     await waitFor(() => expect(resultCalls).toBe(2));
   });
+
+  it("muestra las tres columnas de puntaje bruto, penalizaciones y neto en el ranking general", async () => {
+    apiRequestMock.mockImplementation((path) => {
+      if (path === "/api/v1/results/events") return Promise.resolve([event]);
+      if (path === "/api/v1/results/events/event-1/troupes") return Promise.resolve([
+        { id: "troupe-a", name: "Comparsa Porambá" },
+        { id: "troupe-b", name: "Comparsa Itá Verá" },
+      ]);
+      if (path === "/api/v1/events/event-1/results") return Promise.resolve({
+        overallRanking: [
+          {
+            rank: 1,
+            troupeId: "troupe-a",
+            troupeName: "Comparsa Porambá",
+            grossScore: 120,
+            totalPenalties: 2,
+            netScore: 118,
+            totalScore: 118,
+          },
+          {
+            rank: 2,
+            troupeId: "troupe-b",
+            troupeName: "Comparsa Itá Verá",
+            grossScore: 115,
+            totalPenalties: 0,
+            netScore: 115,
+            totalScore: 115,
+          },
+        ],
+      });
+      return Promise.reject(new Error(`request inesperado: ${path}`));
+    });
+
+    const { getByText, getAllByText, getByRole } = render(<AdminResultsPage />);
+
+    await waitFor(() => expect(getByRole("heading", { name: "Ranking general" })).toBeVisible());
+    expect(getByText("Puntaje bruto")).toBeVisible();
+    expect(getByText("Penalizaciones")).toBeVisible();
+    expect(getByText("Puntaje final neto")).toBeVisible();
+
+    expect(getByText("Comparsa Porambá")).toBeVisible();
+    expect(getByText("120 pts")).toBeVisible();
+    expect(getByText("−2 pts")).toBeVisible();
+    expect(getByText("118 pts")).toBeVisible();
+
+    expect(getByText("Comparsa Itá Verá")).toBeVisible();
+    expect(getAllByText("115 pts")).toHaveLength(2);
+    expect(getByText("0 pts")).toBeVisible();
+  });
 });

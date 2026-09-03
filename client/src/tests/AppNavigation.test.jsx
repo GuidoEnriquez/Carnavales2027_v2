@@ -26,4 +26,13 @@ describe("AppNavigation", () => {
     expect(screen.getByRole("link", { name: "Personas" })).toHaveAttribute("aria-current", "page");
     expect(screen.queryByRole("link", { name: "Accesos" })).not.toBeInTheDocument();
   });
+
+  it("muestra el enlace de Penalizaciones para el rol COMISARIO", () => {
+    window.location.hash = "#/admin/penalties";
+    render(<AppNavigation session={{ user: { name: "Comisario" }, roles: ["COMISARIO"] }} />);
+    expect(screen.getByText("Administración")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Penalizaciones" })).toHaveAttribute("href", "#/admin/penalties");
+    expect(screen.getByRole("link", { name: "Penalizaciones" })).toHaveAttribute("aria-current", "page");
+    expect(screen.queryByRole("link", { name: "Evento" })).not.toBeInTheDocument();
+  });
 });

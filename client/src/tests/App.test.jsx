@@ -30,4 +30,10 @@ describe("App", () => {
     expect(screen.getByRole("heading", { name: "Cuenta creada" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Continuar al inicio de sesión" })).toHaveAttribute("href", "#/login");
   });
+
+  it("protege la ruta #/admin/penalties para roles no autorizados", () => {
+    window.location.hash = "#/admin/penalties";
+    render(<App session={{ status: "authenticated", roles: ["JUDGE"] }} />);
+    expect(screen.getByText("No tenés permisos para acceder a esta sección.")).toBeInTheDocument();
+  });
 });

@@ -151,16 +151,41 @@ export function AdminResultsPage() {
             </section>
           )}
 
-          {result && <section className="results-ranking" aria-labelledby="results-ranking-title">
-            <div className="section-heading"><div><h2 id="results-ranking-title">Ranking general</h2><p>Solo rubros nominativos participan en Mejor Comparsa.</p></div></div>
-            <div className="results-table" role="table" aria-label="Ranking general de comparsas">
-              {result.overallRanking.map((troupe) => <div className="results-row" role="row" key={troupe.troupeId}>
-                <span role="cell" className="results-rank">#{troupe.rank}</span>
-                <strong role="cell">{troupe.troupeName}</strong>
-                <span role="cell">{troupe.totalScore} puntos</span>
-              </div>)}
-            </div>
-          </section>}
+          {result && (
+            <section className="results-ranking" aria-labelledby="results-ranking-title">
+              <div className="section-heading">
+                <div>
+                  <h2 id="results-ranking-title">Ranking general</h2>
+                  <p>Solo rubros nominativos participan en Mejor Comparsa.</p>
+                </div>
+              </div>
+              <div className="results-table" role="table" aria-label="Ranking general de comparsas">
+                <div className="results-header-row" role="row">
+                  <span role="columnheader">Puesto</span>
+                  <span role="columnheader">Comparsa</span>
+                  <span role="columnheader" className="results-num-col">Puntaje bruto</span>
+                  <span role="columnheader" className="results-num-col">Penalizaciones</span>
+                  <span role="columnheader" className="results-num-col">Puntaje final neto</span>
+                </div>
+                {result.overallRanking.map((troupe) => {
+                  const gross = troupe.grossScore ?? troupe.totalScore ?? 0;
+                  const penalties = troupe.totalPenalties ?? troupe.penaltyPoints ?? 0;
+                  const net = troupe.netScore ?? troupe.totalScore ?? Math.max(0, gross - penalties);
+                  return (
+                    <div className="results-row" role="row" key={troupe.troupeId}>
+                      <span role="cell" className="results-rank">#{troupe.rank}</span>
+                      <strong role="cell" className="results-troupe-name">{troupe.troupeName}</strong>
+                      <span role="cell" className="results-col-gross" data-label="Puntaje bruto">{gross} pts</span>
+                      <span role="cell" className="results-col-penalties" data-label="Penalizaciones">
+                        {penalties > 0 ? `−${penalties} pts` : "0 pts"}
+                      </span>
+                      <span role="cell" className="results-col-net" data-label="Puntaje final neto">{net} pts</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
         </>
       )}
       {modalOpen && tie && <CeremonialDrawModal

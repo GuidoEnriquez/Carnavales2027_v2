@@ -5,7 +5,7 @@
 | T01 Persistencia y migración | Completada | Migración 062 aplicada, suite `penalties.test.js` (11 tests pass) y `migrate.test.js` (49 tests DB total) |
 | T02 Servicios y API de penalizaciones | Completada | `penalty-service.js`, `penalties.routes.js`, middleware `requirePenaltiesAccess` y `penalties-api.test.js` (92 tests API pass) |
 | T03 Integración con cómputo de resultados | Completada | `fetchConsolidatedPenalties`, `computeOverallRanking` con `grossScore`/`totalPenalties`/`netScore` y desglose; test RF-117/118/119; DB 50 y API 93 pass |
-| T04 Cliente: panel de Comisariato y Resultados | Pendiente | Interfaz para `COMISARIO`/`ADMIN`, formulario, revocación y desglose en resultados |
+| T04 Cliente: panel de Comisariato y Resultados | Completada | `AdminPenaltiesPage.jsx`, `RevokePenaltyModal.jsx`, `RequirePenaltiesRole.jsx`, desglose 3 columnas en `AdminResultsPage.jsx`, ruta `#/admin/penalties` y navegación; suites de cliente (26 archivos / 85 tests pass), build exitoso |
 | T05 Pruebas automatizadas completas | Pendiente | Suites de API, DB y cliente pasando al 100% |
 | T06 Validación manual y cierre SDD | Pendiente | Comprobación en 390×844, 768×1024 y 1440×900, revisión diff y actualización de estado |
 

@@ -1,12 +1,14 @@
 import { RequireAdmin } from "./auth/RequireAdmin.jsx";
 import { RequireRole } from "./auth/RequireRole.jsx";
 import { RequireResultsRole } from "./auth/RequireResultsRole.jsx";
+import { RequirePenaltiesRole } from "./auth/RequirePenaltiesRole.jsx";
 import { useSession } from "./auth/session-context.jsx";
 import { AppNavigation } from "./components/AppNavigation.jsx";
 import { AdminEventsPage } from "./pages/AdminEventsPage.jsx";
 import { AdminJudgesPage } from "./pages/AdminJudgesPage.jsx";
 import { AdminAssignmentsPage } from "./pages/AdminAssignmentsPage.jsx";
 import { AdminVotingPage } from "./pages/AdminVotingPage.jsx";
+import { AdminPenaltiesPage } from "./pages/AdminPenaltiesPage.jsx";
 import { AdminResultsPage } from "./pages/AdminResultsPage.jsx";
 import { AcceptedJudgeInvitationPage, AcceptJudgeInvitationPage } from "./pages/AcceptJudgeInvitationPage.jsx";
 import { AcceptRoleInvitationPage } from "./pages/AcceptRoleInvitationPage.jsx";
@@ -61,6 +63,12 @@ export default function App({ session: providedSession }) {
   }
   if (route === "#/admin/voting") {
     return <RoleArea session={session} admin><AdminVotingPage /></RoleArea>;
+  }
+  if (route === "#/admin/penalties") {
+    const content = <RequirePenaltiesRole session={session}><AdminPenaltiesPage /></RequirePenaltiesRole>;
+    return session.status === "authenticated"
+      ? <ProtectedShell session={session}>{content}</ProtectedShell>
+      : content;
   }
   if (route === "#/admin/results") {
     const content = <RequireResultsRole session={session}><AdminResultsPage /></RequireResultsRole>;
