@@ -19,7 +19,7 @@ Implementado y validado:
 - **Spec 013:** suplencias priorizadas: pares fijos titular/suplente, activación ADMIN+2FA con motivo ante titular incompleto o ausente, transición `REPLACED` y preservación histórica sin bloqueo de cierre ni liberación. Cerrada.
 - **Spec 014:** gestión de penalizaciones (`troupe_penalty`): deducción reglamentaria en Mejor Comparsa con piso en cero, preservación de rubros artísticos (RF-118), panel accesible de Comisariato, revocación auditada y bloqueo tras liberación de resultados. Cerrada el 2026-09-03.
 - **Spec 015:** actas oficiales y certificación de escrutinio (`official_scrutiny_record`): sello criptográfico JCS/SHA-256 (RFC 8785), inmutabilidad estricta por triggers en BD, segregación estricta de funciones (ADMIN solo lectura; emisión exclusiva `SCRUTINEER`/`ESCRIBANO` con 2FA) y vista notarial imprimible (`@media print`). Cerrada el 2026-09-03.
-- **Perfiles Operativos:** alta unificada de roles auxiliares (VEEDOR, COMISARIO, SCRUTINEER, ESCRIBANO), invitación por consola/SMTP, aceptación solo password, ciclo de vida `INVITED→REGISTERED→ SUSPENDED`. Migraciones 064-065. Implementado y validado (99 tests) el 2026-09-03.
+- **Perfiles Operativos:** alta unificada de roles auxiliares (VEEDOR, COMISARIO, SCRUTINEER, ESCRIBANO), invitación por consola/SMTP, aceptación solo password, ciclo de vida `INVITED→REGISTERED→SUSPENDED`. Migraciones 064-065. Implementado y validado (99 tests) el 2026-09-03.
 
 Todavía fuera de alcance: publicación externa de resultados (portal público) y conexión/sincronización Offline-First. Spec 005 conserva compatibilidad exploratoria para clientes antiguos, pero no es una capacidad operativa aceptada.
 
@@ -132,7 +132,7 @@ erDiagram
 - La auditoría, perfiles, invitaciones, asignaciones, planillas y scores conservan historia y no admiten borrado físico operativo.
 - No se puede eliminar ni degradar al último `ADMIN` activo.
 
-El código exploratorio de I4-A conserva la revisión de planilla y el ledger `ballot_sync_operation`, pero Offline/sync continúa fuera del alcance operativo hasta contar con un incremento SDD futuro. Penalizaciones, consolidación de resultados, rankings, desempate, escrutinio y actas también continúan fuera de alcance.
+El código exploratorio de I4-A conserva la revisión de planilla y el ledger `ballot_sync_operation`, pero Offline/sync continúa fuera del alcance operativo hasta contar con un incremento SDD futuro.
 
 ## Requisitos
 
@@ -243,7 +243,7 @@ La API expone, entre otros, estos contratos bajo `/api/v1`:
 - `POST /operational-invitations/inspect` [PÚBLICO] inspeccionar invitación
 - `POST /operational-invitations/accept` [PÚBLICO] aceptar invitación (solo password)
 
-Cada ítem de planilla permanece en `PENDING`, recibe un puntaje ordinario `SCORED` de 1 a 10, o se marca mediante la acción independiente `NOT_PRESENTED` con valor efectivo 0. Si el jurado intenta confirmar con pendientes, recibe un modal bloqueante que los identifica por comparsa, rubro e ítem. Los pendientes también bloquean el cierre administrativo y abren un modal con jurado, comparsa, rubro e ítem faltante. Una planilla confirmada no se puede reabrir. Las subsanaciones históricas se conservan; su operación pertenece al futuro incremento de escrutinio.
+Cada ítem de planilla permanece en `PENDING`, recibe un puntaje ordinario `SCORED` de 1 a 10, o se marca mediante la acción independiente `NOT_PRESENTED` con valor efectivo 0. Si el jurado intenta confirmar con pendientes, recibe un modal bloqueante que los identifica por comparsa, rubro e ítem. Los pendientes también bloquean el cierre administrativo y abren un modal con jurado, comparsa, rubro e ítem faltante. Una planilla confirmada no se puede reabrir.
 
 ## Producción
 
@@ -293,26 +293,21 @@ La evidencia automatizada completa reporta 38 pruebas de persistencia, 107 de AP
 - [Tareas I1](specs/001-plataforma-votacion-carnavales/tasks.md)
 - [Spec 002](specs/002-jurados-asignaciones/spec.md)
 - [Validación I2](specs/002-jurados-asignaciones/validation.md)
-- [Plan I2-B](.hermes/plans/2026-08-30_i2-b-cupos-asignaciones.md)
 - [Spec 003](specs/003-votacion-planillas/spec.md)
 - [Clarificaciones I3](specs/003-votacion-planillas/clarifications.md)
 - [Tareas I3](specs/003-votacion-planillas/tasks.md)
 - [Validación I3](specs/003-votacion-planillas/validation.md)
-- [Plan I3](.hermes/plans/2026-08-30_i3-votacion-planillas.md)
 - [Spec 004](specs/004-completitud-planillas/spec.md)
 - [Clarificaciones Spec 004](specs/004-completitud-planillas/clarifications.md)
 - [Tareas Spec 004](specs/004-completitud-planillas/tasks.md)
-- [Plan Spec 004](.hermes/plans/2026-08-30_completitud-planillas.md)
 - [Validación Spec 004](specs/004-completitud-planillas/validation.md)
 - [Spec 005 - Offline-First](specs/005-offline-first/spec.md)
 - [Clarificaciones Spec 005](specs/005-offline-first/clarifications.md)
 - [Tareas Spec 005](specs/005-offline-first/tasks.md)
-- [Plan Spec 005](.hermes/plans/2026-08-31_i4-a-offline-first.md)
 - [Validación Spec 005](specs/005-offline-first/validation.md)
 - [Spec 006 - Cierre sin reapertura](specs/006-cierre-sin-reapertura/spec.md)
 - [Clarificaciones Spec 006](specs/006-cierre-sin-reapertura/clarifications.md)
 - [Tareas Spec 006](specs/006-cierre-sin-reapertura/tasks.md)
-- [Plan Spec 006](.hermes/plans/2026-08-31_cierre-sin-reapertura.md)
 - [Validación Spec 006](specs/006-cierre-sin-reapertura/validation.md)
 - [Spec 007 - Inmutabilidad por ítem](specs/007-inmutabilidad-por-item/spec.md)
 - [Clarificaciones Spec 007](specs/007-inmutabilidad-por-item/clarifications.md)
@@ -349,5 +344,6 @@ La evidencia automatizada completa reporta 38 pruebas de persistencia, 107 de AP
 - [Plan Spec 013](specs/013-suplencias-priorizadas/plan.md)
 - [Tareas Spec 013](specs/013-suplencias-priorizadas/tasks.md)
 - [Validación Spec 013](specs/013-suplencias-priorizadas/validation.md)
+- [Plan Perfiles Operativos](PLAN-operational-profiles.md)
 
 No commitear `.env`, contraseñas, tokens ni secretos. No existe autoasignación pública de `ADMIN`. La seguridad del sistema se aplica del lado del servidor.
