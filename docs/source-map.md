@@ -20,6 +20,7 @@
 - Decisión de producto del 2026-08-31: no se permiten nuevas reaperturas de planillas. Un cierre con `PENDING` se rechaza y ADMIN recibe un modal con jurado, comparsa, rubro e ítem faltante. Fuente de Spec-006/RF-67 a Spec-006/RF-70.
 - Spec 007: inmutabilidad por ítem aprobada formalmente el 2026-09-01; implementación validada automáticamente y manualmente en Chrome de escritorio con emulación responsive.
 - Spec 008: alta por invitación de `VEEDOR`, `COMISARIO` y `SCRUTINEER`; emisión, inspección, aceptación, login real, 2FA y UI validados. La decisión de producto 2026-09-01 revoca links existentes, elimina el token plano y unifica las altas con Jurados. No hay fuente Jira/Confluence identificada para este incremento. **[NECESITA ACLARACIÓN]**.
+- Perfiles Operativos: módulo implementado 2026-09-03 con migraciones 064 (tablas `operational_profile`, `operational_invitation`, triggers) y 065 (`delivery_status`, `sent_at`). Alto unificado de roles auxiliares desde AdminJudgesPage, invitación por consola/SMTP, aceptación solo password, ciclo de vida `INVITED→REGISTERED→SUSPENDED`. Validado con 99 tests (28 archivos). Artefactos: `PLAN-operational-profiles.md`, `api/src/modules/operational-profiles/`, `api/src/db/migrations/064_operational_profiles.sql`, `api/src/db/migrations/065_operational_invitation_delivery.sql`, `client/src/pages/AcceptOperationalInvitationPage.jsx`.
 - Spec 009: rediseño operativo del cliente de jurado basado en el brief y las referencias visuales de producto del 2026-09-01, preservando Specs 004, 006 y 007. Implementación, pruebas de cliente y validación manual (390x844, 768x1024, 1440x900) completadas y cerradas el 2026-09-01.
 - Decisión de producto 2026-09-02: cada suplente queda reservado para un titular fijo por noche y especialidad. ADMIN con 2FA lo activa, con motivo, solo si el titular no presentó la planilla o quedó incompleta. Implementada, validada y cerrada en Spec 013.
 
@@ -164,3 +165,18 @@ Por decisión de producto del 2026-09-01, la regla de subsanación conocida como
 - Los títulos de tickets no se interpretan como reglas completas.
 - Ante conflicto entre una copia de Obsidian y Jira/Confluence actual, se documenta como `[NECESITA ACLARACIÓN]` antes del plan o código.
 - La visión funcional objetivo se divide en incrementos verticales: cierre I1; usuarios y jurados; programación y nominaciones; votación; futura conexión/sincronización Offline-First; supervisión y penalizaciones; escrutinio/resultados; actas/reportes.
+
+## Artefactos Perfiles Operativos (2026-09-03)
+
+| Artefacto | Ubicación | Descripción |
+|---|---|---|
+| Plan | `PLAN-operational-profiles.md` | Plan de implementación y validación |
+| Spec | `specs/008-gestion-accesos/spec.md` | Alcance original de gestión de accesos |
+| Migración 064 | `api/src/db/migrations/064_operational_profiles.sql` | Tablas `operational_profile`, `operational_invitation`, triggers |
+| Migración 065 | `api/src/db/migrations/065_operational_invitation_delivery.sql` | Columnas `delivery_status`, `sent_at` |
+| Service | `api/src/modules/operational-profiles/operational-profile-service.js` | Lógica de negocio: crear, aceptar, inspect, reissue, suspend, reactivate, revoke, recordDelivery, deliverInvitation |
+| Controller | `api/src/modules/operational-profiles/operational-profile-controller.js` | HTTP handlers con error handling |
+| Routes | `api/src/routes/operational-profiles.routes.js` | Endpoints API |
+| Client Page | `client/src/pages/AcceptOperationalInvitationPage.jsx` | Formulario de aceptación (solo password) |
+| Client Tests | `client/src/pages/AdminJudgesPage.test.jsx` | Tests de UI para perfiles operativos |
+| API Tests | `api/src/tests/operational-profiles.test.js` | Tests de integración API |

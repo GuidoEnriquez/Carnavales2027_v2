@@ -13,6 +13,7 @@ import { requireTrustedOrigin } from "./auth/trusted-origin.js";
 import { createResultsRouter } from "./routes/results.routes.js";
 import { createPenaltiesRouter } from "./routes/penalties.routes.js";
 import { createScrutinyRecordsRouter } from "./routes/scrutiny-records.routes.js";
+import { createOperationalProfilesRouter } from "./routes/operational-profiles.routes.js";
 
 export function createApp({
   authHandler,
@@ -72,6 +73,10 @@ export function createApp({
       requireSession: createRequireSession(getSession),
       sendInvitation,
       revokeSessions,
+    }));
+    app.use("/api/v1", createOperationalProfilesRouter({
+      requireSession: createRequireSession(getSession),
+      sendInvitation,
     }));
   }
 

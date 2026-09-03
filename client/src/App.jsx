@@ -13,6 +13,7 @@ import { AdminResultsPage } from "./pages/AdminResultsPage.jsx";
 import { OfficialRecordPage } from "./pages/OfficialRecordPage.jsx";
 import { AcceptedJudgeInvitationPage, AcceptJudgeInvitationPage } from "./pages/AcceptJudgeInvitationPage.jsx";
 import { AcceptRoleInvitationPage } from "./pages/AcceptRoleInvitationPage.jsx";
+import { AcceptOperationalInvitationPage } from "./pages/AcceptOperationalInvitationPage.jsx";
 import { HomePage } from "./pages/HomePage.jsx";
 import { JudgeHomePage } from "./pages/JudgeHomePage.jsx";
 import { JudgeBallotPage } from "./pages/JudgeBallotPage.jsx";
@@ -49,6 +50,10 @@ export default function App({ session: providedSession }) {
   if (route === "#/invitations/role/accept") {
     const token = new URLSearchParams(query).get("token") ?? "";
     return <AcceptRoleInvitationPage key={token} token={token} />;
+  }
+  if (route === "#/invitations/operational/accept") {
+    const secret = new URLSearchParams(query).get("secret") ?? "";
+    return <AcceptOperationalInvitationPage key={secret} secret={secret} />;
   }
   if (route === "#/invitations/accepted") return <AcceptedJudgeInvitationPage />;
   if (route === "#/login" || route === "") return <LoginPage />;

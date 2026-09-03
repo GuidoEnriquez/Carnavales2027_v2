@@ -11,7 +11,7 @@ const registered = {
   email: "jurado@example.test",
   documentNumber: "12345678",
   registrationStatus: "REGISTERED",
-  invitation: { id: "i1", status: "USED", deliveryStatus: "SENT" },
+  invitation: { id: "i1", status: "USED" },
 };
 
 describe("AdminJudgesPage", () => {
@@ -20,7 +20,7 @@ describe("AdminJudgesPage", () => {
   it("crea un perfil sin especialidad y actualiza el padrón", async () => {
     let judgeRequests = 0;
     apiRequest.mockImplementation((path, options) => {
-      if (path === "/api/v1/users") return Promise.resolve([]);
+      if (path === "/api/v1/operational-profiles") return Promise.resolve([]);
       if (path === "/api/v1/judges" && !options) {
         judgeRequests += 1;
         return Promise.resolve(judgeRequests === 1 ? [] : [registered]);
@@ -51,31 +51,39 @@ describe("AdminJudgesPage", () => {
   it("genera una invitación auxiliar desde la misma sección", async () => {
     apiRequest.mockImplementation((path, options) => {
       if (path === "/api/v1/judges" && !options) return Promise.resolve([]);
-      if (path === "/api/v1/users" && !options) return Promise.resolve([]);
-      if (path === "/api/v1/users/invitations") return Promise.resolve({ token: "operational-token" });
+      if (path === "/api/v1/operational-profiles" && !options) return Promise.resolve([]);
+      if (path === "/api/v1/operational-profiles") return Promise.resolve({
+        operationalProfile: { id: "op1", name: "Comisario Test" },
+        invitation: { id: "inv1", status: "PENDING", expiresAt: new Date().toISOString(), deliveryStatus: "SENT" },
+      });
       return Promise.resolve([]);
     });
     render(<AdminJudgesPage />);
     await screen.findByText("Todavía no hay jurados registrados.");
 
     fireEvent.change(screen.getByLabelText("Tipo de alta"), { target: { value: "COMISARIO" } });
+    fireEvent.change(screen.getByLabelText("Nombre completo"), { target: { value: "Comisario Test" } });
     fireEvent.change(screen.getByLabelText("Correo"), { target: { value: "comisario@example.test" } });
-    fireEvent.click(screen.getByRole("button", { name: "Generar link de invitación" }));
+    fireEvent.change(screen.getByLabelText("DNI"), { target: { value: "87654321" } });
+    fireEvent.click(screen.getByRole("button", { name: "Registrar e invitar" }));
 
-    await waitFor(() => expect(apiRequest).toHaveBeenCalledWith("/api/v1/users/invitations", {
+    await waitFor(() => expect(apiRequest).toHaveBeenCalledWith("/api/v1/operational-profiles", {
       method: "POST",
-      body: JSON.stringify({ email: "comisario@example.test", roleCode: "COMISARIO" }),
+      body: JSON.stringify({
+        name: "Comisario Test",
+        email: "comisario@example.test",
+        documentNumber: "87654321",
+        roleCodes: ["COMISARIO"],
+      }),
     }));
-    expect(await screen.findByText("Link de invitación")).toBeInTheDocument();
-    expect(screen.getByText(/operational-token/)).toBeInTheDocument();
-    expect(screen.queryByLabelText("DNI")).not.toBeInTheDocument();
+    expect(await screen.findByText("Perfil registrado e invitación enviada.")).toBeInTheDocument();
   });
 
   it("suspende con confirmación y refresca el estado", async () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     let judgeRequests = 0;
     apiRequest.mockImplementation((path, options) => {
-      if (path === "/api/v1/users") return Promise.resolve([]);
+      if (path === "/api/v1/operational-profiles") return Promise.resolve([]);
       if (path === "/api/v1/judges" && !options) {
         judgeRequests += 1;
         return Promise.resolve(judgeRequests === 1 ? [registered] : [{ ...registered, registrationStatus: "SUSPENDED" }]);

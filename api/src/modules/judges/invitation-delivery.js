@@ -6,20 +6,21 @@ function requireEnvironment(name) {
   return value;
 }
 
-function invitationUrl(secret) {
+function invitationUrl(secret, route = "#/invitations/accept") {
   const frontendUrl = requireEnvironment("FRONTEND_URL").replace(/\/$/, "");
   if (process.env.NODE_ENV === "production" && !frontendUrl.startsWith("https://")) {
     throw new Error("FRONTEND_URL debe usar HTTPS en producción.");
   }
-  return `${frontendUrl}/#/invitations/accept?secret=${encodeURIComponent(secret)}`;
+  return `${frontendUrl}/${route}?secret=${encodeURIComponent(secret)}`;
 }
 
 export function createInvitationDelivery({
   createTransport = nodemailer.createTransport,
   logger = console,
+  route,
 } = {}) {
   return async ({ email, name, secret, expiresAt }) => {
-    const url = invitationUrl(secret);
+    const url = invitationUrl(secret, route);
     const provider = process.env.EMAIL_PROVIDER ?? "console";
 
     if (provider === "console" && process.env.NODE_ENV !== "production") {

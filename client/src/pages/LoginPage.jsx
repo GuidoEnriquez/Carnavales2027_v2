@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { apiRequest } from "../api/http.js";
 import { useSession } from "../auth/session-context.jsx";
 
@@ -62,6 +62,9 @@ function EyeOffIcon() {
   );
 }
 
+const OTP_LENGTH = 6;
+const RESEND_SECONDS = 28;
+
 export function LoginPage({ onAuthenticated }) {
   const session = useSession();
   const [step, setStep] = useState("credentials");
@@ -70,6 +73,8 @@ export function LoginPage({ onAuthenticated }) {
   const [showPassword, setShowPassword] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [resendCooldown, setResendCooldown] = useState(28);
+  const [otpValues, setOtpValues] = useState(Array(OTP_LENGTH).fill(""));
+  const otpRefs = useRef([]);
 
   useEffect(() => {
     if (step !== "otp" || resendCooldown <= 0) return undefined;
@@ -108,7 +113,8 @@ export function LoginPage({ onAuthenticated }) {
       await apiRequest("/api/auth/two-factor/send-otp", { method: "POST", body: "{}" });
       form.reset();
       setStep("otp");
-      setResendCooldown(28);
+      setOtpValues(Array(OTP_LENGTH).fill(""));
+      setResendCooldown(RESEND_SECONDS);
       setMessage("✓ Código enviado correctamente");
     } catch {
       setMessage("No pudimos iniciar sesión. Intentá nuevamente.");
@@ -127,8 +133,11 @@ export function LoginPage({ onAuthenticated }) {
 
   const submitOtp = async (event) => {
     event.preventDefault();
-    const form = event.currentTarget;
-    const code = new FormData(form).get("code");
+    const code = otpValues.join("");
+    if (code.length < OTP_LENGTH) {
+      setMessage("Ingresá los 6 números para continuar.");
+      return;
+    }
     setLoading(true);
     setMessage("");
     try {
@@ -151,13 +160,39 @@ export function LoginPage({ onAuthenticated }) {
     setMessage("");
     try {
       await apiRequest("/api/auth/two-factor/send-otp", { method: "POST", body: "{}" });
-      setResendCooldown(28);
       setMessage("Te enviamos un nuevo código.");
+      setResendCooldown(RESEND_SECONDS);
     } catch {
       setMessage("No se pudo reenviar el código. Intentá nuevamente.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleOtpChange = (index, value) => {
+    if (!/^\d*$/.test(value)) return;
+    const newValues = [...otpValues];
+    newValues[index] = value.slice(-1);
+    setOtpValues(newValues);
+    if (value && index < OTP_LENGTH - 1) {
+      otpRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index, event) => {
+    if (event.key === "Backspace" && !otpValues[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (event) => {
+    event.preventDefault();
+    const pasted = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, OTP_LENGTH);
+    if (!pasted) return;
+    const newValues = Array(OTP_LENGTH).fill("");
+    for (let i = 0; i < pasted.length; i++) newValues[i] = pasted[i];
+    setOtpValues(newValues);
+    otpRefs.current[Math.min(pasted.length, OTP_LENGTH - 1)]?.focus();
   };
 
   return (
@@ -205,33 +240,24 @@ export function LoginPage({ onAuthenticated }) {
               <p>Te enviamos un código de 6 números a <strong>{maskEmail(userEmail)}</strong></p>
               <p className="otp-subtext">Ingresalo para continuar.</p>
             </div>
-            <label>
-              Código de verificación
-              <input
-                name="code"
-                inputMode="numeric"
-                pattern="[0-9]{6}"
-                maxLength="6"
-                autoComplete="one-time-code"
-                className="otp-code-input"
-                placeholder="000000"
-                required
-              />
-            </label>
-            <button className="primary-action" disabled={loading}>Verificar código</button>
-            <button
-              className="secondary"
-              type="button"
-              disabled={loading || resendCooldown > 0}
-              onClick={resendOtp}
-            >
-              {resendCooldown > 0 ? `Reenviar código en ${resendCooldown} s` : "Reenviar código"}
-            </button>
+            <div className="otp-input-group" role="group" aria-label="Código de verificación" onPaste={handleOtpPaste}>
+              {otpValues.map((val, i) => (
+                <input key={i} ref={(el) => { otpRefs.current[i] = el; }} type="text" inputMode="numeric" pattern="[0-9]" maxLength="1" autoComplete={i === 0 ? "one-time-code" : "off"} value={val} onChange={(e) => handleOtpChange(i, e.target.value)} onKeyDown={(e) => handleOtpKeyDown(i, e)} disabled={loading} required />
+              ))}
+            </div>
+            <button disabled={loading}>Verificar código</button>
+            <p className="resend-cooldown">
+              {resendCooldown > 0 ? (
+                <>¿No recibiste el código? Reenviar código en {resendCooldown} s</>
+              ) : (
+                <button type="button" className="resend-link" disabled={loading} onClick={resendOtp}>Reenviar código</button>
+              )}
+            </p>
             <button
               className="secondary"
               type="button"
               disabled={loading}
-              onClick={() => { setStep("credentials"); setMessage(""); }}
+              onClick={() => { setStep("credentials"); setMessage(""); setOtpValues(Array(OTP_LENGTH).fill("")); }}
             >
               Volver
             </button>

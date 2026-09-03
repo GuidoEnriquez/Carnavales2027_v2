@@ -19,6 +19,7 @@ Implementado y validado:
 - **Spec 013:** suplencias priorizadas: pares fijos titular/suplente, activación ADMIN+2FA con motivo ante titular incompleto o ausente, transición `REPLACED` y preservación histórica sin bloqueo de cierre ni liberación. Cerrada.
 - **Spec 014:** gestión de penalizaciones (`troupe_penalty`): deducción reglamentaria en Mejor Comparsa con piso en cero, preservación de rubros artísticos (RF-118), panel accesible de Comisariato, revocación auditada y bloqueo tras liberación de resultados. Cerrada el 2026-09-03.
 - **Spec 015:** actas oficiales y certificación de escrutinio (`official_scrutiny_record`): sello criptográfico JCS/SHA-256 (RFC 8785), inmutabilidad estricta por triggers en BD, segregación estricta de funciones (ADMIN solo lectura; emisión exclusiva `SCRUTINEER`/`ESCRIBANO` con 2FA) y vista notarial imprimible (`@media print`). Cerrada el 2026-09-03.
+- **Perfiles Operativos:** alta unificada de roles auxiliares (VEEDOR, COMISARIO, SCRUTINEER, ESCRIBANO), invitación por consola/SMTP, aceptación solo password, ciclo de vida `INVITED→REGISTERED→ SUSPENDED`. Migraciones 064-065. Implementado y validado (99 tests) el 2026-09-03.
 
 Todavía fuera de alcance: publicación externa de resultados (portal público) y conexión/sincronización Offline-First. Spec 005 conserva compatibilidad exploratoria para clientes antiguos, pero no es una capacidad operativa aceptada.
 
@@ -45,7 +46,7 @@ La autorización real se verifica en la API: sesión, 2FA, rol y estado del perf
 
 ## Estructura de base de datos
 
-La persistencia usa PostgreSQL y está definida por las migraciones incrementales `001` a `063` en `api/src/db/migrations/`. Los estados se implementan con columnas `TEXT` y restricciones `CHECK`; no se usan tipos `ENUM` nativos. La tabla `"user"` pertenece a Better Auth y el modelo de dominio solo la referencia.
+La persistencia usa PostgreSQL y está definida por las migraciones incrementales `001` a `065` en `api/src/db/migrations/`. Los estados se implementan con columnas `TEXT` y restricciones `CHECK`; no se usan tipos `ENUM` nativos. La tabla `"user"` pertenece a Better Auth y el modelo de dominio solo la referencia.
 
 ### Relaciones principales
 
@@ -88,7 +89,7 @@ erDiagram
 
 | Dominio | Tablas | Estructura y relaciones relevantes |
 |---|---|---|
-| Autorización y auditoría | `app_role`, `user_role`, `bootstrap_state`, `audit_event`, `role_invitation` | `user_role` es la relación N:M entre usuarios Better Auth y roles. `bootstrap_state` conserva el ADMIN inicial. `audit_event` es append-only. `role_invitation` conserva solo el hash, estado y vencimiento de cada invitación operativa. |
+| Autorización y auditoría | `app_role`, `user_role`, `bootstrap_state`, `audit_event`, `role_invitation`, `operational_profile`, `operational_invitation` | `user_role` es la relación N:M entre usuarios Better Auth y roles. `bootstrap_state` conserva el ADMIN inicial. `audit_event` es append-only. `role_invitation` conserva solo el hash, estado y vencimiento de cada invitación operativa. `operational_profile` y `operational_invitation` soportan roles auxiliares (VEEDOR, COMISARIO, SCRUTINEER, ESCRIBANO). |
 | Configuración | `carnival_event`, `night`, `event_category`, `event_troupe`, `event_specialty` | Un evento contiene jornadas, categorías, comparsas y especialidades. Categorías, especialidades y comparsas están scoped por evento. |
 | Evaluación | `rubric`, `evaluation_item`, `rubric_criterion`, `troupe_nomination` | Una rúbrica pertenece a un evento y tiene ítems y criterios. Cada ítem referencia una rúbrica y una especialidad del mismo evento. Las nominaciones vinculan comparsa y rúbrica del mismo evento. |
 | Programación | `night_troupe_schedule`, `configuration_seed` | `night_troupe_schedule` relaciona jornada y comparsa, con orden de presentación único por jornada. `configuration_seed` registra la semilla inicial aplicada a un evento. |
@@ -113,6 +114,8 @@ erDiagram
 | `ballot_score.evaluation_state` | `PENDING` con score `NULL`; `SCORED` con 1 a 10; `NOT_PRESENTED` con 0 |
 | `troupe_penalty.status` | `APPLIED`, `REVOKED` |
 | `official_scrutiny_record.certified_role` | `SCRUTINEER`, `ESCRIBANO` (inmutable tras inserción) |
+| `operational_profile` | `INVITED`, `REGISTERED`, `SUSPENDED` |
+| `operational_invitation` | Estado `PENDING`, `USED`, `REVOKED`; entrega `PENDING`, `SENT`, `FAILED` |
 | `voting_window` | `OPEN`, `CLOSED` |
 
 ### Invariantes de integridad
@@ -197,7 +200,8 @@ Abrir `http://localhost:5173/#/login`. En desarrollo, Vite redirige `/api` a `ht
 - `#/admin/voting`: apertura, cierre y estado de planillas; un cierre bloqueado lista los votos pendientes en un modal.
 - `#/judge`: consulta de asignaciones y planillas propias.
 - `#/judge/ballot?ballotId=:ballotId`: carga y confirmación de una planilla propia.
-- `#/invitations/accept`: aceptación de invitaciones.
+- `#/invitations/accept`: aceptación de invitaciones de jurados.
+- `#/invitations/operational/accept`: aceptación de invitaciones de perfiles operativos (VEEDOR, COMISARIO, SCRUTINEER, ESCRIBANO).
 - `#/invitations/role/accept?token=:token`: aceptación pública de una invitación operativa; el cliente elimina el token de la URL antes de inspeccionarla.
 
 Las rutas protegidas requieren 2FA verificado. `ADMIN` administra el sistema; `JUDGE` solo accede a sus asignaciones activas y planillas propias; `VEEDOR` ve conteos operativos sin puntajes.
@@ -230,6 +234,14 @@ La API expone, entre otros, estos contratos bajo `/api/v1`:
 - `POST /events/:eventId/nights/:nightId/voting/close`
 - `GET /events/:eventId/nights/:nightId/voting/status`
 - `GET /events/:eventId/nights/:nightId/voting/ballots`
+- `POST /operational-profiles` [ADMIN+2FA] crear perfil + invitación
+- `GET /operational-profiles` [ADMIN+2FA] listar perfiles
+- `POST /operational-profiles/:id/invitations` [ADMIN+2FA] reemitir invitación
+- `DELETE /operational-profiles/:id/invitations/:invId` [ADMIN+2FA] revocar invitación
+- `POST /operational-profiles/:id/suspend` [ADMIN+2FA] suspender
+- `POST /operational-profiles/:id/reactivate` [ADMIN+2FA] reactivar
+- `POST /operational-invitations/inspect` [PÚBLICO] inspeccionar invitación
+- `POST /operational-invitations/accept` [PÚBLICO] aceptar invitación (solo password)
 
 Cada ítem de planilla permanece en `PENDING`, recibe un puntaje ordinario `SCORED` de 1 a 10, o se marca mediante la acción independiente `NOT_PRESENTED` con valor efectivo 0. Si el jurado intenta confirmar con pendientes, recibe un modal bloqueante que los identifica por comparsa, rubro e ítem. Los pendientes también bloquean el cierre administrativo y abren un modal con jurado, comparsa, rubro e ítem faltante. Una planilla confirmada no se puede reabrir. Las subsanaciones históricas se conservan; su operación pertenece al futuro incremento de escrutinio.
 
@@ -269,7 +281,7 @@ npm audit
 
 Las pruebas PostgreSQL requieren que `TEST_DATABASE_URL` apunte a una base aislada. La evidencia detallada está en los archivos `validation.md` de cada especificación en [`specs/`](specs/).
 
-La evidencia automatizada completa reporta 38 pruebas de persistencia, 80 de API y 73 de cliente, además del build exitoso de Vite y las migraciones 001-061 sin pendientes.
+La evidencia automatizada completa reporta 38 pruebas de persistencia, 107 de API y 99 de cliente, además del build exitoso de Vite y las migraciones 001-065 sin pendientes.
 
 ## SDD y seguridad
 

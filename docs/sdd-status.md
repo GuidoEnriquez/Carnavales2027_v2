@@ -22,6 +22,7 @@
 | Spec 013 | Suplencias priorizadas: pares fijos titular/suplente, activación ADMIN+2FA, transición `REPLACED`, cierre y liberación. Validada automáticamente y manualmente (Asignaciones). Cerrada el 2026-09-02. | `specs/013-suplencias-priorizadas/validation.md` |
 | Spec 014 | Gestión de penalizaciones: tabla `troupe_penalty`, deducción en Mejor Comparsa con piso cero, preservación de rubros artísticos, panel accesible de Comisariato y revocación auditada. Cerrada el 2026-09-03. | `specs/014-penalizaciones/validation.md` |
 | Spec 015 | Actas Oficiales y Certificación de Escrutinio: tabla inmutable `official_scrutiny_record`, hash JCS/SHA-256 (RFC 8785), segregación 2FA (ADMIN sólo lectura, emisión exclusiva SCRUTINEER/ESCRIBANO), vista notarial imprimible (@media print). Cerrada el 2026-09-03. | `specs/015-actas-escrutinio/validation.md` |
+| Perfiles Operativos | Alta unificada de roles auxiliares (VEEDOR, COMISARIO, SCRUTINEER, ESCRIBANO), invitación por consola/SMTP, aceptación solo password, ciclo de vida INVITED→REGISTERED→SUSPENDED, trigger auto-registro. Migraciones 064-065. Implementado y validado (99 tests) el 2026-09-03. | `PLAN-operational-profiles.md` |
 
 ## Incremento activo
 
@@ -51,4 +52,4 @@ Toda spec que modifique una pantalla operativa debe declarar el criterio de uso 
 
 ## Verificación de referencia
 
-Al 2026-09-03, las evidencias automatizadas son API 107, DB 62, cliente 99 y build exitoso. Specs 014 y 015 cerradas; todos los incrementos (001–015) completados.
+Al 2026-09-03, las evidencias automatizadas son API 107, DB 62, cliente 99 y build exitoso. Specs 014, 015 y Perfiles Operativos completados; todos los incrementos (001–015 + Perfiles Operativos) completados.

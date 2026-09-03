@@ -7,7 +7,7 @@ Este documento guía el diseño de experiencia e interfaz del cliente. No autori
 - **Offline-First:** conexión y sincronización siguen diferidas. Los estados visuales de esta guía pueden diseñarse y prototiparse, pero no habilitan una capacidad operativa hasta contar con una spec aprobada posterior a Spec 005.
 - **Inmutabilidad por ítem:** Spec 007 está aprobada. Una decisión que el jurado confirma para un ítem queda inmutable de inmediato. Por ello, "Modificar puntuaciones" solo puede aplicar a ítems aún `PENDING`; no se debe diseñar ni implementar una edición posterior de `SCORED` o `NOT_PRESENTED`.
 - **Completitud:** `PENDING` bloquea la confirmación de la planilla y el cierre administrativo. Nunca crear puntajes automáticos, el "5 por equidad", subsanaciones ni una opción `0` en la escala ordinaria.
-- **Módulos diferidos:** penalizaciones, escrutinio operativo y actas oficiales requieren un incremento SDD nuevo. No implementar sus flujos operativos.
+- **Perfiles Operativos:** Implementados en AdminJudgesPage con creación de perfiles auxiliares (VEEDOR, COMISARIO, SCRUTINEER, ESCRIBANO), invitación por consola/SMTP y aceptación solo password en `#/invitations/operational/accept`.
 - **Servidor autoritativo:** los indicadores de UI no sustituyen sesión, 2FA, roles, asignación, integridad ni controles API.
 
 ---
@@ -25,6 +25,7 @@ Preservar las rutas existentes y adaptar el diseño progresivamente:
 - Planilla del jurado: `#/judge/ballot?ballotId=:ballotId`.
 - Personas y accesos: `#/admin/judges`.
 - Control de votación: `#/admin/voting`.
+- Aceptación de invitación operativa: `#/invitations/operational/accept`.
 
 Antes de modificar una pantalla, leer la spec, clarificaciones, plan, tareas y validación del incremento afectado. Implementar solo los estados que estén aprobados para operación; representar los demás como prototipo, nunca como comportamiento activo.
 
@@ -93,19 +94,10 @@ Crear una estructura persistente.
 
 ```text
 [Carnavales 2027]                          [Noche 2]
-[Jurado: Vestuario]                        [● Online]
+[Jurado: Vestuario]
 ```
 
-El indicador de conexión debe estar siempre visible.
-
-| Estado | Etiqueta |
-|---|---|
-| Online | `● Online` |
-| Sincronizando | `↻ Sincronizando` |
-| Offline | `● Offline` |
-| Error | `! Error de sincronización` |
-
-No usar banners gigantes permanentes para indicar offline. Debe informar sin interferir con la votación.
+**Nota:** El indicador de conexión fue retirado de la UI (decisión 2026-09-03). Los fallos de red se gestionan reactivamente al momento del intento; la app opera 100% online.
 
 ## 4. Login
 

@@ -6,6 +6,14 @@ import { SessionProvider } from "../auth/session-context.jsx";
 
 vi.mock("../api/http.js", () => ({ apiRequest: vi.fn() }));
 
+function fillOtp(code) {
+  const group = screen.getByLabelText("Código de verificación");
+  const inputs = group.querySelectorAll("input");
+  code.split("").forEach((digit, i) => {
+    fireEvent.change(inputs[i], { target: { value: digit } });
+  });
+}
+
 describe("LoginPage", () => {
   afterEach(() => { cleanup(); vi.clearAllMocks(); window.location.hash = ""; });
 
@@ -31,7 +39,8 @@ describe("LoginPage", () => {
       body: "{}",
     });
 
-    fireEvent.change(await screen.findByLabelText("Código de verificación"), { target: { value: "123456" } });
+    await screen.findByLabelText("Código de verificación");
+    fillOtp("123456");
     fireEvent.click(screen.getByRole("button", { name: "Verificar código" }));
 
     await waitFor(() => expect(apiRequest).toHaveBeenNthCalledWith(4, "/api/auth/two-factor/verify-otp", {
@@ -76,7 +85,8 @@ describe("LoginPage", () => {
     fireEvent.change(screen.getByLabelText("Correo"), { target: { value: "judge@example.test" } });
     fireEvent.change(screen.getByLabelText("Contraseña"), { target: { value: "JudgePassword-2026!" } });
     fireEvent.click(screen.getByRole("button", { name: "Ingresar" }));
-    fireEvent.change(await screen.findByLabelText("Código de verificación"), { target: { value: "123456" } });
+    await screen.findByLabelText("Código de verificación");
+    fillOtp("123456");
     fireEvent.click(screen.getByRole("button", { name: "Verificar código" }));
 
     await waitFor(() => expect(window.location.hash).toBe("#/judge"));
@@ -98,7 +108,8 @@ describe("LoginPage", () => {
     fireEvent.change(screen.getByLabelText("Correo"), { target: { value: "judge@example.test" } });
     fireEvent.change(screen.getByLabelText("Contraseña"), { target: { value: "JudgePassword-2026!" } });
     fireEvent.click(screen.getByRole("button", { name: "Ingresar" }));
-    fireEvent.change(await screen.findByLabelText("Código de verificación"), { target: { value: "123456" } });
+    await screen.findByLabelText("Código de verificación");
+    fillOtp("123456");
     fireEvent.click(screen.getByRole("button", { name: "Verificar código" }));
 
     fireEvent.click(await screen.findByRole("button", { name: "Cargar mi perfil" }));

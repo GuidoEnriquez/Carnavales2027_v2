@@ -6,11 +6,13 @@ export function AppNavigation({ session }) {
   const [closing, setClosing] = useState(false);
   const [message, setMessage] = useState("");
   const [currentRoute, setCurrentRoute] = useState(() => window.location.hash.split("?")[0]);
+
   useEffect(() => {
     const updateRoute = () => setCurrentRoute(window.location.hash.split("?")[0]);
     window.addEventListener("hashchange", updateRoute);
     return () => window.removeEventListener("hashchange", updateRoute);
   }, []);
+
   const signOut = async () => {
     setClosing(true);
     try {
