@@ -59,7 +59,7 @@ export function JudgeHomePage({ session }) {
   const progress = total > 0 ? Math.round((resolved / total) * 100) : 0;
 
   const getState = (ballot) => {
-    if (ballot.status === "SUBMITTED") return { label: "Cerrada", icon: "✓", className: "is-closed" };
+    if (ballot.status === "SUBMITTED") return { label: "Planilla confirmada", icon: "✓", className: "is-closed" };
     if (ballot.resolved === 0) return { label: "Sin empezar", icon: "○", className: "is-pending" };
     if (ballot.resolved === ballot.total) return { label: "Lista para revisar", icon: "●", className: "is-ready" };
     return { label: "En progreso", icon: "●", className: "is-progress" };
@@ -75,20 +75,31 @@ export function JudgeHomePage({ session }) {
       <section className="judge-progress-card" aria-label="Progreso general">
         <div><span>Progreso general</span><strong>{progress}%</strong></div>
         <div className="progress-track" aria-label={`${progress}% completado`}><span style={{ inlineSize: `${progress}%` }} /></div>
-        <p><strong>{closed} / {troupes.length}</strong> comparsas confirmadas · {resolved} / {total} ítems resueltos</p>
+        {progress === 100 ? (
+          <div className="judge-completion-message">
+            <span className="completion-icon" aria-hidden="true">✓</span>
+            <div>
+              <strong>Votación completada</strong>
+              <p>Confirmaste las {troupes.length} comparsas asignadas.</p>
+              <p>No tenés votaciones pendientes.</p>
+            </div>
+          </div>
+        ) : (
+          <p><strong>{closed} / {troupes.length}</strong> comparsas confirmadas · {resolved} / {total} puntuaciones completadas</p>
+        )}
       </section>
       <section className="judge-home-content">
         {!profile && <p>Tu cuenta tiene rol JUDGE, pero no está vinculada a un perfil del padrón. Contactá a un administrador.</p>}
         {profile?.registrationStatus === "SUSPENDED" && <div className="suspension-notice" role="alert"><h2>Acceso suspendido</h2><p>Tus sesiones operativas fueron revocadas. Contactá a la administración para revisar tu estado.</p></div>}
         {profile?.registrationStatus === "REGISTERED" && loading && <p role="status">Cargando tus planillas…</p>}
          {profile?.registrationStatus === "REGISTERED" && !loading && ballots.length === 0 && <div className="empty-state"><h2>Registro completo</h2><p>Todavía no tenés planillas habilitadas. Una asignación no abre votación por sí sola.</p></div>}
-         {profile?.registrationStatus === "REGISTERED" && troupes.length > 0 && <section aria-label="Mis planillas"><div className="judge-section-heading"><div><p className="eyebrow">Comparsas habilitadas</p><h2>Tu noche de votación</h2></div><span>{troupes.length} comparsas</span></div><div className="judge-ballot-grid">{troupes.map((troupe) => {
+         {profile?.registrationStatus === "REGISTERED" && troupes.length > 0 && <section aria-label="Mis planillas"><div className="judge-section-heading"><div><p className="eyebrow">Tus comparsas</p><h2>Tu noche de votación</h2></div><span>{troupes.length} comparsas</span></div><div className="judge-ballot-grid">{troupes.map((troupe) => {
            const state = getState(troupe);
            const ballotProgress = troupe.total > 0 ? Math.round((troupe.resolved / troupe.total) * 100) : 0;
            return <article className={`judge-ballot-card ${state.className}`} key={`${troupe.ballotId}-${troupe.troupeId}`}>
              <div className="judge-ballot-card-header"><div><p className="eyebrow">{troupe.nightName} · {troupe.specialtyName}</p><h3>{troupe.troupeName}</h3></div><span className="judge-status-badge"><span aria-hidden="true">{state.icon}</span> {state.label}</span></div>
              <p className="judge-ballot-event">{troupe.eventName}</p>
-             {troupe.status === "SUBMITTED" ? <p className="judge-locked-copy"><span aria-hidden="true">🔒</span> Planilla confirmada</p> : <><p className="judge-item-count">{troupe.resolved} / {troupe.total} ítems completados</p><div className="progress-track small"><span style={{ inlineSize: `${ballotProgress}%` }} /></div></>}
+             {troupe.status === "SUBMITTED" ? <p className="judge-locked-copy"><span aria-hidden="true">🔒</span> Planilla confirmada — No se puede modificar</p> : <><p className="judge-item-count">{troupe.resolved} / {troupe.total} ítems completados</p><div className="progress-track small"><span style={{ inlineSize: `${ballotProgress}%` }} /></div></>}
              <a className="button-link" href={`#/judge/ballot?ballotId=${troupe.ballotId}&troupeId=${encodeURIComponent(troupe.troupeId)}`}>{troupe.status === "SUBMITTED" ? "Ver planilla" : troupe.resolved === 0 ? "Comenzar" : "Continuar"}<span aria-hidden="true"> →</span></a>
            </article>;
          })}</div></section>}

@@ -105,4 +105,21 @@ describe("LoginPage", () => {
     await waitFor(() => expect(window.location.hash).toBe("#/judge"));
     expect(meCalls).toBe(3);
   });
+
+  it("alterna la visibilidad de la contraseña al pulsar el botón con icono", () => {
+    render(<LoginPage />);
+    const passwordInput = screen.getByLabelText("Contraseña");
+    const toggleButton = screen.getByRole("button", { name: "Mostrar contraseña" });
+
+    expect(passwordInput).toHaveAttribute("type", "password");
+    expect(toggleButton).toBeInTheDocument();
+    expect(toggleButton.querySelector("svg")).toBeInTheDocument();
+
+    fireEvent.click(toggleButton);
+    expect(passwordInput).toHaveAttribute("type", "text");
+    expect(screen.getByRole("button", { name: "Ocultar contraseña" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Ocultar contraseña" }));
+    expect(passwordInput).toHaveAttribute("type", "password");
+  });
 });

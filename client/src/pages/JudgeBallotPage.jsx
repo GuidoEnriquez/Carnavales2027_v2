@@ -32,7 +32,6 @@ export function JudgeBallotPage({ ballotId, troupeId }) {
   const [ballot, setBallot] = useState(null);
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
-  const [online, setOnline] = useState(() => navigator.onLine);
   const [pendingDialog, setPendingDialog] = useState(null);
   const [confirmModal, setConfirmModal] = useState(null);
   const [submitConfirm, setSubmitConfirm] = useState(false);
@@ -129,17 +128,6 @@ export function JudgeBallotPage({ ballotId, troupeId }) {
     requestAnimationFrame(() => troupeRefs.current.get(troupeId)?.scrollIntoView({ behavior: "smooth", block: "start" }));
   }, [ballot, troupeId]);
 
-  useEffect(() => {
-    const handleOnline = () => setOnline(true);
-    const handleOffline = () => setOnline(false);
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-    };
-  }, []);
-
   const saveDecision = async (scoreId, evaluationState, score) => {
     if (!ballot || busy) return;
     setBusy(scoreId);
@@ -215,14 +203,23 @@ export function JudgeBallotPage({ ballotId, troupeId }) {
   return <main className="judge-ballot-page judge-operation-shell">
     <header className="ballot-header">
       <div><a className="back-link" href="#/judge">← Comparsas</a><p className="eyebrow">Planilla de jurado</p><h1>{ballot.nightName}</h1><p>{ballot.specialtyName} · {groups.length} comparsa{groups.length === 1 ? "" : "s"}</p></div>
-      <div className="ballot-header-status"><span className={`status-pill ballot-status-${ballot.status.toLowerCase()}`}>{ballot.status === "SUBMITTED" ? "✓ Confirmada" : ballot.status === "REOPENED" ? "Reabierta" : "En carga"}</span><span className={`connection-badge ${online ? "is-online" : "is-offline"}`}><span aria-hidden="true">{online ? "●" : "!"}</span> {online ? "Online" : "Offline"}</span></div>
+      <div className="ballot-header-status">
+        <span className={`status-pill ballot-status-${ballot.status.toLowerCase()}`}>
+          {ballot.status === "SUBMITTED" ? "✓ Confirmada" : ballot.status === "REOPENED" ? "Reabierta" : "En carga"}
+        </span>
+      </div>
     </header>
     <section className="ballot-progress" aria-label="Progreso de la planilla"><div><span>Progreso</span><strong>{resolved} / {total}</strong></div><div className="progress-track"><span style={{ inlineSize: `${progress}%` }} /></div><p>{progress}% completado · {ballot.specialtyName}</p></section>
     <p className="feedback" role="status" aria-live="polite">{message}</p>
-    <section className="sync-panel" aria-label="Estado de conexión">
-      <strong>{online ? "● Con conexión" : "! Sin conexión"}</strong>
-      <span>{online ? "Las decisiones se registran directamente en el servidor." : "Conectate para registrar una decisión o confirmar la planilla."}</span>
-    </section>
+    {readonly && (
+      <section className="readonly-notice">
+        <span aria-hidden="true">🔒</span>
+        <div>
+          <strong>Planilla confirmada</strong>
+          <p>Esta planilla es solo para consulta y ya no puede modificarse.</p>
+        </div>
+      </section>
+    )}
     <div className="ballot-workspace">
       <aside className="ballot-sidebar" aria-label="Navegación de comparsas">
         <p className="eyebrow">Comparsas</p>

@@ -1,5 +1,7 @@
 # Plan de Correcciones UI/UX — Carnavales2027_v2
 
+> **Estado:** COMPLETADO el 2026-09-03. Todas las fases (1 a 5) fueron implementadas en `LoginPage.jsx`, `JudgeHomePage.jsx`, `JudgeBallotPage.jsx`, `AppNavigation.jsx` e `index.css`, y validadas con 98 tests de cliente pasando al 100% y Vite build exitoso.
+
 ## Prioridades (orden de ejecución)
 
 1. Eliminar el mensaje "revisá la consola de la API"
@@ -15,19 +17,16 @@
 
 **Archivo:** `client/src/pages/LoginPage.jsx`
 
-### 1.1 Botón mostrar/ocultar contraseña
+### 1.1 Botón mostrar/ocultar contraseña (Iconos SVG)
 
-- Agregar estado `showPassword` (boolean)
-- Cambiar `type="password"` a `type={showPassword ? "text" : "password"}`
-- Agregar botón 👁 con `aria-label="Mostrar contraseña"` / `"Ocultar contraseña"`
-- Estilo: botón al lado del input, sin bordes, solo icono
+- Estado `showPassword` (boolean)
+- Alterna `type={showPassword ? "text" : "password"}`
+- Botón accesible con iconos SVG vectoriales (`EyeIcon` / `EyeOffIcon`) con `aria-label="Mostrar contraseña"` / `"Ocultar contraseña"`
+- Estilo: botón integrado al final del input, centrado vertical, color suave con hover y outline accesible.
 
-### 1.2 Indicador de conexión unificado
+### 1.2 Indicador de conexión (Retirado)
 
-- Agregar estado `online` con `navigator.onLine`
-- Listener para eventos `online`/`offline` (igual que en AppNavigation)
-- Línea 120: reemplazar `"Dispositivo conectado"` por `"● EN LÍNEA"` / `"● SIN CONEXIÓN"`
-- Usar clase `connection-badge` existente
+- **Decisión de producto del 2026-09-03:** El indicador de conexión ("En Línea / Conectado / Sin conexión") fue retirado de `LoginPage.jsx`, `AppNavigation.jsx` y `JudgeBallotPage.jsx` por considerarse irrelevante y redundante en una arquitectura 100% online donde los fallos de red se gestionan reactivamente al momento del intento.
 
 ### 1.3 Corregir mensajes de error
 
@@ -36,11 +35,9 @@
 | 34 | `"No se pudo iniciar sesión. Revisá el correo y la contraseña."` | `"Correo o contraseña incorrectos."` |
 | 50 | `"La sesión se inició, pero no se pudo preparar el segundo factor. Intentá nuevamente."` | `"No pudimos iniciar sesión. Intentá nuevamente."` |
 
-### 1.4 Agregar "¿Olvidaste tu contraseña?"
+### 1.4 "¿Olvidaste tu contraseña?" (Retirado)
 
-- Debajo del campo de contraseña
-- Texto: `¿Olvidaste tu contraseña?`
-- Estilo: texto muted, tamaño pequeño, sin funcionalidad aún (placeholder visual)
+- **Decisión de producto del 2026-09-03:** Retirado para mantener la pantalla de login concisa y enfocada exclusivamente en credenciales y OTP.
 
 ---
 
@@ -343,10 +340,10 @@ Cuando `readonly === true`, mostrar antes del workspace:
 
 | Archivo | Cambios |
 |---|---|
-| `client/src/pages/LoginPage.jsx` | Toggle contraseña, conexión unificada, errores, olvidaste contraseña, OTP header, 6 dígitos, countdown, limpiar mensaje dev |
+| `client/src/pages/LoginPage.jsx` | Toggle contraseña con iconos SVG, errores limpios, OTP header, 6 dígitos, countdown, remoción de olvidaste contraseña y estado de conexión |
 | `client/src/pages/JudgeHomePage.jsx` | Textos: "Tus comparsas", "puntuaciones completadas", "Planilla confirmada", mensaje 100% |
-| `client/src/pages/JudgeBallotPage.jsx` | Header planilla confirmada, conexión unificada |
-| `client/src/components/AppNavigation.jsx` | Conexión unificada |
+| `client/src/pages/JudgeBallotPage.jsx` | Header planilla confirmada, remoción de widgets redundantes de conexión |
+| `client/src/components/AppNavigation.jsx` | Remoción de badge de conexión para navegación limpia |
 | `client/src/index.css` | Estilos: toggle contraseña, OTP 6 dígitos, countdown, header OTP, mensaje completado, readonly notice |
 | `client/src/tests/LoginPage.test.jsx` | Actualizar assertions |
 | `client/src/tests/JudgeHomePage.test.jsx` | Actualizar assertions |

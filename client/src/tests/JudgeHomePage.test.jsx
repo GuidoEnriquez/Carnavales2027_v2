@@ -35,10 +35,10 @@ describe("JudgeHomePage", () => {
     render(<JudgeHomePage session={{ user: { id: "judge-1", name: "Juana Pérez" }, judgeProfile: { registrationStatus: "REGISTERED" } }} />);
 
     expect(await screen.findByText("En progreso")).toBeInTheDocument();
-    expect(screen.getByText("Cerrada")).toBeInTheDocument();
+    expect(screen.getByText("Planilla confirmada")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Ara Berá", level: 3 })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Continuar/ })).toHaveAttribute("href", "#/judge/ballot?ballotId=ballot-1&troupeId=schedule-1");
     expect(screen.getByRole("region", { name: "Progreso general" })).toHaveTextContent("67%");
-    expect(screen.getByRole("region", { name: "Progreso general" })).toHaveTextContent("1 / 2 comparsas confirmadas · 2 / 3 ítems resueltos");
+    expect(screen.getByRole("region", { name: "Progreso general" })).toHaveTextContent("1 / 2 comparsas confirmadas · 2 / 3 puntuaciones completadas");
   });
 });

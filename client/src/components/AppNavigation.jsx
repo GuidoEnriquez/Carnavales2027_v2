@@ -6,20 +6,10 @@ export function AppNavigation({ session }) {
   const [closing, setClosing] = useState(false);
   const [message, setMessage] = useState("");
   const [currentRoute, setCurrentRoute] = useState(() => window.location.hash.split("?")[0]);
-  const [online, setOnline] = useState(() => navigator.onLine);
   useEffect(() => {
     const updateRoute = () => setCurrentRoute(window.location.hash.split("?")[0]);
     window.addEventListener("hashchange", updateRoute);
     return () => window.removeEventListener("hashchange", updateRoute);
-  }, []);
-  useEffect(() => {
-    const updateConnection = () => setOnline(navigator.onLine);
-    window.addEventListener("online", updateConnection);
-    window.addEventListener("offline", updateConnection);
-    return () => {
-      window.removeEventListener("online", updateConnection);
-      window.removeEventListener("offline", updateConnection);
-    };
   }, []);
   const signOut = async () => {
     setClosing(true);
@@ -46,12 +36,10 @@ export function AppNavigation({ session }) {
         {session.roles?.includes("ADMIN") && <a href="#/admin/voting" aria-current={currentRoute === "#/admin/voting" ? "page" : undefined}>Votación</a>}
         {["ADMIN", "COMISARIO"].some((role) => session.roles?.includes(role)) && <a href="#/admin/penalties" aria-current={currentRoute === "#/admin/penalties" ? "page" : undefined}>Penalizaciones</a>}
         {["ADMIN", "SCRUTINEER", "ESCRIBANO"].some((role) => session.roles?.includes(role)) && <a href="#/admin/results" aria-current={currentRoute === "#/admin/results" ? "page" : undefined}>Escrutinio</a>}
+        {["ADMIN", "SCRUTINEER", "ESCRIBANO"].some((role) => session.roles?.includes(role)) && <a href="#/admin/record" aria-current={currentRoute === "#/admin/record" ? "page" : undefined}>Acta Oficial</a>}
         {session.roles?.includes("JUDGE") && <a href="#/judge" aria-current={currentRoute === "#/judge" ? "page" : undefined}>Mi panel</a>}
       </nav>
       <div className="session-actions">
-        <span className={`connection-badge ${online ? "is-online" : "is-offline"}`} role="status">
-          <span aria-hidden="true">{online ? "●" : "!"}</span> {online ? "Online" : "Sin conexión"}
-        </span>
         <span>{session.user?.name}</span>
         <button className="secondary" type="button" disabled={closing} onClick={signOut}>Salir</button>
       </div>
