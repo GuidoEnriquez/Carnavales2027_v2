@@ -148,4 +148,42 @@ describe("AdminResultsPage", () => {
     expect(getAllByText("115 pts")).toHaveLength(2);
     expect(getByText("0 pts")).toBeVisible();
   });
+
+  it("muestra deducción con penalizaciones que superan el puntaje bruto respetando piso cero y data-label accesibles (RF-117, RF-119, RF-120)", async () => {
+    apiRequestMock.mockImplementation((path) => {
+      if (path === "/api/v1/results/events") return Promise.resolve([event]);
+      if (path === "/api/v1/results/events/event-1/troupes") return Promise.resolve([
+        { id: "troupe-a", name: "Comparsa Penalizada al Cero" },
+      ]);
+      if (path === "/api/v1/events/event-1/results") return Promise.resolve({
+        overallRanking: [
+          {
+            rank: 1,
+            troupeId: "troupe-a",
+            troupeName: "Comparsa Penalizada al Cero",
+            grossScore: 5,
+            totalPenalties: 12,
+            netScore: 0,
+            totalScore: 0,
+          },
+        ],
+      });
+      return Promise.reject(new Error(`request inesperado: ${path}`));
+    });
+
+    const { getByText, getByRole } = render(<AdminResultsPage />);
+
+    await waitFor(() => expect(getByRole("heading", { name: "Ranking general" })).toBeVisible());
+    expect(getByText("Comparsa Penalizada al Cero")).toBeVisible();
+    expect(getByText("5 pts")).toBeVisible();
+    expect(getByText("−12 pts")).toBeVisible();
+    expect(getByText("0 pts")).toBeVisible();
+
+    const grossCell = getByText("5 pts");
+    const penaltiesCell = getByText("−12 pts");
+    const netCell = getByText("0 pts");
+    expect(grossCell).toHaveAttribute("data-label", "Puntaje bruto");
+    expect(penaltiesCell).toHaveAttribute("data-label", "Penalizaciones");
+    expect(netCell).toHaveAttribute("data-label", "Puntaje final neto");
+  });
 });

@@ -260,4 +260,71 @@ describe("AdminPenaltiesPage", () => {
       expect(getByText("No tenés permisos para acceder a las competencias.")).toBeVisible(),
     );
   });
+
+  it("valida en cliente puntos enteros mayores a cero y motivo obligatorio antes de enviar", async () => {
+    apiRequestMock.mockImplementation((path) => {
+      if (path === "/api/v1/events") return Promise.resolve([mockEvent]);
+      if (path === "/api/v1/events/event-1/nights") return Promise.resolve(mockNights);
+      if (path === "/api/v1/events/event-1/troupes") return Promise.resolve(mockTroupes);
+      if (path === "/api/v1/events/event-1/penalties") return Promise.resolve([]);
+      return Promise.reject(new Error(`request inesperado: ${path}`));
+    });
+
+    const { getByLabelText, getByRole, getByText } = render(<AdminPenaltiesPage />);
+
+    await waitFor(() => {
+      expect(getByRole("heading", { name: "Registrar sanción reglamentaria" })).toBeVisible();
+      expect(getByRole("option", { name: "Noche 1" })).toBeVisible();
+    });
+
+    const pointsInput = getByLabelText(/puntos a descontar/i);
+    const reasonInput = getByLabelText(/motivo \/ concepto reglamentario/i);
+    const submitBtn = getByRole("button", { name: "Registrar penalización" });
+
+    // Intento con puntos inválidos (0)
+    fireEvent.change(pointsInput, { target: { value: "0" } });
+    fireEvent.change(reasonInput, { target: { value: "Motivo válido" } });
+    fireEvent.submit(submitBtn.closest("form"));
+
+    await waitFor(() =>
+      expect(getByText("Los puntos deben ser un número entero mayor a 0.")).toBeVisible(),
+    );
+
+    // Intento con motivo vacío o solo espacios
+    fireEvent.change(pointsInput, { target: { value: "4" } });
+    fireEvent.change(reasonInput, { target: { value: "   " } });
+    fireEvent.submit(submitBtn.closest("form"));
+
+    await waitFor(() =>
+      expect(getByText("El motivo o concepto reglamentario es obligatorio.")).toBeVisible(),
+    );
+  });
+
+  it("maneja errores específicos de API (PENALTY_REQUIRES_COMPETITION_NIGHT y TWO_FACTOR_REQUIRED)", async () => {
+    const nightError = Object.assign(new Error("PENALTY_REQUIRES_COMPETITION_NIGHT"), {
+      code: "PENALTY_REQUIRES_COMPETITION_NIGHT",
+    });
+    apiRequestMock.mockImplementation((path, options) => {
+      if (path === "/api/v1/events") return Promise.resolve([mockEvent]);
+      if (path === "/api/v1/events/event-1/nights") return Promise.resolve(mockNights);
+      if (path === "/api/v1/events/event-1/troupes") return Promise.resolve(mockTroupes);
+      if (path === "/api/v1/events/event-1/penalties" && !options?.method) return Promise.resolve([]);
+      if (path === "/api/v1/events/event-1/penalties" && options?.method === "POST") return Promise.reject(nightError);
+      return Promise.reject(new Error(`request inesperado: ${path}`));
+    });
+
+    const { getByLabelText, getByRole, getByText } = render(<AdminPenaltiesPage />);
+
+    await waitFor(() => {
+      expect(getByRole("heading", { name: "Registrar sanción reglamentaria" })).toBeVisible();
+    });
+
+    fireEvent.change(getByLabelText(/puntos a descontar/i), { target: { value: "3" } });
+    fireEvent.change(getByLabelText(/motivo \/ concepto reglamentario/i), { target: { value: "Infracción" } });
+    fireEvent.click(getByRole("button", { name: "Registrar penalización" }));
+
+    await waitFor(() =>
+      expect(getByText("Solo se pueden aplicar penalizaciones en jornadas competitivas.")).toBeVisible(),
+    );
+  });
 });

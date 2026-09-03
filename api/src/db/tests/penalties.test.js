@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { getPool, closePool } from "../pool.js";
 import { migrate } from "../migrate.js";
+import { getTroupePenaltiesTotalsByEvent } from "../../modules/penalties/penalty-service.js";
+import { computeOverallRanking } from "../../modules/results/results-service.js";
 
 let client;
 
@@ -109,7 +111,7 @@ describe("troupe_penalty DB", () => {
     );
   });
 
-  it("rechaza penalizaciones con comparsa o noche de distinto evento", async () => {
+  it("rechaza penalizaciones con comparsa de distinto evento (unicidad de contexto)", async () => {
     const data1 = await setupPenaltyTestData();
     const data2 = await setupPenaltyTestData();
 
@@ -118,7 +120,22 @@ describe("troupe_penalty DB", () => {
       client.query(
         `INSERT INTO troupe_penalty(event_id, night_id, event_troupe_id, reason, penalty_points, applied_by_user_id)
          VALUES ($1, $2, $3, $4, $5, $6)`,
-        [data1.eventId, data1.nightId, data2.troupeId, "Incompatibilidad de evento", 3, data1.userId],
+        [data1.eventId, data1.nightId, data2.troupeId, "Incompatibilidad de comparsa", 3, data1.userId],
+      ),
+      /violates foreign key constraint|foreign key/i,
+    );
+  });
+
+  it("rechaza penalizaciones con noche de distinto evento (unicidad de contexto)", async () => {
+    const data1 = await setupPenaltyTestData();
+    const data2 = await setupPenaltyTestData();
+
+    // Intentar asociar noche de evento 2 con comparsa de evento 1
+    await assert.rejects(
+      client.query(
+        `INSERT INTO troupe_penalty(event_id, night_id, event_troupe_id, reason, penalty_points, applied_by_user_id)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [data1.eventId, data2.nightId, data1.troupeId, "Incompatibilidad de noche", 3, data1.userId],
       ),
       /violates foreign key constraint|foreign key/i,
     );
@@ -282,5 +299,92 @@ describe("troupe_penalty DB", () => {
       ),
       /RESULTS_ALREADY_RELEASED/,
     );
+  });
+
+  it("deducción: acumula penalizaciones activas, excluye revocadas y respeta piso de cero (RF-117, RF-119)", async () => {
+    const data = await setupPenaltyTestData();
+
+    // Crear segunda comparsa para contrastar ranking
+    const { rows: [troupeCat] } = await client.query(
+      "SELECT category_id FROM event_troupe WHERE id = $1",
+      [data.troupeId],
+    );
+    const { rows: [troupe2] } = await client.query(
+      "INSERT INTO event_troupe(event_id, category_id, name) VALUES($1, $2, $3) RETURNING id",
+      [data.eventId, troupeCat.category_id, "Comparsa Competidora"],
+    );
+
+    // 1. Dos penalizaciones activas para comparsa 1 (3 y 5 pts)
+    await client.query(
+      `INSERT INTO troupe_penalty(event_id, night_id, event_troupe_id, reason, penalty_points, applied_by_user_id)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [data.eventId, data.nightId, data.troupeId, "Demora en ingreso", 3, data.userId],
+    );
+    await client.query(
+      `INSERT INTO troupe_penalty(event_id, night_id, event_troupe_id, reason, penalty_points, applied_by_user_id)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [data.eventId, data.nightId, data.troupeId, "Exceso de sonido", 5, data.userId],
+    );
+
+    // 2. Penalización revocada de 10 puntos para comparsa 1
+    const { rows: [revoked] } = await client.query(
+      `INSERT INTO troupe_penalty(event_id, night_id, event_troupe_id, reason, penalty_points, applied_by_user_id)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+      [data.eventId, data.nightId, data.troupeId, "Falta a revocar", 10, data.userId],
+    );
+    await client.query(
+      `UPDATE troupe_penalty
+       SET status = 'REVOKED', revoked_by_user_id = $1, revocation_reason = 'Descargo formal aceptado'
+       WHERE id = $2`,
+      [data.userId, revoked.id],
+    );
+
+    // 3. Penalización activa de 2 puntos para comparsa 2
+    await client.query(
+      `INSERT INTO troupe_penalty(event_id, night_id, event_troupe_id, reason, penalty_points, applied_by_user_id)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [data.eventId, data.nightId, troupe2.id, "Falta leve de vestuario", 2, data.userId],
+    );
+
+    // Consultar totales mediante getTroupePenaltiesTotalsByEvent
+    const totals = await getTroupePenaltiesTotalsByEvent({ eventId: data.eventId, client });
+    const c1Totals = totals.get(data.troupeId);
+    const c2Totals = totals.get(troupe2.id);
+
+    // Comparsa 1: 3 + 5 = 8 puntos aplicados (los 10 revocados se excluyen)
+    assert.equal(c1Totals.totalPenaltyPoints, 8);
+    assert.equal(c1Totals.penalties.length, 2);
+    const c1Points = c1Totals.penalties.map((p) => p.penaltyPoints).sort((a, b) => a - b);
+    assert.deepEqual(c1Points, [3, 5]);
+
+    // Comparsa 2: 2 puntos aplicados
+    assert.equal(c2Totals.totalPenaltyPoints, 2);
+    assert.equal(c2Totals.penalties.length, 1);
+    assert.equal(c2Totals.penalties[0].penaltyPoints, 2);
+
+    // Verificar cálculo determinístico de ranking con computeOverallRanking
+    // Caso con piso 0: comparsa 1 tiene bruto 6 < penalizaciones 8 -> neto = max(0, 6 - 8) = 0
+    // Comparsa 2 tiene bruto 10 - penalizaciones 2 = 8
+    const mockScores = [
+      { troupeId: data.troupeId, troupeName: "Comparsa 1", rubricKind: "NOMINATIVE", totalScore: 6, rubricId: randomUUID(), rubricName: "R1", rubricCode: "R1" },
+      { troupeId: troupe2.id, troupeName: "Comparsa Competidora", rubricKind: "NOMINATIVE", totalScore: 10, rubricId: randomUUID(), rubricName: "R1", rubricCode: "R1" },
+    ];
+
+    const overall = computeOverallRanking(mockScores, totals);
+    const r1 = overall.find((t) => t.troupeId === data.troupeId);
+    const r2 = overall.find((t) => t.troupeId === troupe2.id);
+
+    assert.equal(r1.grossScore, 6);
+    assert.equal(r1.totalPenalties, 8);
+    assert.equal(r1.netScore, 0); // piso 0 garantizado
+    assert.equal(r1.totalScore, 0);
+
+    assert.equal(r2.grossScore, 10);
+    assert.equal(r2.totalPenalties, 2);
+    assert.equal(r2.netScore, 8);
+    assert.equal(r2.totalScore, 8);
+
+    assert.equal(r2.rank, 1);
+    assert.equal(r1.rank, 2);
   });
 });
