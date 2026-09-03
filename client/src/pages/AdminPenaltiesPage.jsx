@@ -50,14 +50,16 @@ export function AdminPenaltiesPage() {
           items = await apiRequest("/api/v1/events");
         } catch (err) {
           if (err?.code === "ADMIN_REQUIRED" || err?.status === 403) {
-            items = await apiRequest("/api/v1/results/events");
+            items = await apiRequest("/api/v1/penalties/events").catch(() =>
+              apiRequest("/api/v1/results/events"),
+            );
           } else {
             throw err;
           }
         }
         if (!active) return;
         setEvents(items);
-        const defaultEvent = items.find((e) => e.name === "test_prueba") ?? items[0];
+        const defaultEvent = items.find((e) => e.name === "Competencia Oficial de Prueba - Goya 2027") ?? items.find((e) => e.name === "test_prueba") ?? items[0];
         setEventId(defaultEvent?.id ?? "");
       } catch (error) {
         if (!active) return;
@@ -93,9 +95,13 @@ export function AdminPenaltiesPage() {
       try {
         // Carga en paralelo
         const [nightsRes, troupesRes, penaltiesRes] = await Promise.allSettled([
-          apiRequest(`/api/v1/events/${eventId}/nights`),
+          apiRequest(`/api/v1/events/${eventId}/nights`).catch(() =>
+            apiRequest(`/api/v1/events/${eventId}/penalties/nights`),
+          ),
           apiRequest(`/api/v1/events/${eventId}/troupes`).catch(() =>
-            apiRequest(`/api/v1/results/events/${eventId}/troupes`),
+            apiRequest(`/api/v1/events/${eventId}/penalties/troupes`).catch(() =>
+              apiRequest(`/api/v1/results/events/${eventId}/troupes`),
+            ),
           ),
           apiRequest(`/api/v1/events/${eventId}/penalties`),
         ]);

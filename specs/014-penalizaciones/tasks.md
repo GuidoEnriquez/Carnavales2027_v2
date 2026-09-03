@@ -6,8 +6,8 @@
 | T02 Servicios y API de penalizaciones | Completada | `penalty-service.js`, `penalties.routes.js`, middleware `requirePenaltiesAccess` y `penalties-api.test.js` (92 tests API pass) |
 | T03 Integración con cómputo de resultados | Completada | `fetchConsolidatedPenalties`, `computeOverallRanking` con `grossScore`/`totalPenalties`/`netScore` y desglose; test RF-117/118/119; DB 50 y API 93 pass |
 | T04 Cliente: panel de Comisariato y Resultados | Completada | `AdminPenaltiesPage.jsx`, `RevokePenaltyModal.jsx`, `RequirePenaltiesRole.jsx`, desglose 3 columnas en `AdminResultsPage.jsx`, ruta `#/admin/penalties` y navegación; suites de cliente (26 archivos / 85 tests pass), build exitoso |
-| T05 Pruebas automatizadas completas | Completada | DB 52 tests (13 en `penalties.test.js`), API 96 tests (autorización, validación, ciclo de vida e impacto en ranking en `penalties-api.test.js`), Cliente 27 archivos / 94 tests (`AdminPenaltiesPage.test.jsx`, `RevokePenaltyModal.test.jsx`, `AdminResultsPage.test.jsx`), build 662ms |
-| T06 Validación manual y cierre SDD | Pendiente | Comprobación en 390×844, 768×1024 y 1440×900, revisión diff y actualización de estado |
+| T05 Pruebas automatizadas completas | Completada | DB 52 tests (13 en `penalties.test.js`), API 96 tests (autorización, validación, ciclo de vida e impacto en ranking en `penalties-api.test.js`), Cliente 27 archivos / 95 tests (`AdminPenaltiesPage.test.jsx`, `RevokePenaltyModal.test.jsx`, `AdminResultsPage.test.jsx`), build 1.06s |
+| T06 Validación manual y cierre SDD | Completada | Comprobación en 390×844, 768×1024 y 1440×900, revisión diff, segregación de roles para liberación y actualización de estado |
 
 ## T01 — Persistencia y migración
 - Crear migración `062_troupe_penalties.sql`.

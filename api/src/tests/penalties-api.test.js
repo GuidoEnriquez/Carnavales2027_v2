@@ -296,6 +296,36 @@ test("API penalizaciones: autorización, ciclo de vida, auditoría y bloqueo pos
     });
     assert.equal(revokePostRelease.status, 409);
     assert.equal((await revokePostRelease.json()).code, "RESULTS_ALREADY_RELEASED");
+
+    // 13. Lecturas acotadas para comisariato (eventos, noches, comparsas)
+    const comisarioEvents = await fetch(`${baseUrl}/api/v1/penalties/events`, {
+      headers: { "x-test-caller": "comisario" },
+    });
+    assert.equal(comisarioEvents.status, 200);
+    const eventList = await comisarioEvents.json();
+    assert.ok(Array.isArray(eventList));
+    assert.ok(eventList.some((e) => e.id === fixture.eventId));
+
+    const comisarioNights = await fetch(`${baseUrl}/api/v1/events/${fixture.eventId}/penalties/nights`, {
+      headers: { "x-test-caller": "comisario" },
+    });
+    assert.equal(comisarioNights.status, 200);
+    const nightList = await comisarioNights.json();
+    assert.ok(nightList.some((n) => n.id === fixture.nightId));
+
+    const comisarioTroupes = await fetch(`${baseUrl}/api/v1/events/${fixture.eventId}/penalties/troupes`, {
+      headers: { "x-test-caller": "comisario" },
+    });
+    assert.equal(comisarioTroupes.status, 200);
+    const troupeList = await comisarioTroupes.json();
+    assert.ok(troupeList.some((t) => t.id === fixture.troupeId));
+
+    // Rechazo a usuario sin rol COMISARIO ni ADMIN
+    const judgeEvents = await fetch(`${baseUrl}/api/v1/penalties/events`, {
+      headers: { "x-test-caller": "judge" },
+    });
+    assert.equal(judgeEvents.status, 403);
+    assert.equal((await judgeEvents.json()).code, "PENALTIES_ACCESS_DENIED");
   });
 });
 
@@ -345,21 +375,24 @@ async function setupRankingTestEvent(pool) {
   const adminId = randomUUID();
   const comisarioId = randomUUID();
   const judgeId = randomUUID();
+  const scrutineerId = randomUUID();
 
   await pool.query(
     `INSERT INTO "user"(id, name, email, "emailVerified")
-     VALUES ($1,'Admin Ranking',$2,true), ($3,'Comisario Ranking',$4,true), ($5,'Judge Ranking',$6,true)`,
+     VALUES ($1,'Admin Ranking',$2,true), ($3,'Comisario Ranking',$4,true), ($5,'Judge Ranking',$6,true), ($7,'Scrutineer Ranking',$8,true)`,
     [
       adminId, `${adminId}@example.test`,
       comisarioId, `${comisarioId}@example.test`,
       judgeId, `${judgeId}@example.test`,
+      scrutineerId, `${scrutineerId}@example.test`,
     ],
   );
 
-  await pool.query("INSERT INTO user_role(user_id, role_code) VALUES ($1,'ADMIN'), ($2,'COMISARIO'), ($3,'JUDGE')", [
+  await pool.query("INSERT INTO user_role(user_id, role_code) VALUES ($1,'ADMIN'), ($2,'COMISARIO'), ($3,'JUDGE'), ($4,'SCRUTINEER')", [
     adminId,
     comisarioId,
     judgeId,
+    scrutineerId,
   ]);
 
   const { rows: [judgeProfile] } = await pool.query(
@@ -402,6 +435,7 @@ async function setupRankingTestEvent(pool) {
     adminId,
     comisarioId,
     judgeId,
+    scrutineerId,
   };
 }
 
@@ -421,6 +455,7 @@ test("API penalizaciones: impacto exacto en el ranking de Mejor Comparsa y prese
     const caller = headers.get("x-test-caller");
     if (caller === "admin") return { user: { id: fixture.adminId, twoFactorEnabled: true } };
     if (caller === "comisario") return { user: { id: fixture.comisarioId, twoFactorEnabled: true } };
+    if (caller === "scrutineer") return { user: { id: fixture.scrutineerId, twoFactorEnabled: true } };
     return null;
   };
 
@@ -462,10 +497,18 @@ test("API penalizaciones: impacto exacto en el ranking de Mejor Comparsa y prese
     });
     assert.equal(revokeRes.status, 200);
 
-    // 3. Admin libera resultados
-    const releaseRes = await fetch(`${baseUrl}/api/v1/events/${fixture.eventId}/results/release`, {
+    // 3. Admin intenta liberar resultados y es rechazado (separación de funciones)
+    const adminReleaseRes = await fetch(`${baseUrl}/api/v1/events/${fixture.eventId}/results/release`, {
       method: "POST",
       headers: { "content-type": "application/json", "x-test-caller": "admin" },
+    });
+    assert.equal(adminReleaseRes.status, 403);
+    assert.equal((await adminReleaseRes.json()).code, "RESULTS_RELEASE_FORBIDDEN_FOR_ADMIN");
+
+    // Scrutineer libera resultados exitosamente
+    const releaseRes = await fetch(`${baseUrl}/api/v1/events/${fixture.eventId}/results/release`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-test-caller": "scrutineer" },
     });
     assert.equal(releaseRes.status, 201);
 
