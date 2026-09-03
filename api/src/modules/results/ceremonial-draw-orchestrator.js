@@ -21,6 +21,7 @@ import { auditCeremonialDraw } from "../../audit/audit-service.js";
 import { randomUUID } from "node:crypto";
 import {
   fetchConsolidatedScores,
+  fetchConsolidatedPenalties,
   computeRubricRankings,
   computeOverallRanking,
   determineBestTroupe,
@@ -92,14 +93,15 @@ export async function executeCeremonialDraw({
     );
     if (existingDraws.length > 0) throw new Error("TIE_BREAKER_ALREADY_DRAWN");
 
-    // 4. Recalcular resultados y verificar empate vigente.
+    // 4. Recalcular resultados y verificar empate vigente (considerando penalizaciones).
     const scores = await fetchConsolidatedScores({ eventId, client });
+    const penalties = await fetchConsolidatedPenalties({ eventId, client });
     const rubricRankings = computeRubricRankings(scores);
-    const overallRanking = computeOverallRanking(scores);
+    const overallRanking = computeOverallRanking(scores, penalties);
     if (overallRanking.length === 0) throw new Error("TIE_BREAKER_NOT_REQUIRED");
 
-    const topScore = overallRanking[0].totalScore;
-    const tied = overallRanking.filter((t) => t.totalScore === topScore);
+    const topScore = overallRanking[0].netScore ?? overallRanking[0].totalScore;
+    const tied = overallRanking.filter((t) => (t.netScore ?? t.totalScore) === topScore);
     if (tied.length < 2) throw new Error("TIE_BREAKER_NOT_REQUIRED");
 
     // 5. Criterios 1 y 2 deben seguir sin resolver el empate. El pool válido

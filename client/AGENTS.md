@@ -7,7 +7,7 @@ Este documento guía el diseño de experiencia e interfaz del cliente. No autori
 - **Offline-First:** conexión y sincronización siguen diferidas. Los estados visuales de esta guía pueden diseñarse y prototiparse, pero no habilitan una capacidad operativa hasta contar con una spec aprobada posterior a Spec 005.
 - **Inmutabilidad por ítem:** Spec 007 está aprobada. Una decisión que el jurado confirma para un ítem queda inmutable de inmediato. Por ello, "Modificar puntuaciones" solo puede aplicar a ítems aún `PENDING`; no se debe diseñar ni implementar una edición posterior de `SCORED` o `NOT_PRESENTED`.
 - **Completitud:** `PENDING` bloquea la confirmación de la planilla y el cierre administrativo. Nunca crear puntajes automáticos, el "5 por equidad", subsanaciones ni una opción `0` en la escala ordinaria.
-- **Módulos diferidos:** penalizaciones, resultados, rankings, desempate, escrutinio y actas requieren un incremento SDD nuevo. No implementar sus flujos operativos.
+- **Módulos diferidos:** penalizaciones, escrutinio operativo y actas oficiales requieren un incremento SDD nuevo. No implementar sus flujos operativos.
 - **Servidor autoritativo:** los indicadores de UI no sustituyen sesión, 2FA, roles, asignación, integridad ni controles API.
 
 ---

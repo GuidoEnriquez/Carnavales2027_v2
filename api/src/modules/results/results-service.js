@@ -1,5 +1,6 @@
 import { auditEvent } from "../../audit/audit-service.js";
 import { getPool } from "../../db/pool.js";
+import { getTroupePenaltiesTotalsByEvent } from "../penalties/penalty-service.js";
 
 function requireText(value, name) {
   if (typeof value !== "string" || value.trim().length === 0) {
@@ -123,10 +124,58 @@ export function computeRubricRankings(scores) {
 }
 
 /**
- * Calcula el ranking general de Mejor Comparsa usando solo rubros nominativos.
- * RF-91, RF-92, RF-93.
+ * Carga el acumulado y desglose de penalizaciones activas por comparsa en un evento.
+ * RF-117, RF-119.
  */
-export function computeOverallRanking(scores) {
+export async function fetchConsolidatedPenalties({ eventId, client = getPool() }) {
+  return getTroupePenaltiesTotalsByEvent({ eventId, client });
+}
+
+function extractTroupePenalties(penaltiesInput, troupeId) {
+  if (!penaltiesInput) {
+    return { totalPenalties: 0, penaltyList: [] };
+  }
+  if (penaltiesInput instanceof Map) {
+    const data = penaltiesInput.get(troupeId);
+    if (!data) return { totalPenalties: 0, penaltyList: [] };
+    if (typeof data === "number") {
+      return { totalPenalties: data, penaltyList: [] };
+    }
+    return {
+      totalPenalties: Number(data.totalPenaltyPoints ?? data.totalPenalties ?? data.penaltyPoints ?? 0),
+      penaltyList: Array.isArray(data.penalties) ? data.penalties : [],
+    };
+  }
+  if (Array.isArray(penaltiesInput)) {
+    const troupePenalties = penaltiesInput.filter(
+      (p) => (p.eventTroupeId === troupeId || p.troupeId === troupeId) && p.status !== "REVOKED",
+    );
+    const total = troupePenalties.reduce(
+      (sum, p) => sum + Number(p.penaltyPoints ?? p.points ?? 0),
+      0,
+    );
+    return { totalPenalties: total, penaltyList: troupePenalties };
+  }
+  if (typeof penaltiesInput === "object") {
+    const data = penaltiesInput[troupeId];
+    if (!data) return { totalPenalties: 0, penaltyList: [] };
+    if (typeof data === "number") {
+      return { totalPenalties: data, penaltyList: [] };
+    }
+    return {
+      totalPenalties: Number(data.totalPenaltyPoints ?? data.totalPenalties ?? data.penaltyPoints ?? 0),
+      penaltyList: Array.isArray(data.penalties) ? data.penalties : [],
+    };
+  }
+  return { totalPenalties: 0, penaltyList: [] };
+}
+
+/**
+ * Calcula el ranking general de Mejor Comparsa usando solo rubros nominativos
+ * y deduciendo las penalizaciones aplicadas por comparsa.
+ * RF-91, RF-92, RF-93, RF-117, RF-118, RF-119.
+ */
+export function computeOverallRanking(scores, penalties = null) {
   const byTroupe = new Map();
   for (const score of scores) {
     if (score.rubricKind !== "NOMINATIVE") continue;
@@ -134,12 +183,12 @@ export function computeOverallRanking(scores) {
       byTroupe.set(score.troupeId, {
         troupeId: score.troupeId,
         troupeName: score.troupeName,
-        totalScore: 0,
+        grossScore: 0,
         rubricScores: [],
       });
     }
     const troupe = byTroupe.get(score.troupeId);
-    troupe.totalScore += score.totalScore;
+    troupe.grossScore += score.totalScore;
     troupe.rubricScores.push({
       rubricId: score.rubricId,
       rubricName: score.rubricName,
@@ -148,20 +197,35 @@ export function computeOverallRanking(scores) {
     });
   }
 
-  const ranking = Array.from(byTroupe.values());
+  const ranking = Array.from(byTroupe.values()).map((troupe) => {
+    const { totalPenalties, penaltyList } = extractTroupePenalties(penalties, troupe.troupeId);
+    const netScore = Math.max(0, troupe.grossScore - totalPenalties);
+    return {
+      troupeId: troupe.troupeId,
+      troupeName: troupe.troupeName,
+      grossScore: troupe.grossScore,
+      totalPenalties,
+      penaltyPoints: totalPenalties,
+      netScore,
+      totalScore: netScore,
+      penalties: penaltyList,
+      rubricScores: troupe.rubricScores,
+    };
+  });
+
   ranking.sort((a, b) => {
-    if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
+    if (b.netScore !== a.netScore) return b.netScore - a.netScore;
     return a.troupeName.localeCompare(b.troupeName);
   });
 
   let rank = 1;
   let previousScore = null;
   ranking.forEach((troupe, index) => {
-    if (previousScore !== null && troupe.totalScore < previousScore) {
+    if (previousScore !== null && troupe.netScore < previousScore) {
       rank = index + 1;
     }
     troupe.rank = rank;
-    previousScore = troupe.totalScore;
+    previousScore = troupe.netScore;
   });
 
   return ranking;
@@ -261,8 +325,8 @@ export function determineBestTroupe({ overallRanking, rubricRankings }) {
   if (overallRanking.length === 0) {
     return { winnerTroupeId: null, tieBreaker: null };
   }
-  const topScore = overallRanking[0].totalScore;
-  const tied = overallRanking.filter((t) => t.totalScore === topScore);
+  const topScore = overallRanking[0].netScore ?? overallRanking[0].totalScore;
+  const tied = overallRanking.filter((t) => (t.netScore ?? t.totalScore) === topScore);
   if (tied.length === 1) {
     return {
       winnerTroupeId: tied[0].troupeId,
@@ -349,7 +413,7 @@ export async function releaseResults({ eventId, actorUserId, client: injectedCli
 
 /**
  * Calcula y expone resultados si la etapa está autorizada.
- * RF-89 a RF-97.
+ * RF-89 a RF-97, RF-117 a RF-119.
  */
 export async function computeResults({ eventId, actorUserId, client: injectedClient = null }) {
   const id = requireUuid(eventId, "eventId");
@@ -357,8 +421,9 @@ export async function computeResults({ eventId, actorUserId, client: injectedCli
   return runTransaction(injectedClient, async (client) => {
     await requireResultsReleased(client, id);
     const scores = await fetchConsolidatedScores({ eventId: id, client });
+    const penalties = await fetchConsolidatedPenalties({ eventId: id, client });
     const rubricRankings = computeRubricRankings(scores);
-    const overallRanking = computeOverallRanking(scores);
+    const overallRanking = computeOverallRanking(scores, penalties);
     const bestTroupe = determineBestTroupe({ overallRanking, rubricRankings });
 
     const result = {

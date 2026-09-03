@@ -21,10 +21,14 @@
 | Spec 012 | Planilla online únicamente: simplificación a operación 100% online, eliminación de persistencia local y controles de sync, validación manual responsive (12 criterios × 3 viewports). Cerrada el 2026-09-02. | `specs/012-planilla-online-unicamente/validation.md` |
 | Spec 013 | Suplencias priorizadas: pares fijos titular/suplente, activación ADMIN+2FA, transición `REPLACED`, cierre y liberación. Validada automáticamente y manualmente (Asignaciones). Cerrada el 2026-09-02. | `specs/013-suplencias-priorizadas/validation.md` |
 
+## Incremento activo
+
+- **Spec 014 — Gestión de Penalizaciones (Comisariato):** en fase de especificación, clarificaciones y plan (`specs/014-penalizaciones/`).
+
 ## Diferido explícitamente
 
-- Penalizaciones.
-- Escrutinio operativo y actas.
+- Escrutinio operativo y actas oficiales con hash de integridad.
+- Publicación externa de resultados.
 - Conexión y sincronización Offline-First (Spec 005): funcionalidad futura; Spec 012 retiró su uso del cliente actual.
 
 ## Estado reglamentario actualizado
@@ -32,11 +36,9 @@
 - La prevención de omisiones está **ACTIVA**: toda planilla debe resolver cada ítem como `SCORED` (1 a 10) o `NOT_PRESENTED` (0 mediante acción explícita) antes de confirmar o cerrar. `PENDING` bloquea la confirmación y el cierre.
 - **"5 por equidad" nulo:** por decisión de producto del 2026-09-01, no aplica a planillas digitales. La completitud obligatoria evita la omisión humana que buscaba subsanar; no existe flujo, cálculo ni ajuste operativo asociado.
 
-## Próxima puerta SDD
+## Flujo SDD vigente
 
-No hay incrementos activos. Todos los specs 001–013 están cerrados.
-
-Offline-First, penalizaciones, escrutinio y actas continúan requiriendo sus propias specs aprobadas. Antes de iniciar cualquier incremento posterior, se debe redactar y aprobar su especificación e iniciar un nuevo ciclo:
+Para el incremento en curso:
 
 ```text
 spec → clarificaciones → plan → tareas → implementación → validación

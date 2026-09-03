@@ -12,8 +12,12 @@ Carnavales2027_v2 es una plataforma configurable de gestión y votación para Ca
 * **Spec 006:** no se permiten nuevas reaperturas de planillas. Si ADMIN intenta cerrar con pendientes, la votación sigue abierta y recibe un modal con jurado, comparsa, rubro e ítem faltante. Las planillas históricas ya `REOPENED` solo pueden finalizar en `SUBMITTED`; el modal fue validado manualmente con teclado, lista extensa y viewports operativos.
 * **Spec 007:** cada decisión confirmada por un jurado queda inmutable por ítem; el modal de confirmación fue validado manualmente con teclado, emulación táctil y viewports operativos.
 * **Spec 008:** las invitaciones de `VEEDOR`, `COMISARIO` y `SCRUTINEER` persisten solo como hash, vencen y se consumen una vez. El alta se realiza desde Personas; emisión, aceptación, login y 2FA están validados automáticamente y la UI fue validada manualmente con teclado, emulación táctil y viewports operativos.
-* **Spec 009:** el rediseño visual del jurado está implementado con evidencia automática de cliente y build. La comprobación manual de responsive, teclado y emulación táctil en 390x844, 768x1024 y 1440x900 sigue pendiente; no habilita nuevos flujos ni modifica Specs 004, 006, 007 u 008.
-* **Módulos diferidos:** penalizaciones, resultados, rankings, desempate, escrutinio y actas. El `5 por equidad` es nulo para planillas digitales: la completitud obligatoria previene la omisión humana que buscaba subsanar.
+* **Spec 009:** rediseño visual del jurado implementado y validado automáticamente y con comprobación manual en responsive, teclado y emulación táctil (390x844, 768x1024 y 1440x900). Aceptada y cerrada el 2026-09-01.
+* **Spec 010:** consolidación de puntajes por rubro, ganador por rubro, ranking de Mejor Comparsa (exclusivamente rubros nominativos), desempate por criterios 1 (rubros ganados) y 2 (Mejor Batería) y guardias de integridad de liberación (RF-94a). Validada y cerrada el 2026-09-02.
+* **Spec 011:** sorteo ceremonial (criterio 3 de desempate) con countdown accesible, selección aleatoria criptográfica y cadena de auditoría JCS/SHA-256; validada automáticamente y con comprobación manual en 3 viewports. Cerrada el 2026-09-02.
+* **Spec 012:** simplificación a planilla 100% online; retira el uso operativo de outbox y cache local en el cliente actual. Validada automáticamente y con comprobación manual. Cerrada el 2026-09-02.
+* **Spec 013:** suplencias priorizadas: pares fijos titular/suplente, activación ADMIN+2FA con motivo ante titular ausente o incompleto, transición `REPLACED` y preservación histórica sin bloqueo de cierre ni resultados. Validada y cerrada el 2026-09-02.
+* **Módulos diferidos:** penalizaciones (comisariato), escrutinio operativo y actas oficiales, publicación externa de resultados y Offline-First operativo. El `5 por equidad` es nulo para planillas digitales: la completitud obligatoria previene la omisión humana que buscaba subsanar.
 
 ---
 
@@ -78,7 +82,7 @@ Antes de modificar código o artefactos SDD que afecten el comportamiento del si
 * Prohibido crear autoasignación pública del rol `ADMIN`.
 * Exigir 2FA/OTP verificado para rutas protegidas cuando el incremento lo requiera (sesión primaria no basta).
 * Prohibido eliminar o degradar al último `ADMIN` activo.
-* Prohibido ampliar módulos diferidos (*penalizaciones, resultados, escrutinio o actas*) sin un incremento SDD explícito. Las modificaciones a Offline-First deben ajustarse exclusivamente a Spec 005 o a una spec posterior aprobada.
+* Prohibido ampliar módulos diferidos (*penalizaciones, escrutinio o actas*) sin un incremento SDD explícito. Las modificaciones a Offline-First deben ajustarse exclusivamente a Spec 005 o a una spec posterior aprobada.
 * El módulo de votación existente solo puede modificarse conforme a su spec vigente o una spec aprobada posterior.
 
 ---

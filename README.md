@@ -12,16 +12,17 @@ Implementado y validado:
 - **I3/Spec 004/Spec 006:** apertura y cierre de votación, planillas por jurado, puntuaciones por comparsa, confirmación inmutable sin nuevas reaperturas, secreto de puntajes, supervisión por `VEEDOR` y completitud obligatoria por ítem. El cierre con pendientes abre un modal administrativo con jurado, comparsa, rubro e ítem.
 - **Spec 007:** confirmación e inmutabilidad inmediata por ítem, con modal de decisión y controles bloqueados tras confirmar. Validada automáticamente y con comprobación manual responsive.
 - **Spec 008:** invitaciones de un solo uso para `VEEDOR`, `COMISARIO` y `SCRUTINEER`, persistidas solo como hash. La emisión, inspección, aceptación, login real, 2FA y la UI responsive están validados. Las altas se gestionan desde Personas.
-- **Spec 009:** rediseño operativo oscuro del jurado, validado automáticamente y manualmente.
-- **Spec 010:** consolidación de resultados, rankings y desempate por criterios 1 y 2; reabierta para reforzar la liberación íntegra de resultados.
-- **Spec 011:** sorteo ceremonial con `crypto.randomInt()`, auditoría encadenada e interfaz de escrutinio; pendiente comprobación manual.
-- **Spec 012:** planilla online únicamente; retira el uso operativo de outbox y cache local en el cliente actual, pendiente comprobación manual.
+- **Spec 009:** rediseño operativo oscuro del jurado, validado automáticamente y con comprobación manual. Cerrada.
+- **Spec 010:** consolidación de resultados, rankings, desempate por criterios 1 y 2, y guardias de integridad de liberación (RF-94a). Cerrada.
+- **Spec 011:** sorteo ceremonial con `crypto.randomInt()`, auditoría encadenada e interfaz de escrutinio, con comprobación manual en 3 viewports. Cerrada.
+- **Spec 012:** planilla online únicamente; retira el uso operativo de outbox y cache local en el cliente actual, con comprobación manual. Cerrada.
+- **Spec 013:** suplencias priorizadas: pares fijos titular/suplente, activación ADMIN+2FA con motivo ante titular incompleto o ausente, transición `REPLACED` y preservación histórica sin bloqueo de cierre ni liberación. Cerrada.
 
 Todavía fuera de alcance: penalizaciones, actas, publicación externa de resultados y conexión/sincronización Offline-First. Spec 005 conserva compatibilidad exploratoria para clientes antiguos, pero no es una capacidad operativa aceptada.
 
 ## Incremento vigente
 
-Los incrementos abiertos son Specs 010, 011 y 012. La evidencia y los pendientes manuales se registran en sus respectivos `validation.md`.
+No hay incrementos activos abiertos. Todos los specs 001–013 están completados y cerrados. La evidencia detallada se registra en sus respectivos `validation.md`.
 
 ## Próxima puerta SDD
 
@@ -42,7 +43,7 @@ La autorización real se verifica en la API: sesión, 2FA, rol y estado del perf
 
 ## Estructura de base de datos
 
-La persistencia usa PostgreSQL y está definida por las migraciones incrementales `001` a `052` en `api/src/db/migrations/`. Los estados se implementan con columnas `TEXT` y restricciones `CHECK`; no se usan tipos `ENUM` nativos. La tabla `"user"` pertenece a Better Auth y el modelo de dominio solo la referencia.
+La persistencia usa PostgreSQL y está definida por las migraciones incrementales `001` a `061` en `api/src/db/migrations/`. Los estados se implementan con columnas `TEXT` y restricciones `CHECK`; no se usan tipos `ENUM` nativos. La tabla `"user"` pertenece a Better Auth y el modelo de dominio solo la referencia.
 
 ### Relaciones principales
 
@@ -254,14 +255,15 @@ npm run build
 npm audit
 ```
 
-Las pruebas PostgreSQL requieren que `TEST_DATABASE_URL` apunte a una base aislada. La evidencia detallada está en [`specs/002-jurados-asignaciones/validation.md`](specs/002-jurados-asignaciones/validation.md), [`specs/004-completitud-planillas/validation.md`](specs/004-completitud-planillas/validation.md), [`specs/005-offline-first/validation.md`](specs/005-offline-first/validation.md), [`specs/006-cierre-sin-reapertura/validation.md`](specs/006-cierre-sin-reapertura/validation.md) y [`specs/008-gestion-accesos/validation.md`](specs/008-gestion-accesos/validation.md).
+Las pruebas PostgreSQL requieren que `TEST_DATABASE_URL` apunte a una base aislada. La evidencia detallada está en los archivos `validation.md` de cada especificación en [`specs/`](specs/).
 
-La última evidencia automatizada de Spec 008 reporta 27 pruebas de persistencia, 60 de API y 52 de cliente, además del build exitoso y las migraciones 001-052 sin pendientes.
+La evidencia automatizada completa reporta 38 pruebas de persistencia, 80 de API y 73 de cliente, además del build exitoso de Vite y las migraciones 001-061 sin pendientes.
 
 ## SDD y seguridad
 
 - [Constitución](docs/constitution.md)
 - [Mapa de fuentes](docs/source-map.md)
+- [Estado SDD](docs/sdd-status.md)
 - [Spec 001](specs/001-plataforma-votacion-carnavales/spec.md)
 - [Clarificaciones](specs/001-plataforma-votacion-carnavales/clarifications.md)
 - [Tareas I1](specs/001-plataforma-votacion-carnavales/tasks.md)
@@ -298,5 +300,30 @@ La última evidencia automatizada de Spec 008 reporta 27 pruebas de persistencia
 - [Plan Spec 008](specs/008-gestion-accesos/plan.md)
 - [Tareas Spec 008](specs/008-gestion-accesos/tasks.md)
 - [Validación Spec 008](specs/008-gestion-accesos/validation.md)
+- [Spec 009 - Experiencia operativa jurado](specs/009-experiencia-operativa-jurado/spec.md)
+- [Clarificaciones Spec 009](specs/009-experiencia-operativa-jurado/clarifications.md)
+- [Plan Spec 009](specs/009-experiencia-operativa-jurado/plan.md)
+- [Tareas Spec 009](specs/009-experiencia-operativa-jurado/tasks.md)
+- [Validación Spec 009](specs/009-experiencia-operativa-jurado/validation.md)
+- [Spec 010 - Resultados](specs/010-resultados/spec.md)
+- [Clarificaciones Spec 010](specs/010-resultados/clarifications.md)
+- [Plan Spec 010](specs/010-resultados/plan.md)
+- [Tareas Spec 010](specs/010-resultados/tasks.md)
+- [Validación Spec 010](specs/010-resultados/validation.md)
+- [Spec 011 - Sorteo ceremonial](specs/011-sorteo-ceremonial/spec.md)
+- [Clarificaciones Spec 011](specs/011-sorteo-ceremonial/clarifications.md)
+- [Plan Spec 011](specs/011-sorteo-ceremonial/plan.md)
+- [Tareas Spec 011](specs/011-sorteo-ceremonial/tasks.md)
+- [Validación Spec 011](specs/011-sorteo-ceremonial/validation.md)
+- [Spec 012 - Planilla online únicamente](specs/012-planilla-online-unicamente/spec.md)
+- [Clarificaciones Spec 012](specs/012-planilla-online-unicamente/clarifications.md)
+- [Plan Spec 012](specs/012-planilla-online-unicamente/plan.md)
+- [Tareas Spec 012](specs/012-planilla-online-unicamente/tasks.md)
+- [Validación Spec 012](specs/012-planilla-online-unicamente/validation.md)
+- [Spec 013 - Suplencias priorizadas](specs/013-suplencias-priorizadas/spec.md)
+- [Clarificaciones Spec 013](specs/013-suplencias-priorizadas/clarifications.md)
+- [Plan Spec 013](specs/013-suplencias-priorizadas/plan.md)
+- [Tareas Spec 013](specs/013-suplencias-priorizadas/tasks.md)
+- [Validación Spec 013](specs/013-suplencias-priorizadas/validation.md)
 
 No commitear `.env`, contraseñas, tokens ni secretos. No existe autoasignación pública de `ADMIN`. La seguridad del sistema se aplica del lado del servidor.

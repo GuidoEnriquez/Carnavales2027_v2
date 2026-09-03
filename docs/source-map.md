@@ -7,18 +7,19 @@
 - I1/I1-C: configuración operativa, validado.
 - I2-A/I2-B: padrón, invitaciones, cupos, asignaciones y reemplazos, validados.
 - I3 + Specs 004, 006 y 007: planillas, puntuaciones, secreto, completitud, cierre sin reapertura e inmutabilidad por ítem, implementados y validados.
-- Spec 010: resultados, rankings y desempate por criterios 1 y 2 implementados; reabierta para guardias de liberación íntegra.
-- Spec 011: sorteo ceremonial implementado y pendiente de comprobación manual.
-- Spec 012: cliente online únicamente implementado y pendiente de comprobación manual.
-- Diferido: penalizaciones, actas, publicación externa y Offline-First operativo. Spec 005 conserva compatibilidad exploratoria, no capacidad aceptada.
+- Spec 010: consolidación de puntajes, rankings, desempate por criterios 1 y 2 y guardias de liberación íntegra (RF-94a) implementados y validados. Cerrada el 2026-09-02.
+- Spec 011: sorteo ceremonial implementado y validado automáticamente y con comprobación manual (12 criterios × 3 viewports). Cerrada el 2026-09-02.
+- Spec 012: cliente online únicamente implementado y validado con comprobación manual responsive. Cerrada el 2026-09-02.
+- Spec 013: suplencias priorizadas con pares fijos titular/suplente y reemplazo seguro administrado con 2FA. Cerrada el 2026-09-02.
+- Diferido: penalizaciones, actas oficiales de escrutinio, publicación externa y Offline-First operativo. Spec 005 conserva compatibilidad exploratoria, no capacidad aceptada.
 - Spec 004 implementa prevención de omisiones: las nuevas planillas exigen `SCORED` (1 a 10) o `NOT_PRESENTED` (0 por acción explícita) antes de confirmar o cerrar. `PENDING` bloquea ambas operaciones.
 - Decisión de producto del 2026-09-01: el `5 por equidad` es nulo para planillas digitales. La completitud obligatoria evita la omisión humana que buscaba subsanar; no existe flujo, cálculo ni ajuste operativo asociado.
 - I4-A Offline-First (Spec 005) conserva código exploratorio. Por decisión de producto del 2026-09-01, conexión y sincronización son una funcionalidad futura; su activación, modificación o retiro requiere un nuevo ciclo SDD.
 - Decisión de producto del 2026-08-31: no se permiten nuevas reaperturas de planillas. Un cierre con `PENDING` se rechaza y ADMIN recibe un modal con jurado, comparsa, rubro e ítem faltante. Fuente de Spec-006/RF-67 a Spec-006/RF-70.
 - Spec 007: inmutabilidad por ítem aprobada formalmente el 2026-09-01; implementación validada automáticamente y manualmente en Chrome de escritorio con emulación responsive.
 - Spec 008: alta por invitación de `VEEDOR`, `COMISARIO` y `SCRUTINEER`; emisión, inspección, aceptación, login real, 2FA y UI validados. La decisión de producto 2026-09-01 revoca links existentes, elimina el token plano y unifica las altas con Jurados. No hay fuente Jira/Confluence identificada para este incremento. **[NECESITA ACLARACIÓN]**.
-- Spec 009: rediseño operativo del cliente de jurado basado en el brief y las referencias visuales de producto del 2026-09-01, preservando Specs 004, 006 y 007. La implementación y pruebas de cliente están completadas; la validación manual responsive, de teclado y táctil permanece pendiente. No habilita Offline-First ni módulos de resultados.
-- Decision de producto 2026-09-02: cada suplente queda reservado para un titular fijo por noche y especialidad. ADMIN con 2FA lo activa, con motivo, solo si el titular no presento la planilla o quedo incompleta. Esta regla se implementa en Spec 013.
+- Spec 009: rediseño operativo del cliente de jurado basado en el brief y las referencias visuales de producto del 2026-09-01, preservando Specs 004, 006 y 007. Implementación, pruebas de cliente y validación manual (390x844, 768x1024, 1440x900) completadas y cerradas el 2026-09-01.
+- Decisión de producto 2026-09-02: cada suplente queda reservado para un titular fijo por noche y especialidad. ADMIN con 2FA lo activa, con motivo, solo si el titular no presentó la planilla o quedó incompleta. Implementada, validada y cerrada en Spec 013.
 
 ## Visión funcional objetivo
 

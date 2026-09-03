@@ -7,11 +7,22 @@ export function sendKnownError(response, error) {
     response.status(400).json({ code: "VALIDATION_ERROR", message: error.message });
     return true;
   }
-  if (error.message === "RESULTS_NOT_RELEASED" || error.message === "RESULTS_ACCESS_DENIED") {
+  if (
+    error.message === "RESULTS_NOT_RELEASED" ||
+    error.message === "RESULTS_ACCESS_DENIED" ||
+    error.message === "PENALTIES_ACCESS_DENIED"
+  ) {
     response.status(403).json({ code: error.message });
     return true;
   }
-  if (error.message === "RESULTS_NOT_READY") {
+  if (
+    error.message === "RESULTS_NOT_READY" ||
+    error.message === "RESULTS_ALREADY_RELEASED" ||
+    error.message === "PENALTY_REQUIRES_COMPETITION_NIGHT" ||
+    error.message === "CANNOT_MUTATE_REVOKED_PENALTY" ||
+    error.message === "CANNOT_DELETE_PENALTY" ||
+    error.message === "PENALTY_FIELDS_IMMUTABLE"
+  ) {
     response.status(409).json({ code: error.message });
     return true;
   }

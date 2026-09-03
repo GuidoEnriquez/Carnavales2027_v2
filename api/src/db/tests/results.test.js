@@ -5,6 +5,7 @@ import { getPool, closePool } from "../pool.js";
 import { migrate } from "../migrate.js";
 import {
   fetchConsolidatedScores,
+  fetchConsolidatedPenalties,
   computeRubricRankings,
   computeOverallRanking,
   resolveTieBreaker,
@@ -322,5 +323,45 @@ describe("results DB", () => {
     );
     assert.ok(tieAudit);
     assert.deepEqual(tieAudit.after_data.appliedCriteria, ["WON_NOMINATIVE_RUBRICS_COUNT", "BATTERY_RUBRIC_WINNER"]);
+  });
+
+  it("deduce penalizaciones activas en el puntaje neto de Mejor Comparsa (RF-117, RF-119) y no afecta rubros (RF-118)", async () => {
+    const data = await setupResultFixtures();
+    const adminId = (await client.query('SELECT id FROM "user" WHERE name = $1', ["Admin"])).rows[0]?.id;
+    // Compresa A: coreo 8 + bateria 9 = 17 (gross). Aplicar 4 puntos de penalización.
+    await client.query(
+      `INSERT INTO troupe_penalty(event_id, night_id, event_troupe_id, reason, penalty_points, status, applied_by_user_id)
+       VALUES($1,$2,$3,'Demora en pista',4,'APPLIED',$4)`,
+      [data.event.id, data.night.id, data.troupes.a.id, adminId],
+    );
+    // Compresa B: 7+6 = 13, sin penalizaciones.
+
+    const scores = await fetchConsolidatedScores({ eventId: data.event.id, client });
+    const penalties = await fetchConsolidatedPenalties({ eventId: data.event.id, client });
+    const overall = computeOverallRanking(scores, penalties);
+    const rubricRankings = computeRubricRankings(scores);
+
+    const troupeA = overall.find((t) => t.troupeId === data.troupes.a.id);
+    const troupeB = overall.find((t) => t.troupeId === data.troupes.b.id);
+
+    // RF-117: netScore = max(0, grossScore - penalizaciones)
+    assert.equal(troupeA.grossScore, 17);
+    assert.equal(troupeA.totalPenalties, 4);
+    assert.equal(troupeA.penaltyPoints, 4);
+    assert.equal(troupeA.netScore, 13);
+    assert.equal(troupeA.totalScore, 13);
+    assert.equal(troupeA.penalties.length, 1);
+    assert.equal(troupeB.grossScore, 13);
+    assert.equal(troupeB.totalPenalties, 0);
+    assert.equal(troupeB.netScore, 13);
+    // Ranking ordena por netScore; A empatado con B tras la deducción.
+    assert.equal(troupeA.rank, troupeB.rank);
+    // RF-118: los premios por rubro siguen basados en el puntaje artístico (sin penalización).
+    const coreo = rubricRankings.find((r) => r.rubricCode === "COREO");
+    assert.equal(coreo.winners[0].totalScore, 8);
+    assert.equal(rubricRankings.find((r) => r.rubricCode === "BATERIA").winners[0].totalScore, 9);
+    // RF-119: desglose auditable presente.
+    assert.ok(Array.isArray(troupeA.penalties));
+    assert.equal(troupeA.penalties[0].penaltyPoints, 4);
   });
 });
