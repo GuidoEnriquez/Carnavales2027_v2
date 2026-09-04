@@ -130,7 +130,7 @@ describe("official_scrutiny_record DB", () => {
           [data.eventId, data.userId, data.validHash, JSON.stringify(data.validPayload)],
         );
       },
-      /check constraint/i,
+      { code: "23514" },
     );
   });
 
@@ -150,7 +150,7 @@ describe("official_scrutiny_record DB", () => {
           [data.eventId, data.userId, JSON.stringify(data.validPayload)],
         );
       },
-      /check constraint|value too long/i,
+      { code: "23514" },
     );
   });
 

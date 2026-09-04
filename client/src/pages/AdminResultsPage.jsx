@@ -114,6 +114,12 @@ export function AdminResultsPage() {
     [tie, troupes],
   );
   const selectedEvent = events.find((event) => event.id === eventId);
+  const workflowSteps = [
+    { label: "Revisar consolidación", state: result || releaseAvailable ? "done" : "current" },
+    { label: "Liberar resultados", state: result ? "done" : releaseAvailable ? "current" : "locked" },
+    { label: "Resolver desempate", state: result && !tie ? "skipped" : drawResult ? "done" : tie ? "current" : "locked" },
+    { label: "Emitir acta oficial", state: result && (!tie || drawResult) ? "current" : "locked" },
+  ];
 
   return (
     <main className="admin-shell results-page">
@@ -133,7 +139,7 @@ export function AdminResultsPage() {
       {loading && <p>Cargando resultados…</p>}
       {!loading && selectedEvent && (
         <>
-          <section className="config-section results-intro">
+           <section className="config-section results-intro">
             <p className="eyebrow">{selectedEvent.name}</p>
             <h2>Mejor Comparsa</h2>
             <p>Resultados consolidados de rubros nominativos, liberados para escrutinio.</p>
@@ -148,9 +154,16 @@ export function AdminResultsPage() {
                 </p>
               )
             )}
-          </section>
+           </section>
 
-          {tie && (
+           <ol className="workflow-stepper" aria-label="Flujo de escrutinio">
+             {workflowSteps.map((step, index) => <li className={`workflow-step workflow-step-${step.state}`} key={step.label}>
+               <span className="workflow-step-number" aria-hidden="true">{index + 1}</span>
+               <div><strong>{step.label}</strong><span>{step.state === "done" ? "Listo" : step.state === "current" ? "En curso" : step.state === "skipped" ? "No requerido" : "Bloqueado"}</span></div>
+             </li>)}
+           </ol>
+
+           {tie && (
             <section className="tie-breaker-panel" aria-labelledby="tie-breaker-title">
               <div>
                 <p className="eyebrow">Criterio 3</p>

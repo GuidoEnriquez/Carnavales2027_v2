@@ -13,4 +13,9 @@ describe("HomePage", () => {
       "#/admin/results",
     );
   });
+
+  it("ofrece supervisión al VEEDOR", () => {
+    render(<HomePage session={{ roles: ["VEEDOR"] }} />);
+    expect(screen.getByRole("link", { name: "Abrir supervisión" })).toHaveAttribute("href", "#/veedor");
+  });
 });

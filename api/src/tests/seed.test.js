@@ -50,13 +50,25 @@ test("el seed de desarrollo crea o reutiliza un ADMIN y registra auditoría", {
     password: "SeedPassword-2026!",
   };
   const firstRun = await seedDevelopmentAdmin({ config });
-  const secondRun = await seedDevelopmentAdmin({ config });
-
   assert.equal(firstRun.createdUser, true);
   assert.equal(firstRun.grantedAdminRole, true);
+  await getPool().query(
+    `UPDATE account SET password = 'legacy-invalid-hash'
+      WHERE "userId" = $1 AND "providerId" = 'credential'`,
+    [firstRun.user.id],
+  );
+  const secondRun = await seedDevelopmentAdmin({ config });
+
   assert.equal(secondRun.createdUser, false);
   assert.equal(secondRun.grantedAdminRole, false);
   assert.equal(secondRun.user.id, firstRun.user.id);
+
+  const { rows: accountRows } = await getPool().query(
+    `SELECT password FROM account
+      WHERE "userId" = $1 AND "providerId" = 'credential'`,
+    [firstRun.user.id],
+  );
+  assert.match(accountRows[0].password, /^[0-9a-f]{32}:[0-9a-f]{128}$/);
 
   const { rows: roleRows } = await getPool().query(
     "SELECT role_code FROM user_role WHERE user_id = $1",

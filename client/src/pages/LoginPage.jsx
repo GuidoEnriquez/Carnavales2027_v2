@@ -6,6 +6,9 @@ function goToRoleHome(session) {
   if (session.status !== "authenticated") return false;
   if (session.roles?.length === 1 && session.roles[0] === "ADMIN") window.location.hash = "#/admin/events";
   else if (session.roles?.length === 1 && session.roles[0] === "JUDGE") window.location.hash = "#/judge";
+  else if (session.roles?.length === 1 && session.roles[0] === "COMISARIO") window.location.hash = "#/admin/penalties";
+  else if (session.roles?.length === 1 && ["SCRUTINEER", "ESCRIBANO"].includes(session.roles[0])) window.location.hash = "#/admin/results";
+  else if (session.roles?.length === 1 && session.roles[0] === "VEEDOR") window.location.hash = "#/veedor";
   else window.location.hash = "#/home";
   return true;
 }
@@ -18,6 +21,24 @@ function maskEmail(email) {
   const domain = parts[1];
   const visible = local.slice(0, 2);
   return `${visible}••••@${domain}`;
+}
+
+function UserIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
 }
 
 function EyeIcon() {
@@ -145,12 +166,29 @@ export function LoginPage({ onAuthenticated }) {
         method: "POST",
         body: JSON.stringify({ code }),
       });
+    } catch (error) {
+      if (error.code === "INVALID_CODE") {
+        setMessage("El código no es correcto.");
+      } else if (error.code === "OTP_HAS_EXPIRED") {
+        setMessage("El código venció. Solicitá uno nuevo.");
+      } else if (error.code === "TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE") {
+        setMessage("Se agotaron los intentos. Solicitá un código nuevo.");
+      } else if (error.code === "INVALID_TWO_FACTOR_COOKIE") {
+        setMessage("La verificación venció. Volvé a ingresar para recibir un código nuevo.");
+      } else {
+        setMessage("No pudimos verificar el código. Intentá nuevamente.");
+      }
+      return;
+    } finally {
+      setLoading(false);
+    }
+
+    try {
       if (onAuthenticated) onAuthenticated();
       else await finishAuthentication();
     } catch {
-      setMessage("El código no es correcto.");
-    } finally {
-      setLoading(false);
+      setStep("verified");
+      setMessage("El código fue aceptado, pero no se pudo cargar el perfil. Reintentá esta consulta.");
     }
   };
 
@@ -170,12 +208,18 @@ export function LoginPage({ onAuthenticated }) {
   };
 
   const handleOtpChange = (index, value) => {
-    if (!/^\d*$/.test(value)) return;
+    const digits = value.replace(/\D/g, "").slice(0, OTP_LENGTH - index);
     const newValues = [...otpValues];
-    newValues[index] = value.slice(-1);
+    if (digits.length > 1) {
+      for (let offset = 0; offset < digits.length; offset++) {
+        newValues[index + offset] = digits[offset];
+      }
+    } else {
+      newValues[index] = digits;
+    }
     setOtpValues(newValues);
-    if (value && index < OTP_LENGTH - 1) {
-      otpRefs.current[index + 1]?.focus();
+    if (digits) {
+      otpRefs.current[Math.min(index + digits.length, OTP_LENGTH - 1)]?.focus();
     }
   };
 
@@ -206,17 +250,22 @@ export function LoginPage({ onAuthenticated }) {
         <p className="login-subtitle">Sistema de jurados</p>
         {step === "credentials" ? (
           <form onSubmit={submitCredentials}>
-            <label>
-              Correo
-              <input name="email" type="email" autoComplete="username" placeholder="nombre@ejemplo.com" required />
+            <label className="login-field-label">
+              Usuario / DNI
+              <div className="login-input-wrapper">
+                <span className="login-input-icon" aria-hidden="true"><UserIcon /></span>
+                <input name="email" type="text" autoComplete="username" placeholder="Ingrese su identificador" required />
+              </div>
             </label>
-            <label>
+            <label className="login-field-label">
               Contraseña
               <div className="login-password-wrapper">
+                <span className="login-input-icon" aria-hidden="true"><LockIcon /></span>
                 <input
                   name="password"
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
+                  placeholder="••••••••"
                   required
                 />
                 <button
@@ -230,7 +279,7 @@ export function LoginPage({ onAuthenticated }) {
               </div>
             </label>
             <button className="primary-action" disabled={loading}>
-              {loading ? "Verificando…" : "Ingresar"}
+              {loading ? "Verificando…" : <>Ingresar <span aria-hidden="true">→]</span></>}
             </button>
           </form>
         ) : step === "otp" ? (
@@ -275,6 +324,9 @@ export function LoginPage({ onAuthenticated }) {
             <p className="login-message-alert" role="status" aria-live="polite">{message}</p>
           </div>
         )}
+      </div>
+      <div className="login-device-status" aria-label="Estado del dispositivo">
+        <span aria-hidden="true">●</span> Dispositivo conectado
       </div>
     </main>
   );

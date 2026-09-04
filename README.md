@@ -25,7 +25,7 @@ Todavía fuera de alcance: publicación externa de resultados (portal público) 
 
 ## Incremento vigente
 
-No hay incrementos activos abiertos. Todos los specs 001–015 están completados y cerrados. La evidencia detallada se registra en sus respectivos `validation.md`.
+Spec 016 — Supervisión de votación por VEEDOR está implementada y validada automáticamente. Permanece abierta únicamente la comprobación manual en 390×844, 768×1024 y 1440×900, con teclado y emulación táctil. La evidencia detallada se registra en `specs/016-supervision-veedor/validation.md`.
 
 ## Próxima puerta SDD
 
@@ -183,6 +183,13 @@ El fixture local `Carnaval de Fantasia 2027 - Noche Unica` contiene los siguient
 | COMISARIO | Comisario demo | `demo.comisario@carnaval.local` |
 
 Cada cuenta debe completar 2FA antes de usar rutas protegidas.
+
+Si una base local fue creada con una versión anterior del fixture y muestra `Invalid password hash`, regenerá primero la credencial del ADMIN y luego repará las cuentas demo:
+
+```bash
+NODE_ENV=development npm run db:seed
+npm run db:seed:fiction
+```
 
 En otra terminal, desde `client/`:
 

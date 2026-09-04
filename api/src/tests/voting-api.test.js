@@ -395,6 +395,15 @@ test("API votación: juez no puede abrir votación", {
   await pool.query("INSERT INTO user_role (user_id, role_code) VALUES ($1, 'ADMIN')", [adminId]);
   await pool.query("INSERT INTO user_role (user_id, role_code) VALUES ($1, 'JUDGE')", [judgeUserId]);
   await pool.query("INSERT INTO user_role (user_id, role_code) VALUES ($1, 'VEEDOR')", [observerId]);
+  const { rows: [observerProfile] } = await pool.query(
+    `INSERT INTO operational_profile(name, email, document_number, user_id, registration_status, created_by)
+     VALUES ($1, $2, $3, $4, 'REGISTERED', $5) RETURNING id`,
+    ["Voting Observer", `${observerId}@example.test`, `DOC-OBS-${randomUUID()}`, observerId, adminId],
+  );
+  await pool.query(
+    "INSERT INTO operational_profile_role (operational_profile_id, role_code) VALUES ($1, 'VEEDOR')",
+    [observerProfile.id],
+  );
 
   const { rows: [event] } = await pool.query(
     "INSERT INTO carnival_event(name) VALUES($1) RETURNING id", ["Voting No Access"],

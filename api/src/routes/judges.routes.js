@@ -12,7 +12,7 @@ import {
 
 export function createJudgesRouter({ requireSession, sendInvitation, revokeSessions }) {
   const router = Router();
-  router.use(requireSession, requireTwoFactor, requireAdmin);
+  router.use("/judges", requireSession, requireTwoFactor, requireAdmin);
 
   router.get("/judges", async (_request, response, next) => {
     try {

@@ -1,6 +1,6 @@
 # Estado SDD — Carnavales2027_v2
 
-> Estado actualizado: 2026-09-03. Esta nota distingue implementación, validación automatizada y validación manual; las specs y validaciones son la evidencia detallada.
+> Estado actualizado: 2026-09-04. Esta nota distingue implementación, validación automatizada y validación manual; las specs y validaciones son la evidencia detallada.
 
 ## Incrementos completados
 
@@ -23,10 +23,12 @@
 | Spec 014 | Gestión de penalizaciones: tabla `troupe_penalty`, deducción en Mejor Comparsa con piso cero, preservación de rubros artísticos, panel accesible de Comisariato y revocación auditada. Cerrada el 2026-09-03. | `specs/014-penalizaciones/validation.md` |
 | Spec 015 | Actas Oficiales y Certificación de Escrutinio: tabla inmutable `official_scrutiny_record`, hash JCS/SHA-256 (RFC 8785), segregación 2FA (ADMIN sólo lectura, emisión exclusiva SCRUTINEER/ESCRIBANO), vista notarial imprimible (@media print). Cerrada el 2026-09-03. | `specs/015-actas-escrutinio/validation.md` |
 | Perfiles Operativos | Alta unificada de roles auxiliares (VEEDOR, COMISARIO, SCRUTINEER, ESCRIBANO), invitación por consola/SMTP, aceptación solo password, ciclo de vida INVITED→REGISTERED→SUSPENDED, trigger auto-registro. Migraciones 064-065. Implementado y validado (99 tests) el 2026-09-03. | `PLAN-operational-profiles.md` |
+| Spec 016 | Supervisión de votación por VEEDOR: endpoint agregado, guard de rol, vista con polling, navegación y redirect post-login. Validación automatizada completada; comprobación manual responsive pendiente. | `specs/016-supervision-veedor/validation.md` |
 
 ## Incremento activo
 
-- Ninguno activo en este momento. Módulos pendientes: Publicación externa de resultados / Portal público.
+- Spec 016 — Supervisión de votación por VEEDOR. La implementación y validación automatizada están completas; falta comprobación manual en los viewports operativos.
+- Módulo diferido: Publicación externa de resultados / Portal público.
 
 ## Diferido explícitamente
 
@@ -52,4 +54,4 @@ Toda spec que modifique una pantalla operativa debe declarar el criterio de uso 
 
 ## Verificación de referencia
 
-Al 2026-09-03, las evidencias automatizadas son API 107, DB 62, cliente 99 y build exitoso. Specs 014, 015 y Perfiles Operativos completados; todos los incrementos (001–015 + Perfiles Operativos) completados.
+Al 2026-09-04, las evidencias automatizadas son API 108, DB 62, cliente 108 y build exitoso. Specs 014 y 015, y Perfiles Operativos están completados; Spec 016 mantiene pendiente la comprobación manual responsive.

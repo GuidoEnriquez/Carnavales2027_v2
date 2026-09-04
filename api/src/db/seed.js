@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { fileURLToPath } from "node:url";
 import { grantRole } from "../auth/role-service.js";
-import { createCredentialUser } from "../auth/account-service.js";
+import { createCredentialUser, setCredentialPassword } from "../auth/account-service.js";
 import { closePool, getPool } from "./pool.js";
 
 function requireEnvironment(environment, name) {
@@ -44,6 +44,9 @@ export async function seedDevelopmentAdmin({
     [config.email],
   );
   const user = existingUsers[0] ?? await createUser(config);
+  if (existingUsers.length > 0) {
+    await setCredentialPassword({ userId: user.id, password: config.password });
+  }
   const roleResult = await grantRole({
     actorUserId: null,
     userId: user.id,

@@ -2,6 +2,7 @@ import { RequireAdmin } from "./auth/RequireAdmin.jsx";
 import { RequireRole } from "./auth/RequireRole.jsx";
 import { RequireResultsRole } from "./auth/RequireResultsRole.jsx";
 import { RequirePenaltiesRole } from "./auth/RequirePenaltiesRole.jsx";
+import { RequireVotingObserverRole } from "./auth/RequireVotingObserverRole.jsx";
 import { useSession } from "./auth/session-context.jsx";
 import { AppNavigation } from "./components/AppNavigation.jsx";
 import { AdminEventsPage } from "./pages/AdminEventsPage.jsx";
@@ -17,6 +18,8 @@ import { AcceptOperationalInvitationPage } from "./pages/AcceptOperationalInvita
 import { HomePage } from "./pages/HomePage.jsx";
 import { JudgeHomePage } from "./pages/JudgeHomePage.jsx";
 import { JudgeBallotPage } from "./pages/JudgeBallotPage.jsx";
+import { JudgeAssignmentPage } from "./pages/JudgeAssignmentPage.jsx";
+import { VeedorMonitorPage } from "./pages/VeedorMonitorPage.jsx";
 import { LoginPage } from "./pages/LoginPage.jsx";
 import { useEffect, useState } from "react";
 
@@ -57,6 +60,9 @@ export default function App({ session: providedSession }) {
   }
   if (route === "#/invitations/accepted") return <AcceptedJudgeInvitationPage />;
   if (route === "#/login" || route === "") return <LoginPage />;
+  if (route === "#/judge/assignment") {
+    return <RoleArea session={session} role="JUDGE"><JudgeAssignmentPage session={session} /></RoleArea>;
+  }
   if (route === "#/admin/events") {
     // UX guard only; API remains the authorization boundary.
     return <RoleArea session={session} admin><AdminEventsPage /></RoleArea>;
@@ -84,6 +90,12 @@ export default function App({ session: providedSession }) {
   }
   if (route === "#/admin/record") {
     const content = <RequireResultsRole session={session}><OfficialRecordPage /></RequireResultsRole>;
+    return session.status === "authenticated"
+      ? <ProtectedShell session={session}>{content}</ProtectedShell>
+      : content;
+  }
+  if (route === "#/veedor") {
+    const content = <RequireVotingObserverRole session={session}><VeedorMonitorPage /></RequireVotingObserverRole>;
     return session.status === "authenticated"
       ? <ProtectedShell session={session}>{content}</ProtectedShell>
       : content;

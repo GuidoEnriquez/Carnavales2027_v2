@@ -221,23 +221,14 @@ export function JudgeBallotPage({ ballotId, troupeId }) {
       </section>
     )}
     <div className="ballot-workspace">
-      <aside className="ballot-sidebar" aria-label="Navegación de comparsas">
-        <p className="eyebrow">Comparsas</p>
-        <ol>{groups.map((group) => {
-          const troupeResolved = Object.values(group.rubrics).flatMap((rubric) => rubric.scores).filter((score) => score.evaluationState !== "PENDING").length;
-          const troupeTotal = Object.values(group.rubrics).flatMap((rubric) => rubric.scores).length;
-          return <li key={group.nightScheduleId}><button type="button" onClick={() => goToTroupe(group.nightScheduleId)}><span>{group.troupeName}</span><small>{troupeResolved} / {troupeTotal} resueltos</small></button></li>;
-        })}</ol>
-      </aside>
       <section className="ballot-list" aria-label="Puntuaciones por comparsa">
         {groups.map((group) => <article className="ballot-troupe" key={group.nightScheduleId} ref={(element) => { if (element) troupeRefs.current.set(group.nightScheduleId, element); else troupeRefs.current.delete(group.nightScheduleId); }}>
           <header><p className="eyebrow">Salida {group.presentationOrder}</p><h2>{group.troupeName}</h2></header>
           {Object.values(group.rubrics).map((rubric) => <section className="ballot-rubric" key={rubric.rubricId}>
             <h3>{rubric.rubricName}</h3>
+            <p className="rubric-instruction">Seleccioná una puntuación para este criterio.</p>
             {rubric.scores.map((score) => <div className={`score-row score-state-${score.evaluationState.toLowerCase()}`} key={score.id} ref={(element) => { if (element) scoreRefs.current.set(score.id, element); else scoreRefs.current.delete(score.id); }}>
-              <div className="score-copy"><span>{score.itemName}</span><small>{score.evaluationState === "NOT_PRESENTED" ? "No se presentó" : score.evaluationState === "SCORED" ? "Decisión confirmada" : "Pendiente de decisión"}</small></div>
               {score.evaluationState !== "PENDING" ? <div className={`locked-score ${score.evaluationState === "NOT_PRESENTED" ? "not-presented" : ""}`} aria-label={`${group.troupeName}: ${score.itemName}, ${score.evaluationState === "NOT_PRESENTED" ? "No se presentó" : `puntuado ${score.score}`}`}><span aria-hidden="true">{score.evaluationState === "NOT_PRESENTED" ? "⊘" : "✓"}</span><strong>{score.evaluationState === "NOT_PRESENTED" ? "No se presentó" : score.score}</strong><small>Decisión bloqueada</small></div> : <div className="score-actions" role="group" aria-label={`${group.troupeName}: ${score.itemName}`}>
-                <p>Seleccioná una puntuación</p>
                 <div className="score-grid">{[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => <button key={value} type="button" disabled={readonly || score.status === "LOCKED" || Boolean(busy)} onClick={() => setConfirmModal({ scoreId: score.id, evaluationState: "SCORED", score: value, itemContext: { troupeName: group.troupeName, rubricName: rubric.rubricName, itemName: score.itemName } })}>{value}</button>)}</div>
                 <button type="button" className="not-presented-action" disabled={readonly || score.status === "LOCKED" || Boolean(busy)} onClick={() => setConfirmModal({ scoreId: score.id, evaluationState: "NOT_PRESENTED", score: 0, itemContext: { troupeName: group.troupeName, rubricName: rubric.rubricName, itemName: score.itemName } })}>No se presentó</button>
               </div>}
@@ -247,7 +238,8 @@ export function JudgeBallotPage({ ballotId, troupeId }) {
       </section>
     </div>
     <footer className="ballot-footer">
-      <a className="secondary button-link" href="#/judge">Volver al panel</a>
+      <a className="secondary button-link" href="#/judge">← Anterior</a>
+      <span className="save-indicator"><span aria-hidden="true">●</span> Guardado local</span>
       {!readonly && <button ref={submitButtonRef} type="button" disabled={Boolean(busy)} onClick={() => {
         const pendingItems = getPendingItems(ballot.scores);
         if (pendingItems.length > 0) setPendingDialog(pendingItems);

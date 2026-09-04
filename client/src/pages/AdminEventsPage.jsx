@@ -100,6 +100,12 @@ export function AdminEventsPage() {
     }
   };
 
+  const suggestedStep = (status) => ({
+    CONFIGURING: "Completar la configuración y asignar jurados.",
+    OPEN: "Supervisar el avance de la votación.",
+    CLOSED: "Revisar los resultados del escrutinio.",
+  }[status] ?? "Revisar el estado operativo del evento.");
+
   if (selected) {
     if (configurationLoading) return <main className="container"><p>Cargando configuración…</p></main>;
     if (configurationError) return <main className="container"><div className="card"><h1>No se pudo cargar la configuración</h1><p>No se muestran formularios para evitar trabajar sobre datos incompletos.</p><button type="button" onClick={() => { setConfigurationLoading(true); setSelected({ ...selected }); }}>Reintentar</button> <button className="secondary" type="button" onClick={() => setSelected(null)}>Volver a eventos</button></div></main>;
@@ -123,6 +129,18 @@ export function AdminEventsPage() {
         <h1>Carnavales 2027</h1>
         <h2>Administración de eventos</h2>
         <p className="eyebrow">Configuración operativa</p>
+        {events.length > 0 && <section className="operations-summary" aria-label="Resumen operativo">
+          <div className="section-heading"><div><p className="eyebrow">Resumen operativo</p><h2>Próximo paso</h2></div></div>
+          <div className="operations-summary-list">
+            {events.map((event) => <article key={event.id}>
+              <strong>{event.name}</strong>
+              <span>Estado: {event.status}</span>
+              <p>{suggestedStep(event.status)}</p>
+              {event.status === "OPEN" && <a className="button-link" href="#/veedor">Ver supervisión</a>}
+              {event.status === "CLOSED" && <a className="button-link" href="#/admin/results">Abrir escrutinio</a>}
+            </article>)}
+          </div>
+        </section>}
         <form onSubmit={create}>
           <label>Nuevo evento<input name="name" required /></label>
           <button>Crear evento</button>

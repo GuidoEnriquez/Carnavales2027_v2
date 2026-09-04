@@ -56,7 +56,7 @@ test("el padrón conserva historia y las invitaciones son únicas y de uso únic
          VALUES ($1, $2, CURRENT_TIMESTAMP + INTERVAL '72 hours', $3)`,
         [profile.id, "b".repeat(64), adminId],
       ),
-      /unique|duplicate/i,
+      { code: "23505" },
     );
     await client.query("ROLLBACK TO SAVEPOINT duplicate_pending");
 

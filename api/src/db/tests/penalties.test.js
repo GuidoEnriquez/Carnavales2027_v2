@@ -122,7 +122,7 @@ describe("troupe_penalty DB", () => {
          VALUES ($1, $2, $3, $4, $5, $6)`,
         [data1.eventId, data1.nightId, data2.troupeId, "Incompatibilidad de comparsa", 3, data1.userId],
       ),
-      /violates foreign key constraint|foreign key/i,
+      { code: "23503" },
     );
   });
 
@@ -137,7 +137,7 @@ describe("troupe_penalty DB", () => {
          VALUES ($1, $2, $3, $4, $5, $6)`,
         [data1.eventId, data2.nightId, data1.troupeId, "Incompatibilidad de noche", 3, data1.userId],
       ),
-      /violates foreign key constraint|foreign key/i,
+      { code: "23503" },
     );
   });
 

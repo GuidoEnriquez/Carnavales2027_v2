@@ -142,6 +142,7 @@ export function OfficialRecordPage() {
             </button>
           )}
         </div>
+        <p className="workflow-context">Paso 4 de 4 · Emisión y consulta del Acta Oficial</p>
         {message && <p className="feedback-message is-success" role="status">{message}</p>}
         {error && <p className="feedback-message is-error" role="alert">{error}</p>}
       </section>

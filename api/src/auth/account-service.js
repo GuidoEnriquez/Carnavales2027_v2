@@ -52,6 +52,25 @@ export async function createCredentialUser({ email, name, password, authInstance
   }
 }
 
+export async function setCredentialPassword({ userId, password, authInstance }) {
+  const context = await getAuthContext(authInstance);
+  const normalizedUserId = requireText(userId, "userId");
+  const normalizedPassword = requirePassword(password);
+  const passwordHash = await context.password.hash(normalizedPassword);
+  const accounts = await context.internalAdapter.findAccounts(normalizedUserId);
+  const credential = accounts.find((account) => account.providerId === "credential");
+  if (credential) {
+    await context.internalAdapter.updateAccount(credential.id, { password: passwordHash });
+  } else {
+    await context.internalAdapter.linkAccount({
+      userId: normalizedUserId,
+      providerId: "credential",
+      accountId: normalizedUserId,
+      password: passwordHash,
+    });
+  }
+}
+
 export async function createOrVerifyCredentialUser({ email, name, password, authInstance }) {
   const normalizedEmail = requireText(email, "email").toLowerCase();
   const normalizedPassword = requirePassword(password);

@@ -3,10 +3,12 @@ import { randomUUID } from "node:crypto";
 import { closePool, getPool } from "../db/pool.js";
 import { migrate } from "../db/migrate.js";
 import { createTroupePenalty, revokeTroupePenalty } from "../modules/penalties/penalty-service.js";
+import { getAdminCredentialHash, syncCredentialHash } from "./credential-seed-helpers.js";
 
 const EVENT_NAME = "Competencia Oficial de Prueba - Goya 2027";
 
 async function ensureComisarioUser(client, adminUserId) {
+  const adminPasswordHash = await getAdminCredentialHash(client, adminUserId);
   const email = "demo.comisario@carnaval.local";
   const { rows: existing } = await client.query(
     `SELECT u.id, u.email FROM "user" u WHERE u.email = $1`,
@@ -24,19 +26,9 @@ async function ensureComisarioUser(client, adminUserId) {
       [userId, email],
     );
 
-    // Copiar hash de contraseña del admin para que use la misma clave de desarrollo
-    const { rows: adminAccount } = await client.query(
-      `SELECT password FROM account WHERE "userId" = $1 AND password IS NOT NULL LIMIT 1`,
-      [adminUserId],
-    );
-    const password = adminAccount[0]?.password ?? "$2b$10$demoHashedPasswordFallback";
-
-    await client.query(
-      `INSERT INTO account(id, "userId", "accountId", "providerId", password, "createdAt", "updatedAt")
-       VALUES ($1, $2, $2, 'credential', $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-      [randomUUID(), userId, password],
-    );
   }
+
+  await syncCredentialHash(client, userId, adminPasswordHash);
 
   // Asegurar registro de twoFactor requerido por Better Auth
   const { rows: adminTf } = await client.query(
@@ -85,7 +77,11 @@ async function seedPenaltiesDemo() {
       `SELECT u.id, u.email
        FROM "user" u
        JOIN user_role ur ON ur.user_id = u.id
+       JOIN account a ON a."userId" = u.id
        WHERE ur.role_code = 'ADMIN'
+         AND a."providerId" = 'credential'
+         AND a.password IS NOT NULL
+         AND position(':' IN a.password) > 0
        ORDER BY u.id LIMIT 1`,
     );
     if (!admin) {

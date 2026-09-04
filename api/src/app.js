@@ -14,6 +14,7 @@ import { createResultsRouter } from "./routes/results.routes.js";
 import { createPenaltiesRouter } from "./routes/penalties.routes.js";
 import { createScrutinyRecordsRouter } from "./routes/scrutiny-records.routes.js";
 import { createOperationalProfilesRouter } from "./routes/operational-profiles.routes.js";
+import { createMonitorRouter } from "./routes/monitor.routes.js";
 
 export function createApp({
   authHandler,
@@ -77,6 +78,9 @@ export function createApp({
     app.use("/api/v1", createOperationalProfilesRouter({
       requireSession: createRequireSession(getSession),
       sendInvitation,
+    }));
+    app.use("/api/v1", createMonitorRouter({
+      requireSession: createRequireSession(getSession),
     }));
   }
 

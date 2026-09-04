@@ -86,8 +86,10 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
        || filename === "059_prioritized_substitutes.sql"
        || filename === "060_preserve_ballot_reopen_error.sql"
        || filename === "061_allow_standby_history.sql"
-       || filename === "062_troupe_penalties.sql"
-       || filename === "063_official_scrutiny_record.sql"
+      || filename === "062_troupe_penalties.sql"
+      || filename === "063_official_scrutiny_record.sql"
+      || filename === "064_operational_profiles.sql"
+      || filename === "065_operational_invitation_delivery.sql"
   )));
 
   const status = await getMigrationStatus();
@@ -405,6 +407,16 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
     {
       filename: "063_official_scrutiny_record.sql",
       version: "063",
+      applied: true,
+    },
+    {
+      filename: "064_operational_profiles.sql",
+      version: "064",
+      applied: true,
+    },
+    {
+      filename: "065_operational_invitation_delivery.sql",
+      version: "065",
       applied: true,
     },
   ]);

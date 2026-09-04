@@ -40,7 +40,7 @@ test("una participación exige categoría activa del mismo evento y nunca texto 
         `INSERT INTO event_troupe (event_id, category_id, name)
          VALUES ($1, $2, 'Categoría ajena')`,
         [firstEvent.id, secondCategory.id],
-      ), /foreign key/i,
+      ), { code: "23503" },
     );
     await client.query("ROLLBACK TO SAVEPOINT other_event_category");
     await client.query("UPDATE event_category SET active = false WHERE id = $1", [firstCategory.id]);
@@ -58,7 +58,7 @@ test("una participación exige categoría activa del mismo evento y nunca texto 
       () => client.query(
         `INSERT INTO event_troupe (event_id, name)
          VALUES ($1, 'Sin categoría')`, [firstEvent.id],
-      ), /null value/i,
+      ), { code: "23502" },
     );
     await client.query("ROLLBACK TO SAVEPOINT missing_category");
   } finally {

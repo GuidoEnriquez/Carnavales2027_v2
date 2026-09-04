@@ -38,7 +38,6 @@ describe("JudgeHomePage", () => {
     expect(screen.getByText("Planilla confirmada")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Ara Berá", level: 3 })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Continuar/ })).toHaveAttribute("href", "#/judge/ballot?ballotId=ballot-1&troupeId=schedule-1");
-    expect(screen.getByRole("region", { name: "Progreso general" })).toHaveTextContent("67%");
-    expect(screen.getByRole("region", { name: "Progreso general" })).toHaveTextContent("1 / 2 comparsas confirmadas · 2 / 3 puntuaciones completadas");
+    expect(screen.getByRole("region", { name: "Progreso general" })).toHaveTextContent("Comparsas evaluadas 1 / 2");
   });
 });

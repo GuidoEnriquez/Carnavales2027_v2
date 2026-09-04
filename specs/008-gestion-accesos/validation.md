@@ -56,3 +56,14 @@ La emisión, inspección y aceptación API de invitaciones operativas están val
 
 - `git diff --check` finaliza sin errores.
 - El diff del circuito de invitaciones no contiene secretos; el alerta previa de GitHub por el identificador de campo `password` es un falso positivo.
+
+## Corrección posterior de login/2FA — 2026-09-04
+
+- `LoginPage` distribuye un OTP completo recibido por autofill móvil entre los seis campos, evitando conservar solo el último dígito.
+- La UI distingue código inválido, código vencido, límite de intentos y sesión de verificación vencida; no presenta fallos posteriores de sesión como un OTP incorrecto.
+- `client`: `npm test -- --run src/tests/LoginPage.test.jsx` → **8 passed, 0 failed**.
+- `client`: `npm test` → **30 archivos, 108 tests passed, 0 failed**.
+- `client`: `npm run build` → **build exitoso**.
+- `api`: `npm test` → **108 tests passed, 0 failed**.
+- `api`: `npm run db:test` → **62 tests passed, 0 failed**.
+- `npm run db:seed:fiction` repara usuarios demo existentes con `twoFactorEnabled=true` pero sin fila en `"twoFactor"`; el login real de `jurado.alpha@carnaval.local` verificó OTP, `/api/v1/me` y `/api/v1/judge/ballots` con HTTP **200**.

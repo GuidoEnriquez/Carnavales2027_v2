@@ -17,6 +17,7 @@
     "db:seed:goya": "node src/scripts/seed-goya-2027.js",
     "db:seed:test": "node src/scripts/seed-test-prueba.js",
     "db:seed:penalties": "node src/scripts/seed-penalties-demo.js",
+    "db:seed:fiction": "node src/scripts/seed-fiction-contest.js",
     "db:test": "node --import=dotenv/config --test src/db/tests/**/*.test.js"
   },
   "dependencies": {

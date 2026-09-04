@@ -19,7 +19,7 @@ test("los ítems derivan especialidades activas del rubro sin relación directa"
     const { rows: derived } = await client.query(`SELECT DISTINCT s.code FROM evaluation_item i JOIN event_specialty s ON s.id=i.specialty_id WHERE i.rubric_id=$1 AND i.active AND s.active`, [rubrics[0].id]);
     assert.deepEqual(derived,[{code:"A"}]);
     await client.query("SAVEPOINT cross_event_specialty");
-    await assert.rejects(() => client.query(`INSERT INTO evaluation_item(event_id,rubric_id,specialty_id,name,code) VALUES ($1,$2,$3,'Ajeno','AJENO')`, [eventA.id,rubrics[0].id,specialtyB.id]), /foreign key/i);
+     await assert.rejects(() => client.query(`INSERT INTO evaluation_item(event_id,rubric_id,specialty_id,name,code) VALUES ($1,$2,$3,'Ajeno','AJENO')`, [eventA.id,rubrics[0].id,specialtyB.id]), { code: "23503" });
     await client.query("ROLLBACK TO SAVEPOINT cross_event_specialty");
     await client.query("UPDATE event_specialty SET active=false WHERE id=$1", [specialtyA.id]);
     await client.query("SAVEPOINT inactive_specialty");

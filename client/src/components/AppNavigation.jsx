@@ -31,7 +31,8 @@ export function AppNavigation({ session }) {
     <header className={`app-navigation ${session.roles?.includes("JUDGE") ? "judge-navigation" : ""}`}>
       <a className="brand" href="#/home"><span>Carnavales</span> <strong>2027</strong></a>
       <nav aria-label="Navegación principal">
-        {(session.roles?.includes("ADMIN") || session.roles?.includes("COMISARIO")) && <span className="nav-section-label">Administración</span>}
+        {session.roles?.includes("ADMIN") && <span className="nav-section-label">Administración</span>}
+        {session.roles?.includes("COMISARIO") && !session.roles?.includes("ADMIN") && <span className="nav-section-label">Comisariato</span>}
         {session.roles?.includes("ADMIN") && <a href="#/admin/events" aria-current={currentRoute === "#/admin/events" ? "page" : undefined}>Evento</a>}
         {session.roles?.includes("ADMIN") && <a href="#/admin/judges" aria-current={currentRoute === "#/admin/judges" ? "page" : undefined}>Personas</a>}
         {session.roles?.includes("ADMIN") && <a href="#/admin/assignments" aria-current={currentRoute === "#/admin/assignments" ? "page" : undefined}>Asignaciones</a>}
@@ -40,6 +41,7 @@ export function AppNavigation({ session }) {
         {["ADMIN", "SCRUTINEER", "ESCRIBANO"].some((role) => session.roles?.includes(role)) && <a href="#/admin/results" aria-current={currentRoute === "#/admin/results" ? "page" : undefined}>Escrutinio</a>}
         {["ADMIN", "SCRUTINEER", "ESCRIBANO"].some((role) => session.roles?.includes(role)) && <a href="#/admin/record" aria-current={currentRoute === "#/admin/record" ? "page" : undefined}>Acta Oficial</a>}
         {session.roles?.includes("JUDGE") && <a href="#/judge" aria-current={currentRoute === "#/judge" ? "page" : undefined}>Mi panel</a>}
+        {(session.roles?.includes("ADMIN") || session.roles?.includes("VEEDOR")) && <a href="#/veedor" aria-current={currentRoute === "#/veedor" ? "page" : undefined}>Supervisión</a>}
       </nav>
       <div className="session-actions">
         <span>{session.user?.name}</span>

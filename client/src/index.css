@@ -1206,7 +1206,6 @@ label { color: #cbd5e1; }
 
 .judge-ballot-page { max-inline-size: 1100px; padding-block-start: 0.5rem; }
 .ballot-workspace { display: grid; gap: 1rem; min-inline-size: 0; }
-.ballot-sidebar { display: none; }
 .ballot-header { align-items: flex-start; border-block-end-color: var(--line-color); }
 .ballot-header h1 { font-family: Inter, ui-sans-serif, sans-serif; font-size: clamp(2rem, 6vw, 4rem); }
 .back-link { display: inline-flex; min-block-size: 2.75rem; align-items: center; margin-block-end: 0.5rem; color: #bfdbfe; font-size: 0.9rem; font-weight: 750; text-decoration: none; }
@@ -1224,7 +1223,8 @@ label { color: #cbd5e1; }
 .ballot-troupe h2 { font-size: clamp(1.5rem, 4vw, 2.1rem); }
 .ballot-rubric { border-block-start-color: var(--line-color); }
 .ballot-rubric h3 { color: #e2e8f0; }
-.score-row { grid-template-columns: minmax(11rem, .7fr) minmax(0, 1.3fr); border-block-end-color: var(--line-color); padding-block: 1.1rem; }
+.rubric-instruction { margin: 0; color: var(--muted-color); font-size: .9rem; }
+.score-row { grid-template-columns: 1fr; border-block-end-color: var(--line-color); padding-block: 1.1rem; }
 .score-copy > span { color: #fff; font-size: 1.05rem; font-weight: 760; }
 .score-row small { color: var(--muted-color); }
 .score-actions { display: grid; gap: 0.65rem; justify-content: stretch; }
@@ -1241,9 +1241,11 @@ label { color: #cbd5e1; }
 .locked-score.not-presented { color: #fde68a; border-color: rgba(245,158,11,.46); background: rgba(120,53,15,.24); }
 .locked-score.not-presented > span { color: #451a03; background: #fcd34d; }
 .locked-score.not-presented small { color: #fde68a; }
-.ballot-footer { align-items: stretch; border-block-start: 1px solid var(--line-color); padding-block-start: 1rem; }
+.ballot-footer { align-items: center; border-block-start: 1px solid var(--line-color); padding-block-start: 1rem; gap: 1rem; }
 .ballot-footer > button,
 .ballot-footer > .button-link { min-block-size: 3.4rem; }
+.save-indicator { display: inline-flex; align-items: center; gap: .4rem; color: #86efac; font-family: var(--mono-font); font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.save-indicator span:first-child { color: #22c55e; }
 .locked-sheet { display: flex; align-items: center; gap: .9rem; flex: 1; border: 1px solid rgba(34,197,94,.35); border-radius: .85rem; padding: .8rem 1rem; color: #bbf7d0; background: rgba(20,83,45,.2); }
 .locked-sheet > span { display: grid; inline-size: 2.25rem; block-size: 2.25rem; place-items: center; border-radius: 50%; color: #052e16; background: #86efac; font-weight: 900; }
 .locked-sheet p { margin: .15rem 0 0; color: #bbf7d0; font-size: .86rem; }
@@ -1277,14 +1279,6 @@ label { color: #cbd5e1; }
   .judge-ballot-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .ballot-progress { grid-template-columns: 10rem minmax(14rem, 1fr) auto; align-items: center; }
   .ballot-progress p { justify-self: end; }
-  .ballot-workspace { grid-template-columns: minmax(13rem, 16rem) minmax(0, 1fr); align-items: start; }
-  .ballot-sidebar { position: sticky; inset-block-start: 5.75rem; display: block; border: 1px solid var(--line-color); border-radius: 1rem; padding: 1rem; background: var(--surface); }
-  .ballot-sidebar .eyebrow { margin-block-end: .75rem; }
-  .ballot-sidebar ol { display: grid; gap: .45rem; margin: 0; padding: 0; list-style: none; }
-  .ballot-sidebar button { display: grid; inline-size: 100%; min-block-size: 0; gap: .2rem; padding: .7rem .75rem; color: var(--text-color); background: #0d1523; box-shadow: none; text-align: start; }
-  .ballot-sidebar button:hover:not(:disabled) { background: rgba(59, 130, 246, .22); }
-  .ballot-sidebar button span { font-size: .9rem; }
-  .ballot-sidebar button small { color: var(--muted-color); font-weight: 600; }
 }
 
 @media (max-width: 36rem) {
@@ -1295,10 +1289,10 @@ label { color: #cbd5e1; }
   .judge-ballot-card-header,
   .ballot-header { flex-direction: column; }
   .ballot-header-status { justify-content: flex-start; }
-  .score-row { grid-template-columns: 1fr; }
   .score-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .score-grid button { min-inline-size: 0; min-block-size: 4.75rem; }
-  .ballot-footer > * { inline-size: 100%; }
+  .ballot-footer { flex-wrap: wrap; }
+  .ballot-footer > * { flex: 1 1 100%; }
   .locked-sheet { flex-basis: 100%; }
 }
 
@@ -1720,13 +1714,54 @@ label { color: #cbd5e1; }
    Mejoras UI/UX (PLAN-UI-UX.md)
    ========================================================================== */
 
+.login-field-label {
+  gap: 0.5rem !important;
+  color: #cbd5e1 !important;
+  font-family: var(--mono-font) !important;
+  font-size: 0.85rem !important;
+  letter-spacing: 0.09em !important;
+  text-transform: uppercase !important;
+}
+
+.login-input-wrapper {
+  position: relative;
+  inline-size: 100%;
+}
+
+.login-input-wrapper input {
+  inline-size: 100%;
+  padding-inline-start: 2.8rem;
+}
+
+.login-input-icon {
+  position: absolute;
+  inset-inline-start: 0.75rem;
+  inset-block-start: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  color: #64748b;
+  pointer-events: none;
+}
+
+.login-input-icon svg {
+  display: block;
+  inline-size: 1.15rem;
+  block-size: 1.15rem;
+}
+
 .login-password-wrapper {
   position: relative;
   inline-size: 100%;
 }
 
+.login-password-wrapper .login-input-icon {
+  inset-inline-start: 0.75rem;
+}
+
 .login-password-wrapper input {
   inline-size: 100%;
+  padding-inline-start: 2.8rem;
   padding-inline-end: 2.8rem;
 }
 
@@ -1908,8 +1943,203 @@ label { color: #cbd5e1; }
 }
 
 /* ==========================================================================
-   Spec 015: Actas Oficiales y Certificación Notarial
+   Assignment Confirmation Page
    ========================================================================== */
+
+.assignment-confirm-page {
+  max-inline-size: 28rem;
+  margin-inline: auto;
+  display: grid;
+  gap: 0;
+}
+
+.assignment-confirm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-block: 1rem 0;
+}
+
+.assignment-confirm-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.assignment-confirm-brand strong {
+  display: block;
+  color: #fff;
+  font-size: 1.1rem;
+  line-height: 1.1;
+}
+
+.assignment-confirm-icon {
+  display: grid;
+  place-items: center;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  border: 1px solid var(--line-color);
+  border-radius: 0.6rem;
+  background: var(--surface);
+  color: #93c5fd;
+}
+
+.assignment-confirm-online {
+  color: #86efac;
+  border-color: rgba(34, 197, 94, 0.42);
+}
+
+.assignment-confirm-content {
+  display: grid;
+  gap: 1rem;
+  text-align: center;
+}
+
+.assignment-confirm-content h1 {
+  margin: 0;
+  font-size: clamp(2.5rem, 10vw, 4.5rem);
+  line-height: 0.95;
+  letter-spacing: -0.055em;
+  color: #fff;
+}
+
+.assignment-confirm-date {
+  margin: 0;
+  color: var(--muted-color);
+  font-size: 1rem;
+}
+
+.assignment-confirm-card {
+  display: grid;
+  gap: 1rem;
+  border: 1px solid var(--line-color);
+  border-radius: 1rem;
+  padding: clamp(1.25rem, 4vw, 1.75rem);
+  background: var(--surface);
+  text-align: start;
+}
+
+.assignment-confirm-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding-block-end: 0.75rem;
+  border-block-end: 1px solid var(--line-color);
+}
+
+.assignment-confirm-shield {
+  color: #fbbf24;
+}
+
+.assignment-confirm-card-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #fff;
+}
+
+.assignment-confirm-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border: 1px solid var(--line-color);
+  border-radius: 0.7rem;
+  padding: 0.85rem 1rem;
+  background: #0d1523;
+}
+
+.assignment-confirm-field-icon {
+  margin-block-start: 0.15rem;
+  color: #64748b;
+}
+
+.assignment-confirm-field-label {
+  display: block;
+  color: var(--muted-color);
+  font-family: var(--mono-font);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-block-end: 0.2rem;
+}
+
+.assignment-confirm-field strong {
+  color: #fff;
+  font-size: 1.05rem;
+}
+
+.assignment-confirm-troupe-count {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.assignment-confirm-troupe-count span {
+  color: var(--muted-color);
+  font-size: 0.88rem;
+}
+
+.assignment-confirm-troupe-count strong {
+  display: grid;
+  place-items: center;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  border-radius: 0.5rem;
+  background: #182233;
+  color: #fff;
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+.assignment-confirm-disclaimer {
+  margin: 0;
+  color: var(--muted-color);
+  font-size: 0.88rem;
+  line-height: 1.55;
+  text-align: center;
+  padding-block-start: 0.5rem;
+}
+
+.assignment-confirm-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-block-size: 3.5rem;
+  font-size: 1.1rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.assignment-confirm-btn-icon {
+  display: flex;
+  color: #082b61;
+}
+
+.assignment-report-error {
+  color: #f87171 !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  background: transparent !important;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.assignment-report-error:hover {
+  background: rgba(239, 68, 68, 0.1) !important;
+}
+
+.assignment-confirm-footer {
+  margin: 1.5rem 0 0;
+  color: #4b5563;
+  font-family: var(--mono-font);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+}
 
 .official-record-page {
   max-inline-size: 58rem;
@@ -2258,5 +2488,162 @@ label { color: #cbd5e1; }
   .record-signatures-section,
   .record-table {
     page-break-inside: avoid;
+  }
+}
+
+.role-area-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1rem;
+  margin-block-start: 1.25rem;
+}
+
+.role-area-card {
+  display: grid;
+  gap: 0.6rem;
+  border: 1px solid var(--line-color);
+  border-radius: 0.65rem;
+  padding: 1rem;
+  background: var(--card-bg);
+}
+
+.role-area-card p { margin: 0; }
+.role-area-card .button-link { justify-self: start; margin-block-start: auto; }
+
+.operations-summary {
+  margin-block: 1.25rem;
+  border: 1px solid var(--line-color);
+  border-radius: 0.65rem;
+  padding: 1rem;
+  background: var(--card-bg);
+}
+.operations-summary .section-heading { margin-block-end: 0.75rem; }
+.operations-summary-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 0.75rem; }
+.operations-summary-list article { display: grid; gap: 0.35rem; border-inline-start: 4px solid var(--primary-color); padding-inline-start: 0.75rem; }
+.operations-summary-list span { color: var(--muted-color); font-size: 0.8rem; font-weight: 800; text-transform: uppercase; }
+.operations-summary-list p { margin: 0 0 0.35rem; }
+.operations-summary-list .button-link { justify-self: start; }
+
+.monitor-page { max-inline-size: 1100px; }
+
+.monitor-header,
+.monitor-night-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.monitor-header h1,
+.monitor-night-heading h2 { margin-block: 0.25rem 0; }
+.monitor-header > div > p:last-child { color: var(--muted-color); }
+.monitor-updated { color: var(--muted-color); font-size: 0.85rem; }
+
+.monitor-selectors {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-block: 1.5rem;
+}
+
+.monitor-selectors label { display: grid; gap: 0.4rem; font-weight: 700; }
+.monitor-selectors select { inline-size: 100%; }
+
+.monitor-night-heading {
+  align-items: center;
+  border-block-start: 1px solid var(--line-color);
+  padding-block-start: 1.25rem;
+}
+
+.monitor-status {
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 0.45rem 0.75rem;
+  font-weight: 800;
+}
+.monitor-status-open { color: #166534; background: #dcfce7; }
+.monitor-status-closed { color: #334155; background: #e2e8f0; }
+.monitor-status-not_open { color: #92400e; background: #fef3c7; }
+
+.monitor-counts {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-block: 1.25rem;
+}
+
+.monitor-count-card {
+  display: grid;
+  gap: 0.35rem;
+  min-block-size: 5.5rem;
+  box-sizing: border-box;
+  border: 1px solid var(--line-color);
+  border-radius: 0.65rem;
+  padding: 0.9rem;
+  background: var(--card-bg);
+}
+.monitor-count-card span { color: var(--muted-color); font-size: 0.78rem; font-weight: 800; text-transform: uppercase; }
+.monitor-count-card strong { font-size: 2rem; line-height: 1; }
+.monitor-count-total { border-color: var(--primary-color); }
+
+.monitor-progress {
+  border: 1px solid var(--line-color);
+  border-radius: 0.65rem;
+  padding: 1rem;
+  background: var(--card-bg);
+}
+.monitor-progress > div > div:first-child { display: flex; justify-content: space-between; gap: 1rem; font-weight: 800; }
+.monitor-progress p { margin-block: 0.5rem 0; color: var(--muted-color); }
+
+.workflow-stepper {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+  padding: 0;
+  list-style: none;
+}
+.workflow-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  min-block-size: 4.5rem;
+  border-block-start: 3px solid var(--line-color);
+  padding-block-start: 0.7rem;
+}
+.workflow-step-number {
+  display: grid;
+  place-items: center;
+  flex: 0 0 1.65rem;
+  block-size: 1.65rem;
+  border-radius: 50%;
+  color: white;
+  background: var(--line-color);
+  font-weight: 800;
+}
+.workflow-step div { display: grid; gap: 0.25rem; }
+.workflow-step div span { color: var(--muted-color); font-size: 0.78rem; }
+.workflow-step-done { border-color: #16a34a; }
+.workflow-step-done .workflow-step-number { background: #16a34a; }
+.workflow-step-current { border-color: var(--primary-color); }
+.workflow-step-current .workflow-step-number { background: var(--primary-color); }
+.workflow-step-skipped { border-color: var(--accent-color); }
+.workflow-context { margin: 0.5rem 0 0; color: var(--muted-color); font-size: 0.85rem; }
+
+@media (max-width: 680px) {
+  .monitor-header,
+  .monitor-night-heading { display: grid; }
+  .monitor-selectors,
+  .monitor-counts { grid-template-columns: 1fr 1fr; }
+  .monitor-count-total { grid-column: 1 / -1; }
+  .workflow-stepper { grid-template-columns: 1fr 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

@@ -53,7 +53,19 @@ function createWriteHandler(action, entityType, operation) {
 
 export function createEventsRouter({ requireSession }) {
   const router = Router();
-  router.use(requireSession, requireTwoFactor, requireAdmin);
+  const admin = [requireSession, requireTwoFactor, requireAdmin];
+  for (const prefix of [
+    "/events",
+    "/rubrics",
+    "/nights",
+    "/categories",
+    "/troupes",
+    "/specialties",
+    "/evaluation-items",
+    "/rubric-criteria",
+  ]) {
+    router.use(prefix, ...admin);
+  }
   router.get("/events", async (_request, response, next) => {
     try { response.json(await listEvents()); } catch (error) { next(error); }
   });
