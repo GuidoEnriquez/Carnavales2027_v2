@@ -1,4 +1,8 @@
 export function sendKnownError(response, error) {
+  if (["ORDER_CONFLICT", "ORDER_BOUNDARY", "CRITERION_REASSIGNMENT_REQUIRED"].includes(error.message)) {
+    response.status(409).json({ code: error.message });
+    return true;
+  }
   if (error.type === "entity.parse.failed") {
     response.status(400).json({ code: "VALIDATION_ERROR" });
     return true;

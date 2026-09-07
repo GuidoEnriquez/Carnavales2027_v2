@@ -8,33 +8,32 @@ vi.mock("../api/http.js", () => ({ apiRequest: vi.fn() }));
 describe("AdminEventsPage", () => {
   afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
-  it("espera las listas iniciales antes de habilitar la configuración", async () => {
+  it("espera las noches antes de habilitar la configuracion", async () => {
     const pending = [];
     apiRequest
       .mockResolvedValueOnce([{ id: "e1", name: "Goya", status: "CONFIGURING" }])
+      .mockResolvedValueOnce([])
       .mockImplementation(() => new Promise((resolve) => pending.push(resolve)));
 
     render(<AdminEventsPage />);
     fireEvent.click(await screen.findByRole("button", { name: "Goya (CONFIGURING)" }));
 
-    expect(await screen.findByText("Cargando configuración…")).toBeInTheDocument();
+    expect(await screen.findByText("Cargando configuracion...")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Jornadas" })).not.toBeInTheDocument();
 
     pending.forEach((resolve) => resolve([]));
     expect(await screen.findByRole("heading", { name: "Jornadas" })).toBeInTheDocument();
   });
 
-  it("falla cerrado si una sección de configuración no puede cargarse", async () => {
+  it("muestra error cuando las noches no pueden cargarse", async () => {
     apiRequest
       .mockResolvedValueOnce([{ id: "e1", name: "Goya", status: "CONFIGURING" }])
-      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockRejectedValueOnce(new Error("network"))
       .mockResolvedValue([]);
 
     render(<AdminEventsPage />);
     fireEvent.click(await screen.findByRole("button", { name: "Goya (CONFIGURING)" }));
-    expect(await screen.findByRole("heading", { name: "No se pudo cargar la configuración" })).toBeInTheDocument();
-    expect(screen.queryByLabelText("Nombre de categoría")).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "No se pudo cargar la configuracion" })).toBeInTheDocument();
   });
 });

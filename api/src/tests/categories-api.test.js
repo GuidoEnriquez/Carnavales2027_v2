@@ -49,6 +49,13 @@ test("API ADMIN administra categorías y participaciones sin texto libre", { ski
     });
     assert.equal(updatedCategory.status, 200);
     assert.equal((await updatedCategory.json()).name, "Primera editada");
+    const generatedCategoryResponse = await fetch(`${baseUrl}/api/v1/events/${event.id}/categories`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ name: "Categoría juvenil", displayOrder: 3 }),
+    });
+    assert.equal(generatedCategoryResponse.status, 201);
+    assert.equal((await generatedCategoryResponse.json()).code, "CATEGORIA_JUVENIL");
     const deactivateWithInactiveCategory = await fetch(`${baseUrl}/api/v1/troupes/${troupe.id}`, {
       method: "PATCH",
       headers,
@@ -63,12 +70,12 @@ test("API ADMIN administra categorías y participaciones sin texto libre", { ski
     assert.equal(reactivateWithInactiveCategory.status, 409);
     assert.deepEqual(await reactivateWithInactiveCategory.json(), { code: "CATEGORY_INACTIVE" });
     const eligible = await fetch(`${baseUrl}/api/v1/events/${event.id}/categories?eligible=true`, { headers });
-    assert.deepEqual(await eligible.json(), []);
+    assert.deepEqual((await eligible.json()).map(({ code }) => code), ["CATEGORIA_JUVENIL"]);
 
     const duplicate = await fetch(`${baseUrl}/api/v1/events/${event.id}/categories`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ name: "Duplicada", code: "PRIMERA_EDITADA", displayOrder: 3 }),
+      body: JSON.stringify({ name: "Duplicada", code: "PRIMERA_EDITADA", displayOrder: 4 }),
     });
     assert.equal(duplicate.status, 409);
     assert.equal((await duplicate.json()).code, "RESOURCE_CONFLICT");

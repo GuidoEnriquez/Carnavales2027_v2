@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiRequest } from "../api/http.js";
 
+const READINESS_LABELS = {
+  COMPETITION_NIGHT: "No existe ninguna jornada de competencia configurada",
+  ACTIVE_TROUPE: "No hay comparsas activas registradas",
+  ACTIVE_SPECIALTY: "No hay especialidades activas configuradas",
+  ACTIVE_RUBRIC: "No existe ningun rubro activo",
+  INCOMPLETE_TROUPES: "Existen comparsas sin categoria activa",
+  INCOMPLETE_RUBRICS: "Existen rubros sin items puntuables o con especialidades inactivas",
+};
+
 export function EventReadinessPanel({ event, locked, onOpened, refreshKey = 0 }) {
   const [readiness, setReadiness] = useState(null);
   const [message, setMessage] = useState("");
@@ -16,7 +25,7 @@ export function EventReadinessPanel({ event, locked, onOpened, refreshKey = 0 })
         setMessage("");
       }
     } catch {
-      if (isCurrent() && revision === requestRevision.current) setMessage("No se pudo consultar readiness.");
+      if (isCurrent() && revision === requestRevision.current) setMessage("No se pudo consultar preparacion.");
     }
   }, [event.id]);
 
@@ -27,7 +36,7 @@ export function EventReadinessPanel({ event, locked, onOpened, refreshKey = 0 })
   }, [load, refreshKey]);
 
   const open = async () => {
-    if (!window.confirm("Abrir el evento bloqueará toda su configuración. ¿Querés continuar?")) return;
+    if (!window.confirm("Abrir el evento bloqueara toda su configuracion. Queres continuar?")) return;
     requestRevision.current += 1;
     setOpening(true);
     try {
@@ -38,7 +47,7 @@ export function EventReadinessPanel({ event, locked, onOpened, refreshKey = 0 })
     } catch (error) {
       if (error.code === "EVENT_CONFIGURATION_INCOMPLETE" && error.details) setReadiness(error.details);
       setMessage(error.code === "EVENT_CONFIGURATION_INCOMPLETE"
-        ? "La configuración cambió y ya no está completa."
+        ? "La configuracion cambio y ya no esta completa."
         : "No se pudo abrir el evento.");
     } finally {
       setOpening(false);
@@ -46,18 +55,49 @@ export function EventReadinessPanel({ event, locked, onOpened, refreshKey = 0 })
   };
 
   return (
-    <section>
-      <h2>Readiness</h2>
+    <section className="config-section readiness-panel">
+      <div className="section-heading">
+        <h2>Preparacion del evento</h2>
+      </div>
       {readiness && (
         <>
-          <p>{readiness.ready ? "Configuración completa" : "Faltan elementos"}</p>
-          <ul>
-            {readiness.missing.map((item) => <li key={item}>{item}</li>)}
-            {readiness.incompleteTroupes.map((troupe) => <li key={troupe.id}>{troupe.name}</li>)}
-            {readiness.incompleteRubrics.map((rubric) => <li key={rubric.id}>{rubric.code}</li>)}
+          <div className="readiness-summary">
+            {readiness.ready ? (
+              <p className="readiness-ok">Configuracion completa. El evento esta listo para abrir.</p>
+            ) : (
+               <p className="readiness-pending">{(readiness.missing?.length ?? 0) + (readiness.incompleteTroupes?.length ?? 0) + (readiness.incompleteRubrics?.length ?? 0)} problema(s) impiden abrir la configuracion.</p>
+            )}
+          </div>
+          <ul className="readiness-checklist">
+            {(readiness.missing ?? []).map((code) => (
+              <li key={code} className="readiness-fail">
+                <span className="readiness-icon">&#x2717;</span>
+                {READINESS_LABELS[code] ?? code}
+              </li>
+            ))}
+            {(readiness.incompleteTroupes ?? []).map((troupe) => (
+              <li key={troupe.id} className="readiness-fail">
+                <span className="readiness-icon">&#x2717;</span>
+                La comparsa &ldquo;{troupe.name}&rdquo; no tiene categoria activa
+              </li>
+            ))}
+            {(readiness.incompleteRubrics ?? []).map((rubric) => (
+              <li key={rubric.id} className="readiness-fail">
+                <span className="readiness-icon">&#x2717;</span>
+                El rubro &ldquo;{rubric.name}&rdquo; no tiene items puntuables validos
+              </li>
+            ))}
+            {readiness.ready && (
+              <>
+                <li className="readiness-ok-item"><span className="readiness-icon">&#x2713;</span> Jornadas de competencia configuradas</li>
+                <li className="readiness-ok-item"><span className="readiness-icon">&#x2713;</span> Comparsas activas</li>
+                <li className="readiness-ok-item"><span className="readiness-icon">&#x2713;</span> Especialidades activas</li>
+                <li className="readiness-ok-item"><span className="readiness-icon">&#x2713;</span> Rubros activos con items validos</li>
+              </>
+            )}
           </ul>
           <button className="danger-action" disabled={locked || opening || !readiness.ready} onClick={open}>
-            {opening ? "Abriendo…" : "Abrir evento"}
+            {opening ? "Abriendo..." : "Abrir evento"}
           </button>
         </>
       )}

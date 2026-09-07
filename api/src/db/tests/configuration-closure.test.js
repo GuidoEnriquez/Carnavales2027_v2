@@ -44,13 +44,13 @@ test("criterios, nominaciones y programación quedan bloqueados al abrir", {
       "INSERT INTO rubric(event_id,name,code,evaluation_target,expected_subject_type) VALUES($1,'Reina','REINA','NOMINATION','PERSON') RETURNING id",
       [event.id],
     );
-    await client.query(
-      "INSERT INTO evaluation_item(event_id,rubric_id,specialty_id,name,code) VALUES($1,$2,$3,'Presentación','PRESENTACION')",
+    const { rows: items } = await client.query(
+      "INSERT INTO evaluation_item(event_id,rubric_id,specialty_id,name,code) VALUES($1,$2,$3,'Presentación','PRESENTACION') RETURNING id",
       [event.id, rubrics[0].id, specialties[0].id],
     );
     const { rows: criteria } = await client.query(
-      "INSERT INTO rubric_criterion(event_id,rubric_id,description,display_order) VALUES($1,$2,'Descripción reglamentaria',1) RETURNING id",
-      [event.id, rubrics[0].id],
+      "INSERT INTO rubric_criterion(event_id,rubric_id,scoring_item_id,description,display_order) VALUES($1,$2,$3,'Descripción reglamentaria',1) RETURNING id",
+      [event.id, rubrics[0].id, items[0].id],
     );
     const { rows: nominations } = await client.query(
       "INSERT INTO troupe_nomination(event_id,event_troupe_id,rubric_id,subject_type,display_name) VALUES($1,$2,$3,'PERSON','Figura') RETURNING id",

@@ -17,6 +17,8 @@ function validateAuditData(value) {
   }
 
   for (const [key, nestedValue] of Object.entries(value)) {
+    // This boolean domain field contains "otp" across word boundaries.
+    if (key === "allowNotPresented" && typeof nestedValue === "boolean") continue;
     if (forbiddenFieldPattern.test(key)) {
       throw new Error(`AUDIT_FORBIDDEN_FIELD: ${key}`);
     }

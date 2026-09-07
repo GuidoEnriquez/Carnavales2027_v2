@@ -224,7 +224,7 @@ async function seedFictionContest() {
     }
 
     const { rows: [rubric] } = await client.query(
-      `INSERT INTO rubric(event_id, name, code, evaluation_target, rubric_kind)
+      `INSERT INTO rubric(event_id, name, code, evaluation_target, rubric_type)
        VALUES ($1, 'Coreografía y Danza', 'COREO', 'TROUPE', 'NOMINATIVE')
        RETURNING id`,
       [event.id],
@@ -238,7 +238,7 @@ async function seedFictionContest() {
     );
 
     const { rows: [rubric2] } = await client.query(
-      `INSERT INTO rubric(event_id, name, code, evaluation_target, rubric_kind)
+      `INSERT INTO rubric(event_id, name, code, evaluation_target, rubric_type)
        VALUES ($1, 'Vestuario y Diseño', 'VESTUARIO', 'TROUPE', 'NOMINATIVE')
        RETURNING id`,
       [event.id],

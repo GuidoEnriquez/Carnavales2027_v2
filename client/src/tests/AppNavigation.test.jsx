@@ -21,7 +21,7 @@ describe("AppNavigation", () => {
   it("agrupa la administración y marca la sección activa", () => {
     window.location.hash = "#/admin/judges";
     render(<AppNavigation session={{ user: { name: "Admin" }, roles: ["ADMIN"] }} />);
-    expect(screen.getByText("Administración")).toBeInTheDocument();
+    expect(screen.getByText("Administracion")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Personas" })).toHaveAttribute("href", "#/admin/judges");
     expect(screen.getByRole("link", { name: "Personas" })).toHaveAttribute("aria-current", "page");
     expect(screen.queryByRole("link", { name: "Accesos" })).not.toBeInTheDocument();
@@ -36,10 +36,10 @@ describe("AppNavigation", () => {
     expect(screen.queryByRole("link", { name: "Evento" })).not.toBeInTheDocument();
   });
 
-  it("muestra Supervisión para el rol VEEDOR", () => {
+  it("muestra Supervision para el rol VEEDOR", () => {
     window.location.hash = "#/veedor";
     render(<AppNavigation session={{ user: { name: "Veedor" }, roles: ["VEEDOR"] }} />);
-    expect(screen.getByRole("link", { name: "Supervisión" })).toHaveAttribute("href", "#/veedor");
-    expect(screen.getByRole("link", { name: "Supervisión" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Supervision" })).toHaveAttribute("href", "#/veedor");
+    expect(screen.getByRole("link", { name: "Supervision" })).toHaveAttribute("aria-current", "page");
   });
 });

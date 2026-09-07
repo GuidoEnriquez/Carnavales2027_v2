@@ -193,7 +193,7 @@ async function seedPenaltiesDemo() {
     const rubrics = [];
     for (const item of rubricsData) {
       const { rows: [rubric] } = await client.query(
-        `INSERT INTO rubric(event_id, name, code, evaluation_target, rubric_kind)
+        `INSERT INTO rubric(event_id, name, code, evaluation_target, rubric_type)
          VALUES ($1, $2, $3, 'TROUPE', 'NOMINATIVE')
          RETURNING id, name, code`,
         [event.id, item.name, item.code],

@@ -38,7 +38,7 @@ async function createPersistentTie(pool) {
   const rubrics = [];
   for (const [name, code] of [["Coreografía", "COREOGRAFIA"], ["Diseño", "DISENO"]]) {
     const { rows: [rubric] } = await pool.query(
-      "INSERT INTO rubric(event_id, name, code, evaluation_target, rubric_kind) VALUES($1,$2,$3,'TROUPE','NOMINATIVE') RETURNING id",
+      "INSERT INTO rubric(event_id, name, code, evaluation_target, rubric_type) VALUES($1,$2,$3,'TROUPE','NOMINATIVE') RETURNING id",
       [event.id, name, code],
     );
     const { rows: [item] } = await pool.query(

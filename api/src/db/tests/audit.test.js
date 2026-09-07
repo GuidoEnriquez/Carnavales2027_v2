@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
-import { auditEvent, canonicalizeJson, hashCeremonialDraw } from "../../audit/audit-service.js";
+import { auditEvent, auditCeremonialDraw, canonicalizeJson, hashCeremonialDraw } from "../../audit/audit-service.js";
 import { grantRole } from "../../auth/role-service.js";
 import { closePool, getPool } from "../pool.js";
 import { migrate } from "../migrate.js";
@@ -25,6 +25,48 @@ function restoreDatabaseUrl() {
 
   process.env.DATABASE_URL = originalDatabaseUrl;
 }
+
+test("auditoria rechaza secretos anidados y variantes antes de consultar SQL", async () => {
+  let queries = 0;
+  const client = { query: async () => { queries += 1; return { rows: [{}] }; } };
+  const fields = ["password", "password1", "passwordHash", "accessToken", "accesstoken", "TOKEN", "refresh_token", "clientSecret", "OTP", "otpCode2", "authorizationHeader", "sessionCookie", "allowNotPresentedToken", "allowNotPresented2"];
+  for (const field of fields) {
+    const nested = { changes: [{ [field]: "sensitive-fixture" }] };
+    for (const side of ["before", "after"]) {
+      await assert.rejects(
+        () => auditEvent(client, { action: "TEST", entityType: "test", entityId: "test", [side]: nested }),
+        { message: `AUDIT_FORBIDDEN_FIELD: ${field}` },
+      );
+    }
+    await assert.rejects(
+      () => auditCeremonialDraw(client, { eventId: "test", payload: nested }),
+      { message: `AUDIT_FORBIDDEN_FIELD: ${field}` },
+    );
+  }
+  for (const value of ["true", 1, null, { token: "fixture" }, [{ otp: "fixture" }]]) {
+    await assert.rejects(
+      () => auditEvent(client, { after: { allowNotPresented: value } }),
+      { message: "AUDIT_FORBIDDEN_FIELD: allowNotPresented" },
+    );
+  }
+  assert.equal(queries, 0);
+});
+
+test("auditoria admite solo metadata booleana exacta y no omite sus campos hermanos", async () => {
+  let queries = 0;
+  const client = { query: async () => { queries += 1; return { rows: [{}] }; } };
+  await auditEvent(client, {
+    action: "EVALUATION_ITEM_UPDATED", entityType: "evaluation_item", entityId: "test",
+    before: { items: [{ allowNotPresented: false }] },
+    after: { items: [{ allowNotPresented: true }] },
+  });
+  assert.equal(queries, 1);
+  await assert.rejects(
+    () => auditEvent(client, { after: { allowNotPresented: true, token: "fixture" } }),
+    { message: "AUDIT_FORBIDDEN_FIELD: token" },
+  );
+  assert.equal(queries, 1);
+});
 
 test("audit_event permite inserciones, rechaza mutaciones y no registra secretos", {
   skip: !process.env.TEST_DATABASE_URL,
@@ -73,6 +115,24 @@ test("audit_event permite inserciones, rechaza mutaciones y no registra secretos
       }),
       /AUDIT_FORBIDDEN_FIELD: token/,
     );
+    await assert.rejects(
+      () => auditEvent(client, {
+        actorUserId: randomUUID(),
+        action: "USER_ROLE_GRANTED",
+        entityType: "user_role",
+        entityId,
+        after: { accessToken: "never-store-this" },
+      }),
+      /AUDIT_FORBIDDEN_FIELD: accessToken/,
+    );
+    const safeMetadata = await auditEvent(client, {
+      actorUserId: randomUUID(),
+      action: "EVALUATION_ITEM_UPDATED",
+      entityType: "evaluation_item",
+      entityId,
+      after: { allowNotPresented: true },
+    });
+    assert.deepEqual(safeMetadata.after, { allowNotPresented: true });
   } finally {
     client.release();
   }

@@ -78,7 +78,7 @@ async function seedTestCompetition() {
     const rubrics = [];
     for (const [name, code] of [["Coreografía", "TEST_COREOGRAFIA"], ["Diseño", "TEST_DISENO"]]) {
       const { rows: [rubric] } = await client.query(
-        `INSERT INTO rubric(event_id, name, code, evaluation_target, rubric_kind)
+        `INSERT INTO rubric(event_id, name, code, evaluation_target, rubric_type)
          VALUES($1,$2,$3,'TROUPE','NOMINATIVE')
          ON CONFLICT (event_id, code) DO UPDATE SET name = EXCLUDED.name
          RETURNING id`,

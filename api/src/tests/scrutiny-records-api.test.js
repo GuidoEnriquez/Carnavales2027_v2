@@ -37,7 +37,7 @@ async function setupScrutinyRecordApiFixture(pool) {
     [event.id, "Música", "MUSICA", 1],
   );
   const { rows: [rubric] } = await pool.query(
-    "INSERT INTO rubric(event_id, name, code, evaluation_target, rubric_kind) VALUES($1,$2,$3,$4,$5) RETURNING id",
+    "INSERT INTO rubric(event_id, name, code, evaluation_target, rubric_type) VALUES($1,$2,$3,$4,$5) RETURNING id",
     [event.id, "Banda Musical", "BANDA", "TROUPE", "NOMINATIVE"],
   );
   const { rows: [item] } = await pool.query(

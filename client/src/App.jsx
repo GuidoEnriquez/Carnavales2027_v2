@@ -6,6 +6,7 @@ import { RequireVotingObserverRole } from "./auth/RequireVotingObserverRole.jsx"
 import { useSession } from "./auth/session-context.jsx";
 import { AppNavigation } from "./components/AppNavigation.jsx";
 import { AdminEventsPage } from "./pages/AdminEventsPage.jsx";
+import { AdminCompetenciaPage } from "./pages/AdminCompetenciaPage.jsx";
 import { AdminJudgesPage } from "./pages/AdminJudgesPage.jsx";
 import { AdminAssignmentsPage } from "./pages/AdminAssignmentsPage.jsx";
 import { AdminVotingPage } from "./pages/AdminVotingPage.jsx";
@@ -21,10 +22,38 @@ import { JudgeBallotPage } from "./pages/JudgeBallotPage.jsx";
 import { JudgeAssignmentPage } from "./pages/JudgeAssignmentPage.jsx";
 import { VeedorMonitorPage } from "./pages/VeedorMonitorPage.jsx";
 import { LoginPage } from "./pages/LoginPage.jsx";
+import { apiRequest } from "./api/http.js";
 import { useEffect, useState } from "react";
 
 function ProtectedShell({ session, children }) {
   return <><AppNavigation session={session} />{children}</>;
+}
+
+function AdminCompetenciaPageWrapper() {
+  const [events, setEvents] = useState([]);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiRequest("/api/v1/events").then((evts) => {
+      setEvents(evts);
+      if (evts.length === 1) setSelectedEvent(evts[0]);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
+
+  if (loading) return <main className="container"><p>Cargando eventos...</p></main>;
+  if (!selectedEvent) return (
+    <main className="container">
+      <div className="card">
+        <h1>Competencia</h1>
+        <p>Selecciona un evento para administrar su competencia.</p>
+        <ul>{events.map((e) => <li key={e.id}><button onClick={() => setSelectedEvent(e)}>{e.name} ({e.status})</button></li>)}</ul>
+      </div>
+    </main>
+  );
+
+  return <AdminCompetenciaPage event={selectedEvent} onBack={() => setSelectedEvent(null)} />;
 }
 
 function RoleArea({ session, role, admin = false, children }) {
@@ -64,8 +93,10 @@ export default function App({ session: providedSession }) {
     return <RoleArea session={session} role="JUDGE"><JudgeAssignmentPage session={session} /></RoleArea>;
   }
   if (route === "#/admin/events") {
-    // UX guard only; API remains the authorization boundary.
     return <RoleArea session={session} admin><AdminEventsPage /></RoleArea>;
+  }
+  if (route === "#/admin/competencia") {
+    return <RoleArea session={session} admin><AdminCompetenciaPageWrapper /></RoleArea>;
   }
   if (route === "#/admin/judges") {
     return <RoleArea session={session} admin><AdminJudgesPage /></RoleArea>;

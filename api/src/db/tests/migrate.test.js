@@ -80,7 +80,8 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
      || filename === "052_harden_operational_invitations.sql"
      || filename === "053_rubric_kind_results_stage.sql"
      || filename === "054_tie_breaker_ceremonial_draw_unique.sql"
-     || filename === "055_add_escribano_role.sql"
+      || filename === "055_add_escribano_role.sql"
+      || filename === "056_consolidate_escribano_into_scrutineer.sql"
       || filename === "057_restore_escribano_role.sql"
        || filename === "058_ceremonial_draw_audit_hash_chain.sql"
        || filename === "059_prioritized_substitutes.sql"
@@ -89,7 +90,9 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
       || filename === "062_troupe_penalties.sql"
       || filename === "063_official_scrutiny_record.sql"
       || filename === "064_operational_profiles.sql"
-      || filename === "065_operational_invitation_delivery.sql"
+       || filename === "065_operational_invitation_delivery.sql"
+        || filename === "066_competition_module.sql"
+        || filename === "067_criterion_integrity_and_order.sql"
   )));
 
   const status = await getMigrationStatus();
@@ -417,6 +420,16 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
     {
       filename: "065_operational_invitation_delivery.sql",
       version: "065",
+      applied: true,
+    },
+    {
+      filename: "066_competition_module.sql",
+      version: "066",
+      applied: true,
+    },
+    {
+      filename: "067_criterion_integrity_and_order.sql",
+      version: "067",
       applied: true,
     },
   ]);

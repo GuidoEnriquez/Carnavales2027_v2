@@ -57,17 +57,17 @@ async function setupResultFixtures({ withRandomRubric = false, scoreOverrides = 
   );
 
   const { rows: [rubricNominativeA] } = await client.query(
-    "INSERT INTO rubric(event_id, name, code, evaluation_target, rubric_kind) VALUES($1,$2,$3,$4,$5) RETURNING id",
+    "INSERT INTO rubric(event_id, name, code, evaluation_target, rubric_type) VALUES($1,$2,$3,$4,$5) RETURNING id",
     [event.id, "Coreografía", "COREO", "TROUPE", "NOMINATIVE"],
   );
   const { rows: [rubricNominativeB] } = await client.query(
-    "INSERT INTO rubric(event_id, name, code, evaluation_target, rubric_kind) VALUES($1,$2,$3,$4,$5) RETURNING id",
+    "INSERT INTO rubric(event_id, name, code, evaluation_target, rubric_type) VALUES($1,$2,$3,$4,$5) RETURNING id",
     [event.id, "Batería", "BATERIA", "TROUPE", "NOMINATIVE"],
   );
   let rubricRandom = null;
   if (withRandomRubric) {
     const { rows: [r] } = await client.query(
-      "INSERT INTO rubric(event_id, name, code, evaluation_target, expected_subject_type, rubric_kind) VALUES($1,$2,$3,$4,$5,$6) RETURNING id",
+      "INSERT INTO rubric(event_id, name, code, evaluation_target, expected_subject_type, rubric_type) VALUES($1,$2,$3,$4,$5,$6) RETURNING id",
       [event.id, "Mejor Bailarina", "BAILARINA", "NOMINATION", "PERSON", "RANDOM"],
     );
     rubricRandom = r;
@@ -250,7 +250,7 @@ describe("results DB", () => {
   it("maneja rubro sin puntuaciones: sin ganador y sin afectar ranking", async () => {
     const data = await setupResultFixtures();
     await client.query(
-      "INSERT INTO rubric(event_id, name, code, evaluation_target, rubric_kind) VALUES($1,$2,$3,$4,$5)",
+      "INSERT INTO rubric(event_id, name, code, evaluation_target, rubric_type) VALUES($1,$2,$3,$4,$5)",
       [data.event.id, "Vestuario", "VESTUARIO", "TROUPE", "NOMINATIVE"],
     );
     const scores = await fetchConsolidatedScores({ eventId: data.event.id, client });

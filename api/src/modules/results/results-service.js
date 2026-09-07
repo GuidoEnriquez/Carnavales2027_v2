@@ -49,7 +49,7 @@ export async function fetchConsolidatedScores({ eventId, client = getPool() }) {
         r.id AS "rubricId",
         r.name AS "rubricName",
         r.code AS "rubricCode",
-        r.rubric_kind AS "rubricKind",
+        r.rubric_type AS "rubricKind",
         et.id AS "troupeId",
         et.name AS "troupeName",
         COALESCE(SUM(bs.score), 0)::INTEGER AS "totalScore",
@@ -62,7 +62,7 @@ export async function fetchConsolidatedScores({ eventId, client = getPool() }) {
       WHERE bs.event_id = $1
         AND bs.status = 'LOCKED'
         AND bs.evaluation_state IN ('SCORED', 'NOT_PRESENTED')
-      GROUP BY r.id, r.name, r.code, r.rubric_kind, et.id, et.name
+      GROUP BY r.id, r.name, r.code, r.rubric_type, et.id, et.name
       ORDER BY r.code, "totalScore" DESC, et.name`,
     [id],
   );

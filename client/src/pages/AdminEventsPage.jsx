@@ -8,11 +8,7 @@ export function AdminEventsPage() {
   const [events, setEvents] = useState([]);
   const [users, setUsers] = useState([]);
   const [selected, setSelected] = useState(null);
-  const [categories, setCategories] = useState([]);
   const [nights, setNights] = useState([]);
-  const [troupes, setTroupes] = useState([]);
-  const [specialties, setSpecialties] = useState([]);
-  const [rubrics, setRubrics] = useState([]);
   const [configurationLoading, setConfigurationLoading] = useState(false);
   const [configurationError, setConfigurationError] = useState(false);
   const [message, setMessage] = useState("");
@@ -40,26 +36,14 @@ export function AdminEventsPage() {
     setConfigurationError(false);
     void Promise.all([
       apiRequest(`/api/v1/events/${selected.id}/nights`),
-      apiRequest(`/api/v1/events/${selected.id}/categories`),
-      apiRequest(`/api/v1/events/${selected.id}/troupes`),
-      apiRequest(`/api/v1/events/${selected.id}/specialties`),
-      apiRequest(`/api/v1/events/${selected.id}/rubrics`),
-    ]).then(([eventNights, eventCategories, eventTroupes, eventSpecialties, eventRubrics]) => {
+    ]).then(([eventNights]) => {
       if (!current) return;
       setNights(eventNights);
-      setCategories(eventCategories);
-      setTroupes(eventTroupes);
-      setSpecialties(eventSpecialties);
-      setRubrics(eventRubrics);
       setMessage("");
     }).catch(() => {
       if (!current) return;
       setNights([]);
-      setCategories([]);
-      setTroupes([]);
-      setSpecialties([]);
-      setRubrics([]);
-      setMessage("No se pudo cargar la configuración del evento.");
+      setMessage("No se pudo cargar la configuracion del evento.");
       setConfigurationError(true);
     }).finally(() => { if (current) setConfigurationLoading(false); });
     return () => { current = false; };
@@ -95,30 +79,27 @@ export function AdminEventsPage() {
       setMessage(grant ? "Administrador promovido." : "Rol ADMIN revocado.");
     } catch (error) {
       setMessage(error.code === "LAST_ADMIN_REQUIRED"
-        ? "No se puede revocar al último administrador."
+        ? "No se puede revocar al ultimo administrador."
         : "No se pudo modificar el rol.");
     }
   };
 
   const suggestedStep = (status) => ({
-    CONFIGURING: "Completar la configuración y asignar jurados.",
-    OPEN: "Supervisar el avance de la votación.",
+    CONFIGURING: "Completar la configuracion y asignar jurados.",
+    OPEN: "Supervisar el avance de la votacion.",
     CLOSED: "Revisar los resultados del escrutinio.",
   }[status] ?? "Revisar el estado operativo del evento.");
 
   if (selected) {
-    if (configurationLoading) return <main className="container"><p>Cargando configuración…</p></main>;
-    if (configurationError) return <main className="container"><div className="card"><h1>No se pudo cargar la configuración</h1><p>No se muestran formularios para evitar trabajar sobre datos incompletos.</p><button type="button" onClick={() => { setConfigurationLoading(true); setSelected({ ...selected }); }}>Reintentar</button> <button className="secondary" type="button" onClick={() => setSelected(null)}>Volver a eventos</button></div></main>;
+    if (configurationLoading) return <main className="container"><p>Cargando configuracion...</p></main>;
+    if (configurationError) return <main className="container"><div className="card"><h1>No se pudo cargar la configuracion</h1><p>No se muestran formularios para evitar trabajar sobre datos incompletos.</p><button type="button" onClick={() => { setConfigurationLoading(true); setSelected({ ...selected }); }}>Reintentar</button> <button className="secondary" type="button" onClick={() => setSelected(null)}>Volver a eventos</button></div></main>;
     return (
       <EventConfigurationPage
         key={selected.id}
         event={selected}
         nights={nights}
-        categories={categories}
-        troupes={troupes}
-        specialties={specialties}
-        rubrics={rubrics}
         onBack={async () => { setSelected(null); await refreshEvents(); }}
+        onCompetencia={() => { window.location.hash = "#/admin/competencia"; }}
       />
     );
   }
@@ -127,16 +108,16 @@ export function AdminEventsPage() {
     <main className="container">
       <div className="card">
         <h1>Carnavales 2027</h1>
-        <h2>Administración de eventos</h2>
-        <p className="eyebrow">Configuración operativa</p>
+        <h2>Administracion de eventos</h2>
+        <p className="eyebrow">Configuracion operativa</p>
         {events.length > 0 && <section className="operations-summary" aria-label="Resumen operativo">
-          <div className="section-heading"><div><p className="eyebrow">Resumen operativo</p><h2>Próximo paso</h2></div></div>
+          <div className="section-heading"><div><p className="eyebrow">Resumen operativo</p><h2>Proximo paso</h2></div></div>
           <div className="operations-summary-list">
             {events.map((event) => <article key={event.id}>
               <strong>{event.name}</strong>
               <span>Estado: {event.status}</span>
               <p>{suggestedStep(event.status)}</p>
-              {event.status === "OPEN" && <a className="button-link" href="#/veedor">Ver supervisión</a>}
+              {event.status === "OPEN" && <a className="button-link" href="#/veedor">Ver supervision</a>}
               {event.status === "CLOSED" && <a className="button-link" href="#/admin/results">Abrir escrutinio</a>}
             </article>)}
           </div>
@@ -149,13 +130,13 @@ export function AdminEventsPage() {
         <p role="status">{message}</p>
         <section className="user-admin">
           <h2>Usuarios y administradores</h2>
-          <p>Los usuarios existentes pueden recibir o perder el rol ADMIN. El último ADMIN siempre queda protegido.</p>
+          <p>Los usuarios existentes pueden recibir o perder el rol ADMIN. El ultimo ADMIN siempre queda protegido.</p>
           <ul>{users.map((user) => {
             const isAdmin = user.roles.includes("ADMIN");
             const isCurrentUser = user.id === session.user?.id;
             return <li key={user.id}>
-              <span><strong>{user.name}</strong> · {user.email}</span>
-              <button className="secondary" type="button" disabled={isCurrentUser && isAdmin} onClick={() => changeAdminRole(user, !isAdmin)}>{isCurrentUser && isAdmin ? "Sesión actual" : isAdmin ? "Revocar ADMIN" : "Promover a ADMIN"}</button>
+              <span><strong>{user.name}</strong> . {user.email}</span>
+              <button className="secondary" type="button" disabled={isCurrentUser && isAdmin} onClick={() => changeAdminRole(user, !isAdmin)}>{isCurrentUser && isAdmin ? "Sesion actual" : isAdmin ? "Revocar ADMIN" : "Promover a ADMIN"}</button>
             </li>;
           })}</ul>
         </section>
