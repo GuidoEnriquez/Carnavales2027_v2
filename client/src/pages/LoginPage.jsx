@@ -324,6 +324,11 @@ export function LoginPage({ onAuthenticated }) {
             <p className="login-message-alert" role="status" aria-live="polite">{message}</p>
           </div>
         )}
+        <div className="login-public-link">
+          <a href="#/resultados" className="public-results-link">
+            🏆 Ver Resultados Oficiales Públicos
+          </a>
+        </div>
       </div>
       <div className="login-device-status" aria-label="Estado del dispositivo">
         <span aria-hidden="true">●</span> Dispositivo conectado

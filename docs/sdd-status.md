@@ -30,20 +30,17 @@
 | Spec 021 | Planilla del Jurado v3 (Fase 3 del Plan Maestro): flujo móvil tarjeta a tarjeta, grilla radiogroup 1-10 con doble tap in situ, "No se presentó" segregado, guardado por fila con reintento aislado, barra inferior persistente con faltantes, endpoint optimizado `include=progress` y color de comparsa (`brand_color`). Validada automáticamente (135 API, 68 DB, 175 cliente, build limpio). | `specs/021-planilla-jurado-v3/validation.md` |
 | Spec 022 | Tiempo Real Interno SSE (Fase 4 del Plan Maestro): canal SSE en `/api/v1/monitor/stream` con heartbeats y 2FA, bus interno con hooks, secreto estricto de voto (RF-190), fallback automático a polling (RF-193), alertas de anomalía operativa (RF-194) y modo "Pared de sala" para proyectores (RF-195). Validada automáticamente (136 API, 68 DB, 180 cliente, build limpio). | `specs/022-tiempo-real-sse/validation.md` |
 | Spec 023 | Capa de Marca y Home por Rol (Fase 5 del Plan Maestro): capa dual Marca/Instrumento (`data-layer`), identidad festiva carnaval en Login/Home/Resultados/Acta, redirección inteligente post-login (`goToRoleHome`), stepper y panel de condiciones de liberación en escrutinio (RF-94a) y `prefers-reduced-motion`. Validada automáticamente (136 API, 68 DB, 195 cliente, build limpio). | `specs/023-marca-home-roles/validation.md` |
+| Spec 024 | Portal Público de Resultados (Fase 6 del Plan Maestro): solo lectura post-liberación, snapshot inmutable `results_snapshot` (migración 070, triggers NO UPDATE/DELETE), materialización automática determinística JCS/SHA-256 en liberación/acta/sorteo, verificación de hash de acta oficial, endpoints públicos `/api/v1/public/events` y `/:eventId/results` con ETag/HTTP 304, canal SSE público en `/api/v1/public/stream` con fallback a polling (30s), secreto estricto de voto (RF-214) y vista `PublicResultsPage.jsx` bajo Capa de Marca. Validada automáticamente (141 API, 72 DB, 200 cliente, build limpio). | `specs/024-portal-publico/validation.md` |
 
 ## Incremento activo
 
-- Fase 6 del Plan Maestro — Spec 024: Portal Público de Resultados (solo lectura post-liberación, snapshot inmutable, verificación de hash de acta).
+- Fase 6 del Plan Maestro completada. Siguiente paso: Próxima fase según el backlog o cierre de fases pendientes.
 - Spec 016 — Supervisión de votación por VEEDOR. La implementación y validación automatizada están completas; falta comprobación manual en los viewports operativos.
-- Spec 017 — Configuración de competencia. T01-T03 con evidencia del alcance original; T04 en curso, con validación responsive y hallazgos pendientes. El pedido ampliado requiere completar su contrato SDD. La máquina de estados permanece bloqueada hasta aclarar apertura, vigencia de versiones y reglas temporales de jornadas.
-- Spec 018 — Refinamiento UX de la planilla del jurado. Implementación completada (T01-T06); comprobación manual en los 3 viewports operativos pendiente. Build y 138 tests pasan.
-- Módulo diferido: Publicación externa de resultados / Portal público.
-- Spec 017 / T07: correcciones de formularios y endurecimiento de auditoria validados (113 tests API/DB, 133 cliente, build exitoso). T08-T11 y comprobacion manual siguen pendientes; no se declara cierre integral.
-- Spec 017 / T08: migracion 067, integridad de criterios y reordenamiento auditado con UI validados automaticamente (121 API/DB, 138 cliente en ultima ejecucion, build exitoso). T09-T11, cadena fresca 001-067, analisis estatico y comprobacion manual siguen pendientes. Se registro intermitencia en prueba de Acta Oficial, no resuelta.
+- Spec 017 — Configuración de competencia. T01-T03 con evidencia del alcance original; T04 en curso, con validación responsive y hallazgos pendientes.
+- Spec 018 — Refinamiento UX de la planilla del jurado. Implementación completada (T01-T06); comprobación manual en los 3 viewports operativos pendiente.
 
 ## Diferido explícitamente
 
-- Publicación externa de resultados.
 - Conexión y sincronización Offline-First (Spec 005): funcionalidad futura; Spec 012 retiró su uso del cliente actual.
 
 ## Estado reglamentario actualizado

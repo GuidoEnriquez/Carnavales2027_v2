@@ -43,6 +43,7 @@ export function AppNavigation({ session }) {
         {["ADMIN", "SCRUTINEER", "ESCRIBANO"].some((role) => session.roles?.includes(role)) && <a href="#/admin/record" aria-current={currentRoute === "#/admin/record" ? "page" : undefined}>Acta Oficial</a>}
         {session.roles?.includes("JUDGE") && <a href="#/judge" aria-current={currentRoute === "#/judge" ? "page" : undefined}>Mi panel</a>}
         {(session.roles?.includes("ADMIN") || session.roles?.includes("VEEDOR")) && <a href="#/veedor" aria-current={currentRoute === "#/veedor" ? "page" : undefined}>Supervision</a>}
+        <a href="#/resultados" aria-current={currentRoute === "#/resultados" ? "page" : undefined}>Resultados</a>
       </nav>
       <div className="session-actions">
         <span>{session.user?.name}</span>

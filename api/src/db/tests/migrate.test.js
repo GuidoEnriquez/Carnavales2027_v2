@@ -95,6 +95,7 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
         || filename === "067_criterion_integrity_and_order.sql"
         || filename === "068_general_audit_hash_chain.sql"
         || filename === "069_troupe_brand_color.sql"
+        || filename === "070_results_snapshot.sql"
   )));
 
   const status = await getMigrationStatus();
@@ -442,6 +443,11 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
     {
       filename: "069_troupe_brand_color.sql",
       version: "069",
+      applied: true,
+    },
+    {
+      filename: "070_results_snapshot.sql",
+      version: "070",
       applied: true,
     },
   ]);

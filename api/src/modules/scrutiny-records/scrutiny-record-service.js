@@ -279,6 +279,9 @@ export async function certifyScrutinyRecord({
       recordNumber,
     });
 
+    const { materializeResultsSnapshot } = await import("../results/snapshot-service.js");
+    await materializeResultsSnapshot({ eventId: id, client });
+
     return {
       record,
       alreadyCertified: false,

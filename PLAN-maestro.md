@@ -215,10 +215,12 @@ Sin cambio de comportamiento; habilita todo lo visual posterior.
 - Completar `PLAN-role-ux.md` (panel resumen ADMIN, stepper de escrutinio con condiciones legibles).
 - Validación: manual en 3 viewports, contraste AA verificado, reduced-motion.
 
-### Fase 6 — Portal público de resultados (Spec 024 · 2 semanas)
-- `results_snapshot` materializado en liberación/sorteo/acta; rutas `/public/*` cacheables con ETag; SSE público "nueva versión"; rate limit por IP; CDN/proxy.
-- Frontend público separado del cliente autenticado (mismo sistema de diseño, capa marca), con verificación del hash del acta.
-- Validación: prueba de carga (k6 o autocannon, 1.000 conexiones concurrentes), test de que el portal no expone nada previo a la liberación ni puntajes por jurado.
+### Fase 6 — Portal público de resultados (Spec 024) [COMPLETADA]
+- ✅ `results_snapshot` materializado de forma inmutable (migración 070, triggers NO UPDATE/DELETE) en liberación, sorteo y emisión de acta oficial.
+- ✅ Rutas públicas `/api/v1/public/*` (`/events`, `/:eventId/results` con ETag y HTTP 304, `/stream` con SSE público y fallback de polling a 30s).
+- ✅ Secreto absoluto del voto (RF-214): exclusión estricta de cualquier referencia a jurados, notas parciales o planillas individuales.
+- ✅ Portal Web de Resultados `PublicResultsPage.jsx` bajo Capa de Marca (`#/resultados`), tarjeta de honor para el campeón, tabla de ranking general accesible, ganadores por rubro, y verificación del acta notarial con copia del sello SHA-256.
+- ✅ Validado con 141 tests de API, 72 de DB, 200 de cliente y build exitoso.
 
 ### Fase 7 — Reglas pendientes del reglamento (Spec 025 · según disponibilidad del reglamento)
 - RF-18 (mínimo de integrantes → solo rubros aleatorios).

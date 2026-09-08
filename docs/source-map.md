@@ -191,3 +191,17 @@ Por decisión de producto del 2026-09-01, la regla de subsanación conocida como
 | Client Page | `client/src/pages/AcceptOperationalInvitationPage.jsx` | Formulario de aceptación (solo password) |
 | Client Tests | `client/src/pages/AdminJudgesPage.test.jsx` | Tests de UI para perfiles operativos |
 | API Tests | `api/src/tests/operational-profiles.test.js` | Tests de integración API |
+
+## Artefactos Portal Público de Resultados — Spec 024 (Fase 6)
+
+| Artefacto | Ubicación | Descripción |
+|---|---|---|
+| Spec & Clarifications | `specs/024-portal-publico/` | Contrato SDD: spec, plan, tareas, validación |
+| Migración 070 | `api/src/db/migrations/070_results_snapshot.sql` | Tabla `results_snapshot` inmutable con triggers |
+| DB Tests | `api/src/db/tests/results-snapshot.test.js` | Validación de inmutabilidad y unicidad de snapshot |
+| Service | `api/src/modules/results/snapshot-service.js` | Materialización determinística JCS/SHA-256 |
+| Routes | `api/src/routes/public.routes.js` | Endpoints públicos `/api/v1/public/*` (ETag, HTTP 304, SSE) |
+| API Tests | `api/src/tests/public-results-api.test.js` | Tests de integración API pública y secreto de voto |
+| Client Page | `client/src/pages/PublicResultsPage.jsx` | Portal Web de Resultados bajo Capa de Marca |
+| Client Tests | `client/src/tests/PublicResultsPage.test.jsx` | Tests de UI pública, SSE y copiado de sello |
+

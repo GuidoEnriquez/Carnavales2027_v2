@@ -412,6 +412,8 @@ export async function releaseResults({ eventId, actorUserId, client: injectedCli
       eventId: id,
       releasedAt: release.releasedAt,
     });
+    const { materializeResultsSnapshot } = await import("./snapshot-service.js");
+    await materializeResultsSnapshot({ eventId: id, client });
     return { eventId: id, alreadyReleased: false, releasedAt: release.releasedAt };
   });
 }

@@ -22,6 +22,7 @@ import { JudgeBallotPage } from "./pages/JudgeBallotPage.jsx";
 import { JudgeAssignmentPage } from "./pages/JudgeAssignmentPage.jsx";
 import { VeedorMonitorPage } from "./pages/VeedorMonitorPage.jsx";
 import { LoginPage } from "./pages/LoginPage.jsx";
+import { PublicResultsPage } from "./pages/PublicResultsPage.jsx";
 import { apiRequest } from "./api/http.js";
 import { useEffect, useState } from "react";
 
@@ -75,10 +76,19 @@ export default function App({ session: providedSession }) {
     return () => window.removeEventListener("hashchange", updatePath);
   }, []);
   const [route, query = ""] = path.split("?");
-  const isBrandRoute = route === "#/login" || route === "" || route.startsWith("#/invitations") || route === "#/home";
+  const isBrandRoute =
+    route === "#/login" ||
+    route === "" ||
+    route.startsWith("#/invitations") ||
+    route === "#/home" ||
+    route === "#/resultados";
   const currentLayer = isBrandRoute ? "brand" : "instrument";
 
   const renderContent = () => {
+    if (route === "#/resultados") {
+      const eventId = new URLSearchParams(query).get("eventId") ?? null;
+      return <PublicResultsPage initialEventId={eventId} />;
+    }
     if (route === "#/invitations/accept") {
       const secret = new URLSearchParams(query).get("secret") ?? "";
       return <AcceptJudgeInvitationPage key={secret} secret={secret} />;

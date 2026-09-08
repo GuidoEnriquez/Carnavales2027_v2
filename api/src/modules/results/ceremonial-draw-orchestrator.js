@@ -147,6 +147,9 @@ export async function executeCeremonialDraw({
       payload: auditPayload,
     });
 
+    const { materializeResultsSnapshot } = await import("./snapshot-service.js");
+    await materializeResultsSnapshot({ eventId, client });
+
     return {
       eventId,
       winnerTroupeId: draw.winnerTroupeId,
