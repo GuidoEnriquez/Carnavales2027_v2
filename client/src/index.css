@@ -1,18 +1,5 @@
-:root {
-  --primary-color: #2563eb;
-  --primary-dark: #183a78;
-  --accent-color: #b45309;
-  --danger-color: #a61b3b;
-  --bg-color: #f3f4f6;
-  --text-color: #1f2937;
-  --muted-color: #596579;
-  --line-color: #7b8492;
-  --card-bg: #ffffff;
-  --spacing-sm: 0.5rem;
-  --spacing-md: 1rem;
-  --spacing-lg: 2rem;
-  --border-radius: 0.5rem;
-}
+@import "./styles/tokens.css";
+@import "./styles/components.css";
 
 .sr-only {
   position: absolute;

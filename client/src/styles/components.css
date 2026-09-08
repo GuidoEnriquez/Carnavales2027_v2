@@ -1,0 +1,357 @@
+/**
+ * components.css — Estilos para componentes atómicos del sistema de diseño (Spec 020)
+ */
+
+/* ==========================================================================
+   Skip Link (Accesibilidad / Teclado)
+   ========================================================================== */
+.skip-link {
+  position: absolute;
+  top: -999px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent-primary);
+  color: #ffffff;
+  padding: var(--space-3) var(--space-6);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  font-weight: 700;
+  text-decoration: none;
+  z-index: var(--z-toast);
+  box-shadow: var(--shadow-lg);
+  transition: top var(--transition-fast);
+}
+
+.skip-link:focus {
+  top: 0;
+  outline: 3px solid #ffffff;
+}
+
+/* ==========================================================================
+   Dialog (<dialog>)
+   ========================================================================== */
+.app-dialog {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  padding: 0;
+  max-inline-size: min(90vw, 540px);
+  inline-size: 100%;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.app-dialog::backdrop {
+  background: var(--surface-overlay);
+  backdrop-filter: blur(4px);
+}
+
+.app-dialog-content {
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.app-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  border-block-end: 1px solid var(--border-subtle);
+  padding-block-end: var(--space-3);
+}
+
+.app-dialog-title {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.app-dialog-close-btn {
+  background: transparent;
+  border: 0;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: var(--text-lg);
+  padding: var(--space-2);
+  min-inline-size: var(--touch-target-min);
+  min-block-size: var(--touch-target-min);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast);
+}
+
+.app-dialog-close-btn:hover {
+  color: var(--text-primary);
+  background: var(--surface-raised);
+}
+
+.app-dialog-description {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.app-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ==========================================================================
+   Button
+   ========================================================================== */
+.app-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-family: inherit;
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), opacity var(--transition-fast);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.app-button-md {
+  min-block-size: var(--touch-target-min); /* 48px */
+  padding: 0 var(--space-4);
+  font-size: var(--text-base);
+}
+
+.app-button-lg {
+  min-block-size: var(--touch-target-lg); /* 56px */
+  padding: 0 var(--space-6);
+  font-size: var(--text-lg);
+}
+
+.app-button-primary {
+  background: var(--accent-primary);
+  color: #ffffff;
+}
+
+.app-button-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.app-button-secondary {
+  background: transparent;
+  border-color: var(--border-default);
+  color: var(--text-primary);
+}
+
+.app-button-secondary:hover:not(:disabled) {
+  background: var(--surface-raised);
+  border-color: var(--border-strong);
+}
+
+.app-button-danger {
+  background: var(--danger);
+  color: #ffffff;
+}
+
+.app-button-danger:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.app-button-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.app-button-ghost:hover:not(:disabled) {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+}
+
+.app-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.app-button-spinner {
+  display: inline-block;
+  inline-size: 1rem;
+  block-size: 1rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+.app-button-busy-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ==========================================================================
+   StatusPill
+   ========================================================================== */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid transparent;
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+}
+
+.status-pill-open,
+.status-pill-active {
+  background: var(--success-bg);
+  color: var(--success-text);
+  border-color: var(--success-border);
+}
+
+.status-pill-submitted,
+.status-pill-scored,
+.status-pill-registered {
+  background: rgba(37, 99, 235, 0.16);
+  color: #93c5fd;
+  border-color: #1d4ed8;
+}
+
+.status-pill-pending,
+.status-pill-draft,
+.status-pill-invited {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border-color: var(--warning-border);
+}
+
+.status-pill-not-presented,
+.status-pill-suspended,
+.status-pill-replaced {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  border-color: var(--danger-border);
+}
+
+.status-pill-reopened,
+.status-pill-published,
+.status-pill-locked {
+  background: var(--info-bg);
+  color: var(--info-text);
+  border-color: var(--info-border);
+}
+
+/* ==========================================================================
+   ProgressBar
+   ========================================================================== */
+.app-progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  inline-size: 100%;
+}
+
+.app-progress-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.app-progress-label {
+  font-weight: 600;
+}
+
+.app-progress-sublabel {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.app-progress-track {
+  inline-size: 100%;
+  block-size: 0.5rem;
+  background: var(--surface-raised);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.app-progress-fill {
+  block-size: 100%;
+  background: var(--accent-primary);
+  border-radius: var(--radius-full);
+  transition: inline-size var(--transition-normal);
+}
+
+/* ==========================================================================
+   Toast
+   ========================================================================== */
+.app-toast {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  border: 1px solid var(--border-default);
+  background: var(--surface-card);
+  color: var(--text-primary);
+}
+
+.app-toast-success {
+  border-color: var(--success-border);
+  background: #062817;
+  color: var(--success-text);
+}
+
+.app-toast-warning {
+  border-color: var(--warning-border);
+  background: #2e1a05;
+  color: var(--warning-text);
+}
+
+.app-toast-danger {
+  border-color: var(--danger-border);
+  background: #330b0b;
+  color: var(--danger-text);
+}
+
+.app-toast-action-btn {
+  background: transparent;
+  border: 1px solid currentColor;
+  color: inherit;
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.app-toast-close-btn {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  padding: var(--space-1);
+}

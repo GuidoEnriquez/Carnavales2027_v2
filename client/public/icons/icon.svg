@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="128" fill="#090d16"/>
+  <defs>
+    <linearGradient id="carnivalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e11d74"/>
+      <stop offset="50%" stop-color="#f5b301"/>
+      <stop offset="100%" stop-color="#14b8a6"/>
+    </linearGradient>
+  </defs>
+  <!-- Máscara / Escudo de Carnaval -->
+  <path d="M128 176 C128 288, 256 368, 256 368 C256 368, 384 288, 384 176 C384 128, 336 112, 256 160 C176 112, 128 128, 128 176 Z" 
+        fill="none" stroke="url(#carnivalGrad)" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Ojos estilizados -->
+  <ellipse cx="196" cy="200" rx="36" ry="20" transform="rotate(-15 196 200)" fill="#e11d74"/>
+  <ellipse cx="316" cy="200" rx="36" ry="20" transform="rotate(15 316 200)" fill="#14b8a6"/>
+  <!-- Corona / Plumas centrales -->
+  <path d="M256 96 L276 160 L236 160 Z" fill="#f5b301"/>
+  <path d="M208 112 L240 168 L200 160 Z" fill="#e11d74"/>
+  <path d="M304 112 L312 160 L272 168 Z" fill="#14b8a6"/>
+</svg>

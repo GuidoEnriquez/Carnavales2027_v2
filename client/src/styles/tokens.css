@@ -1,0 +1,191 @@
+/**
+ * tokens.css — Carnavales2027_v2 Design System Foundation (Spec 020)
+ * Sistema unificado de tokens semánticos, capas Marca e Instrumento,
+ * accesibilidad (WCAG 2.2 AA) y variables operativas.
+ */
+
+:root {
+  /* ==========================================================================
+     Tipografía
+     ========================================================================== */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-display: var(--font-sans);
+
+  --text-xs: 0.75rem;     /* 12px */
+  --text-sm: 0.875rem;    /* 14px */
+  --text-base: 1rem;      /* 16px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+  --text-3xl: 1.875rem;   /* 30px */
+  --text-4xl: 2.25rem;    /* 36px */
+
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+
+  /* ==========================================================================
+     Espaciado (Escala base 4px)
+     ========================================================================== */
+  --space-0-5: 0.125rem; /* 2px */
+  --space-1: 0.25rem;    /* 4px */
+  --space-2: 0.5rem;     /* 8px */
+  --space-3: 0.75rem;    /* 12px */
+  --space-4: 1rem;       /* 16px */
+  --space-5: 1.25rem;    /* 20px */
+  --space-6: 1.5rem;     /* 24px */
+  --space-8: 2rem;       /* 32px */
+  --space-10: 2.5rem;    /* 40px */
+  --space-12: 3rem;      /* 48px */
+  --space-16: 4rem;      /* 64px */
+
+  /* ==========================================================================
+     Radios de borde
+     ========================================================================== */
+  --radius-xs: 0.125rem; /* 2px */
+  --radius-sm: 0.25rem;  /* 4px */
+  --radius-md: 0.5rem;   /* 8px */
+  --radius-lg: 0.75rem;  /* 12px */
+  --radius-xl: 1rem;     /* 16px */
+  --radius-full: 9999px;
+
+  /* ==========================================================================
+     Dimensiones táctiles y elevación
+     ========================================================================== */
+  --touch-target-min: 48px;
+  --touch-target-lg: 56px;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
+
+  --z-base: 1;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-drawer: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ==========================================================================
+     Paleta base (Modo Oscuro Predeterminado - Alto Contraste)
+     ========================================================================== */
+  --surface-base: #090d16;
+  --surface-card: #111827;
+  --surface-raised: #1e293b;
+  --surface-overlay: rgba(9, 13, 22, 0.85);
+
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-inverse: #0f172a;
+
+  --border-subtle: #1e293b;
+  --border-default: #334155;
+  --border-strong: #475569;
+
+  /* ==========================================================================
+     Estados operativos semánticos
+     ========================================================================== */
+  --success: #16a34a;
+  --success-bg: rgba(22, 163, 74, 0.16);
+  --success-text: #4ade80;
+  --success-border: #15803d;
+
+  --warning: #d97706;
+  --warning-bg: rgba(217, 119, 6, 0.16);
+  --warning-text: #fcd34d;
+  --warning-border: #b45309;
+
+  --danger: #dc2626;
+  --danger-bg: rgba(220, 38, 38, 0.16);
+  --danger-text: #fca5a5;
+  --danger-border: #b91c1c;
+
+  --info: #0284c7;
+  --info-bg: rgba(2, 132, 199, 0.16);
+  --info-text: #7dd3fc;
+  --info-border: #0369a1;
+
+  /* ==========================================================================
+     Capa predeterminada: Instrumento (alta concentración, sobriedad)
+     ========================================================================== */
+  --accent-primary: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-subtle: rgba(37, 99, 235, 0.15);
+  --focus-ring: 0 0 0 3px rgba(37, 99, 235, 0.6);
+
+  /* ==========================================================================
+     Mapeos heredados (Retrocompatibilidad 100% con estilos previos)
+     ========================================================================== */
+  --primary-color: var(--accent-primary);
+  --primary-dark: var(--accent-hover);
+  --accent-color: var(--warning);
+  --danger-color: var(--danger);
+  --bg-color: var(--surface-base);
+  --text-color: var(--text-primary);
+  --muted-color: var(--text-muted);
+  --line-color: var(--border-subtle);
+  --card-bg: var(--surface-card);
+  --spacing-sm: var(--space-2);
+  --spacing-md: var(--space-4);
+  --spacing-lg: var(--space-8);
+  --border-radius: var(--radius-md);
+}
+
+/* ==========================================================================
+   Capa Marca (data-layer="brand")
+   Vibrante, festiva, tipografía display y acentos carnaval
+   ========================================================================== */
+[data-layer="brand"] {
+  --accent-primary: #e11d74;   /* Magenta carnaval */
+  --accent-hover: #be123c;
+  --accent-subtle: rgba(225, 29, 116, 0.18);
+  --accent-secondary: #f5b301; /* Dorado */
+  --accent-tertiary: #14b8a6;  /* Turquesa */
+  --focus-ring: 0 0 0 3px rgba(225, 29, 116, 0.6);
+
+  --primary-color: var(--accent-primary);
+  --primary-dark: var(--accent-hover);
+}
+
+/* ==========================================================================
+   Capa Instrumento (data-layer="instrument")
+   Sobrio, oscuro, alto contraste, cero distracciones
+   ========================================================================== */
+[data-layer="instrument"] {
+  --accent-primary: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-subtle: rgba(37, 99, 235, 0.15);
+  --focus-ring: 0 0 0 3px rgba(37, 99, 235, 0.6);
+
+  --primary-color: var(--accent-primary);
+  --primary-dark: var(--accent-hover);
+}
+
+/* ==========================================================================
+   Preferencias de accesibilidad del usuario (A11y Media Queries)
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --border-subtle: #475569;
+    --border-default: #64748b;
+    --border-strong: #94a3b8;
+    --text-muted: #cbd5e1;
+    --focus-ring: 0 0 0 4px #ffffff;
+  }
+}

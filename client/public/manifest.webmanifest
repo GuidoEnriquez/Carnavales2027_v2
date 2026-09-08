@@ -1,8 +1,29 @@
 {
-  "name": "Carnavales 2027 - Jurados",
-  "short_name": "Carnavales 2027",
-  "start_url": "/#/login",
+  "name": "Carnavales 2027",
+  "short_name": "Carnavales",
+  "description": "Plataforma oficial de gestión y votación para Carnavales 2027",
+  "start_url": "/#/",
   "display": "standalone",
-  "background_color": "#fffaf1",
-  "theme_color": "#8f2e22"
+  "background_color": "#090d16",
+  "theme_color": "#090d16",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
 }

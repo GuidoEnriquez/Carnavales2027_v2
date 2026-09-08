@@ -75,20 +75,24 @@ export default function App({ session: providedSession }) {
     return () => window.removeEventListener("hashchange", updatePath);
   }, []);
   const [route, query = ""] = path.split("?");
-  if (route === "#/invitations/accept") {
-    const secret = new URLSearchParams(query).get("secret") ?? "";
-    return <AcceptJudgeInvitationPage key={secret} secret={secret} />;
-  }
-  if (route === "#/invitations/role/accept") {
-    const token = new URLSearchParams(query).get("token") ?? "";
-    return <AcceptRoleInvitationPage key={token} token={token} />;
-  }
-  if (route === "#/invitations/operational/accept") {
-    const secret = new URLSearchParams(query).get("secret") ?? "";
-    return <AcceptOperationalInvitationPage key={secret} secret={secret} />;
-  }
-  if (route === "#/invitations/accepted") return <AcceptedJudgeInvitationPage />;
-  if (route === "#/login" || route === "") return <LoginPage />;
+  const isBrandRoute = route === "#/login" || route === "" || route.startsWith("#/invitations") || route === "#/home";
+  const currentLayer = isBrandRoute ? "brand" : "instrument";
+
+  const renderContent = () => {
+    if (route === "#/invitations/accept") {
+      const secret = new URLSearchParams(query).get("secret") ?? "";
+      return <AcceptJudgeInvitationPage key={secret} secret={secret} />;
+    }
+    if (route === "#/invitations/role/accept") {
+      const token = new URLSearchParams(query).get("token") ?? "";
+      return <AcceptRoleInvitationPage key={token} token={token} />;
+    }
+    if (route === "#/invitations/operational/accept") {
+      const secret = new URLSearchParams(query).get("secret") ?? "";
+      return <AcceptOperationalInvitationPage key={secret} secret={secret} />;
+    }
+    if (route === "#/invitations/accepted") return <AcceptedJudgeInvitationPage />;
+    if (route === "#/login" || route === "") return <LoginPage />;
   if (route === "#/judge/assignment") {
     return <RoleArea session={session} role="JUDGE"><JudgeAssignmentPage session={session} /></RoleArea>;
   }
@@ -137,10 +141,17 @@ export default function App({ session: providedSession }) {
   if (route === "#/judge/ballot") {
     return <RoleArea session={session} role="JUDGE"><JudgeBallotPage ballotId={new URLSearchParams(query).get("ballotId") ?? ""} troupeId={new URLSearchParams(query).get("troupeId") ?? ""} userId={session.user?.id ?? ""} /></RoleArea>;
   }
-  if (route === "#/home") {
-    if (session.status === "loading") return <p>Cargando sesión…</p>;
-    if (session.status !== "authenticated") return <LoginPage />;
-    return <ProtectedShell session={session}><HomePage session={session} /></ProtectedShell>;
-  }
-  return <main className="container"><div className="card"><h1>Página no encontrada</h1><a href="#/home">Volver al inicio</a></div></main>;
+    if (route === "#/home") {
+      if (session.status === "loading") return <p>Cargando sesión…</p>;
+      if (session.status !== "authenticated") return <LoginPage />;
+      return <ProtectedShell session={session}><HomePage session={session} /></ProtectedShell>;
+    }
+    return <main id="main-content" className="container"><div className="card"><h1>Página no encontrada</h1><a href="#/home">Volver al inicio</a></div></main>;
+  };
+
+  return (
+    <div className="app-shell" data-layer={currentLayer}>
+      {renderContent()}
+    </div>
+  );
 }
