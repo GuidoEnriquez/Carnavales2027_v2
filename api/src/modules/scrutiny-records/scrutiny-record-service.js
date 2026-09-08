@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { auditEvent, canonicalizeJson } from "../../audit/audit-service.js";
 import { getPool } from "../../db/pool.js";
+import { emitMonitorEvent } from "../monitor/monitor-event-bus.js";
 import {
   computeOverallRanking,
   computeRubricRankings,
@@ -270,6 +271,12 @@ export async function certifyScrutinyRecord({
         certifiedRole: role,
         winnerTroupeId: bestTroupe.winnerTroupeId,
       },
+    });
+
+    emitMonitorEvent("OFFICIAL_RECORD_EMITTED", {
+      eventId: id,
+      recordId: record.id,
+      recordNumber,
     });
 
     return {

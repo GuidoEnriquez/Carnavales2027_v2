@@ -2,6 +2,7 @@ import { auditEvent } from "../../audit/audit-service.js";
 import { getPool } from "../../db/pool.js";
 import { withTransaction } from "../../db/transaction.js";
 import { createHash } from "node:crypto";
+import { emitMonitorEvent } from "../monitor/monitor-event-bus.js";
 
 function requireText(value, name) {
   if (typeof value !== "string" || value.trim().length === 0) throw new TypeError(`${name} debe ser texto no vacío.`);
@@ -152,6 +153,11 @@ async function submitBallotLocked(client, { ballot, actorUserId, ballotId }) {
     actorUserId,
     details: { judgeProfileId: ballot.judgeProfileId },
   });
+  emitMonitorEvent("BALLOT_SUBMITTED", {
+    eventId: ballot.eventId,
+    nightId: ballot.nightId,
+    ballotId,
+  });
   return { ...rows[0], revision: Number(rows[0].revision) };
 }
 
@@ -271,6 +277,11 @@ export async function openVoting({ actorUserId, eventId, nightId }) {
       entityId: nights[0].id,
       after: { eventId, ballotsCreated: created.length },
     });
+    emitMonitorEvent("VOTING_OPENED", {
+      eventId,
+      nightId: nights[0].id,
+      ballotsCreated: created.length,
+    });
     return { nightId: nights[0].id, ballotsCreated: created.length };
   });
 }
@@ -325,6 +336,11 @@ export async function closeVoting({ actorUserId, eventId, nightId }) {
       [nights[0].id, eventId],
     );
     if (pending.length > 0) {
+      emitMonitorEvent("CLOSE_ATTEMPT_INCOMPLETE", {
+        eventId,
+        nightId: nights[0].id,
+        pendingCount: pending.length,
+      });
       const error = new Error("VOTING_CLOSE_INCOMPLETE_BALLOTS");
       error.pending = pending.map((item) => ({
         id: item.id,
@@ -364,6 +380,11 @@ export async function closeVoting({ actorUserId, eventId, nightId }) {
       entityType: "night",
       entityId: nights[0].id,
       after: { eventId, autoSubmitted: openBallots.length },
+    });
+    emitMonitorEvent("VOTING_CLOSED", {
+      eventId,
+      nightId: nights[0].id,
+      autoSubmitted: openBallots.length,
     });
     return { nightId: nights[0].id, autoSubmitted: openBallots.length };
   });

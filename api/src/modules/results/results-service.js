@@ -1,6 +1,7 @@
 import { auditEvent } from "../../audit/audit-service.js";
 import { getPool } from "../../db/pool.js";
 import { getTroupePenaltiesTotalsByEvent } from "../penalties/penalty-service.js";
+import { emitMonitorEvent } from "../monitor/monitor-event-bus.js";
 
 function requireText(value, name) {
   if (typeof value !== "string" || value.trim().length === 0) {
@@ -406,6 +407,10 @@ export async function releaseResults({ eventId, actorUserId, client: injectedCli
       entityType: "results_release",
       entityId: id,
       after: { releasedAt: release.releasedAt },
+    });
+    emitMonitorEvent("RESULTS_RELEASED", {
+      eventId: id,
+      releasedAt: release.releasedAt,
     });
     return { eventId: id, alreadyReleased: false, releasedAt: release.releasedAt };
   });
