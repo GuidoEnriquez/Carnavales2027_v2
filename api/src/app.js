@@ -1,4 +1,5 @@
 import express from "express";
+import helmet from "helmet";
 import { createRequireSession } from "./auth/require-session.js";
 import { createMeRouter } from "./routes/me.routes.js";
 import { createEventsRouter } from "./routes/events.routes.js";
@@ -15,6 +16,11 @@ import { createPenaltiesRouter } from "./routes/penalties.routes.js";
 import { createScrutinyRecordsRouter } from "./routes/scrutiny-records.routes.js";
 import { createOperationalProfilesRouter } from "./routes/operational-profiles.routes.js";
 import { createMonitorRouter } from "./routes/monitor.routes.js";
+import {
+  createAuthRateLimiter,
+  createInvitationRateLimiter,
+  createGeneralApiRateLimiter,
+} from "./auth/rate-limiter.js";
 
 export function createApp({
   authHandler,
@@ -22,23 +28,52 @@ export function createApp({
   createUser,
   sendInvitation,
   revokeSessions,
+  authRateLimiter,
+  invitationRateLimiter,
+  generalApiRateLimiter,
 } = {}) {
   const app = express();
-  app.use(express.json());
+
+  app.set("trust proxy", process.env.TRUST_PROXY ?? 1);
+
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'none'"],
+          frameAncestors: ["'none'"],
+        },
+      },
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+      xFrameOptions: { action: "deny" },
+      hsts: process.env.NODE_ENV === "production" ? { maxAge: 31536000, includeSubDomains: true } : false,
+    }),
+  );
+
+  app.use(express.json({ limit: "100kb" }));
+
+  const authLimiter = authRateLimiter || createAuthRateLimiter();
+  const invitationLimiter = invitationRateLimiter || createInvitationRateLimiter();
+  const generalLimiter = generalApiRateLimiter || createGeneralApiRateLimiter();
 
   app.get("/health", (_request, response) => {
     response.status(200).json({ status: "ok" });
   });
 
   if (authHandler) {
-    app.all("/api/auth/*splat", authHandler);
+    app.all("/api/auth/*splat", authLimiter, authHandler);
   }
 
+  app.use("/api/v1", generalLimiter);
   app.use("/api/v1", requireTrustedOrigin);
   app.use("/api/v1", (_request, response, next) => {
     response.set("Cache-Control", "no-store, private");
     next();
   });
+
+  app.use("/api/v1/judge-invitations", invitationLimiter);
+  app.use("/api/v1/operational-invitations", invitationLimiter);
+
   app.use("/api/v1", createJudgeInvitationsRouter({ createUser }));
 
   if (getSession) {

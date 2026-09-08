@@ -25,12 +25,14 @@
 | Perfiles Operativos | Alta unificada de roles auxiliares (VEEDOR, COMISARIO, SCRUTINEER, ESCRIBANO), invitación por consola/SMTP, aceptación solo password, ciclo de vida INVITED→REGISTERED→SUSPENDED, trigger auto-registro. Migraciones 064-065. Implementado y validado (99 tests) el 2026-09-03. | `PLAN-operational-profiles.md` |
 | Spec 016 | Supervisión de votación por VEEDOR: endpoint agregado, guard de rol, vista con polling, navegación y redirect post-login. Validación automatizada completada; comprobación manual responsive pendiente. | `specs/016-supervision-veedor/validation.md` |
 | Spec 018 | Refinamiento UX de la planilla del jurado: nombre de ítem visible, separación de "No se presentó", palabra-ancla, indicador de guardado online, sidebar de comparsas, navegación por ítems, focus return en diálogos. Implementación completada (T01-T06); comprobación manual responsive pendiente. | `specs/018-refinamiento-planilla-jurado/validation.md` |
+| Spec 019 | Seguridad HTTP, Resiliencia de Persistencia, Idempotencia de Planilla y Cadena de Auditoría (Fase 1 del Plan Maestro): cabeceras Helmet, rate limiting por capas, timeouts y deadlock retry, idempotencia en scores/submit, cadena general SHA-256 JCS en `audit_event`, graceful shutdown y CI. Validada automáticamente (134 API, 68 DB, 138 cliente, build limpio). | `specs/019-seguridad-plataforma/validation.md` |
 
 ## Incremento activo
 
 - Spec 016 — Supervisión de votación por VEEDOR. La implementación y validación automatizada están completas; falta comprobación manual en los viewports operativos.
 - Spec 017 — Configuración de competencia. T01-T03 con evidencia del alcance original; T04 en curso, con validación responsive y hallazgos pendientes. El pedido ampliado requiere completar su contrato SDD. La máquina de estados permanece bloqueada hasta aclarar apertura, vigencia de versiones y reglas temporales de jornadas.
 - Spec 018 — Refinamiento UX de la planilla del jurado. Implementación completada (T01-T06); comprobación manual en los 3 viewports operativos pendiente. Build y 138 tests pasan.
+- Próximo incremento: Fase 2 del Plan Maestro (Spec 020 — Design System Foundation: tokens semánticos, modo oscuro, layout shell unificado).
 - Módulo diferido: Publicación externa de resultados / Portal público.
 - Spec 017 / T07: correcciones de formularios y endurecimiento de auditoria validados (113 tests API/DB, 133 cliente, build exitoso). T08-T11 y comprobacion manual siguen pendientes; no se declara cierre integral.
 - Spec 017 / T08: migracion 067, integridad de criterios y reordenamiento auditado con UI validados automaticamente (121 API/DB, 138 cliente en ultima ejecucion, build exitoso). T09-T11, cadena fresca 001-067, analisis estatico y comprobacion manual siguen pendientes. Se registro intermitencia en prueba de Acta Oficial, no resuelta.

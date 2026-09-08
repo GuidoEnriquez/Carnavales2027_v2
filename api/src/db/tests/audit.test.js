@@ -60,12 +60,12 @@ test("auditoria admite solo metadata booleana exacta y no omite sus campos herma
     before: { items: [{ allowNotPresented: false }] },
     after: { items: [{ allowNotPresented: true }] },
   });
-  assert.equal(queries, 1);
+  assert.equal(queries, 2);
   await assert.rejects(
     () => auditEvent(client, { after: { allowNotPresented: true, token: "fixture" } }),
     { message: "AUDIT_FORBIDDEN_FIELD: token" },
   );
-  assert.equal(queries, 1);
+  assert.equal(queries, 2);
 });
 
 test("audit_event permite inserciones, rechaza mutaciones y no registra secretos", {

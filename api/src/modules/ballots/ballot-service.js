@@ -1,5 +1,6 @@
 import { auditEvent } from "../../audit/audit-service.js";
 import { getPool } from "../../db/pool.js";
+import { withTransaction } from "../../db/transaction.js";
 import { createHash } from "node:crypto";
 
 function requireText(value, name) {
@@ -38,20 +39,7 @@ function requireEvaluationDecision(evaluationState, score) {
   return { evaluationState, score: 0 };
 }
 
-async function inTransaction(operation) {
-  const client = await getPool().connect();
-  try {
-    await client.query("BEGIN");
-    const result = await operation(client);
-    await client.query("COMMIT");
-    return result;
-  } catch (error) {
-    try { await client.query("ROLLBACK"); } catch { /* Preserve the original failure. */ }
-    throw error;
-  } finally {
-    client.release();
-  }
-}
+const inTransaction = withTransaction;
 
 async function lockEvent(client, eventId) {
   const { rows } = await client.query(
@@ -72,7 +60,7 @@ async function auditBallot(client, { ballotId, eventId, action, actorUserId, rea
 
 async function lockJudgeBallot(client, { ballotId, actorUserId }) {
   const { rows: ballots } = await client.query(
-    `SELECT b.id, b.event_id AS "eventId", b.status, b.revision,
+    `SELECT b.id, b.event_id AS "eventId", b.status, b.revision, b.submitted_at AS "submittedAt",
             b.judge_profile_id AS "judgeProfileId", jp.user_id AS "userId"
        FROM ballot b
        JOIN judge_profile jp ON jp.id = b.judge_profile_id
@@ -511,12 +499,44 @@ export async function getBallot({ ballotId, userId }) {
   };
 }
 
-export async function saveScore({ actorUserId, ballotId, scoreId, evaluationState, score }) {
+export async function saveScore({ actorUserId, ballotId, scoreId, evaluationState, score, operationId }) {
   const bid = requireText(ballotId, "ballotId");
   const sid = requireText(scoreId, "scoreId");
+  const opId = operationId ? requireUuid(operationId, "operationId") : undefined;
 
   return inTransaction(async (client) => {
     const ballot = await lockJudgeBallot(client, { ballotId: bid, actorUserId });
+
+    let hash;
+    if (opId) {
+      const decision = requireEvaluationDecision(evaluationState, score);
+      const op = {
+        operationId: opId,
+        type: "SAVE_SCORE",
+        scoreId: sid,
+        evaluationState: decision.evaluationState,
+        score: decision.score,
+      };
+      hash = operationHash(op);
+
+      const { rows: existing } = await client.query(
+        `SELECT operation_id AS "operationId", content_hash AS "contentHash", applied_revision AS "appliedRevision"
+           FROM ballot_sync_operation
+          WHERE actor_user_id = $1 AND ballot_id = $2 AND operation_id = $3`,
+        [actorUserId, bid, opId],
+      );
+      if (existing[0]) {
+        if (existing[0].contentHash !== hash) throw new Error("SYNC_OPERATION_MISMATCH");
+        const { rows: currentScore } = await client.query(
+          `SELECT id, score, evaluation_state AS "evaluationState", status
+             FROM ballot_score
+            WHERE id = $1 AND ballot_id = $2`,
+          [sid, bid],
+        );
+        return { ...currentScore[0], revision: Number(existing[0].appliedRevision), idempotencyReplay: true };
+      }
+    }
+
     const saved = await saveScoreLocked(client, {
       ballot,
       actorUserId,
@@ -525,16 +545,62 @@ export async function saveScore({ actorUserId, ballotId, scoreId, evaluationStat
       evaluationState,
       score,
     });
+
+    if (opId && hash) {
+      await client.query(
+        `INSERT INTO ballot_sync_operation
+          (actor_user_id, ballot_id, operation_id, operation_type, content_hash, applied_revision)
+         VALUES ($1, $2, $3, 'SAVE_SCORE', $4, $5)`,
+        [actorUserId, bid, opId, hash, saved.revision],
+      );
+    }
+
     return saved;
   });
 }
 
-export async function submitBallot({ actorUserId, ballotId }) {
+export async function submitBallot({ actorUserId, ballotId, operationId }) {
   const bid = requireText(ballotId, "ballotId");
+  const opId = operationId ? requireUuid(operationId, "operationId") : undefined;
 
   return inTransaction(async (client) => {
     const ballot = await lockJudgeBallot(client, { ballotId: bid, actorUserId });
-    return submitBallotLocked(client, { ballot, actorUserId, ballotId: bid });
+
+    let hash;
+    if (opId) {
+      const op = { operationId: opId, type: "SUBMIT_BALLOT" };
+      hash = operationHash(op);
+
+      const { rows: existing } = await client.query(
+        `SELECT operation_id AS "operationId", content_hash AS "contentHash", applied_revision AS "appliedRevision"
+           FROM ballot_sync_operation
+          WHERE actor_user_id = $1 AND ballot_id = $2 AND operation_id = $3`,
+        [actorUserId, bid, opId],
+      );
+      if (existing[0]) {
+        if (existing[0].contentHash !== hash) throw new Error("SYNC_OPERATION_MISMATCH");
+        return {
+          id: ballot.id,
+          status: ballot.status,
+          submittedAt: ballot.submittedAt,
+          revision: Number(existing[0].appliedRevision),
+          idempotencyReplay: true,
+        };
+      }
+    }
+
+    const result = await submitBallotLocked(client, { ballot, actorUserId, ballotId: bid });
+
+    if (opId && hash) {
+      await client.query(
+        `INSERT INTO ballot_sync_operation
+          (actor_user_id, ballot_id, operation_id, operation_type, content_hash, applied_revision)
+         VALUES ($1, $2, $3, 'SUBMIT_BALLOT', $4, $5)`,
+        [actorUserId, bid, opId, hash, result.revision],
+      );
+    }
+
+    return result;
   });
 }
 

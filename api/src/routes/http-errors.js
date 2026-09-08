@@ -7,6 +7,10 @@ export function sendKnownError(response, error) {
     response.status(400).json({ code: "VALIDATION_ERROR" });
     return true;
   }
+  if (error.type === "entity.too.large" || error.status === 413) {
+    response.status(413).json({ code: "PAYLOAD_TOO_LARGE", message: "Payload excede el límite permitido." });
+    return true;
+  }
   if (error instanceof TypeError) {
     response.status(400).json({ code: "VALIDATION_ERROR", message: error.message });
     return true;

@@ -20,12 +20,15 @@
     "db:seed:penalties": "node src/scripts/seed-penalties-demo.js",
     "db:seed:fiction": "node src/scripts/seed-fiction-contest.js",
     "predb:test": "node --import=dotenv/config src/scripts/assert-test-database-url.js",
-    "db:test": "node --import=dotenv/config --test src/db/tests/**/*.test.js"
+    "db:test": "node --import=dotenv/config --test src/db/tests/**/*.test.js",
+    "audit:verify": "node src/scripts/verify-audit-chain.js"
   },
   "dependencies": {
     "better-auth": "1.6.27",
     "dotenv": "^16.6.1",
     "express": "^5.1.0",
+    "express-rate-limit": "^8.7.0",
+    "helmet": "^8.3.0",
     "nodemailer": "^9.0.6",
     "pg": "^8.16.3"
   }

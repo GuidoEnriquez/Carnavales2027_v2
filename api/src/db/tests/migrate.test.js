@@ -93,6 +93,7 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
        || filename === "065_operational_invitation_delivery.sql"
         || filename === "066_competition_module.sql"
         || filename === "067_criterion_integrity_and_order.sql"
+        || filename === "068_general_audit_hash_chain.sql"
   )));
 
   const status = await getMigrationStatus();
@@ -430,6 +431,11 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
     {
       filename: "067_criterion_integrity_and_order.sql",
       version: "067",
+      applied: true,
+    },
+    {
+      filename: "068_general_audit_hash_chain.sql",
+      version: "068",
       applied: true,
     },
   ]);

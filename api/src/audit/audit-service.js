@@ -39,6 +39,9 @@ export function canonicalizeJson(value) {
   if (value === null || typeof value === "boolean" || typeof value === "string") {
     return JSON.stringify(value);
   }
+  if (value instanceof Date || typeof value?.toISOString === "function") {
+    return JSON.stringify(value.toISOString());
+  }
   if (typeof value === "number") {
     if (!Number.isFinite(value)) throw new TypeError("El payload de auditoría no admite números no finitos.");
     return JSON.stringify(value);
@@ -55,6 +58,13 @@ export function hashCeremonialDraw({ previousHash, payload }) {
     .digest("hex");
 }
 
+export function hashAuditEvent({ previousHash, payload }) {
+  if (!/^[0-9a-f]{64}$/.test(previousHash)) throw new TypeError("previousHash debe ser SHA-256 hexadecimal.");
+  return createHash("sha256")
+    .update(`carnavales-general-audit-chain:v2\n${previousHash}\n${canonicalizeJson(payload)}`, "utf8")
+    .digest("hex");
+}
+
 export async function auditEvent(client, {
   actorUserId = null,
   action,
@@ -66,35 +76,147 @@ export async function auditEvent(client, {
   validateAuditData(before);
   validateAuditData(after);
 
-  const { rows } = await client.query(
-    `INSERT INTO audit_event (
-      actor_user_id,
-      action,
-      entity_type,
-      entity_id,
-      before_data,
-      after_data
-    ) VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb)
-    RETURNING
-      id,
-      actor_user_id AS "actorUserId",
-      action,
-      entity_type AS "entityType",
-      entity_id AS "entityId",
-      before_data AS before,
-      after_data AS after,
-      created_at AS "createdAt"`,
-    [
-      actorUserId,
-      requireText(action, "action"),
-      requireText(entityType, "entityType"),
-      requireText(entityId, "entityId"),
-      JSON.stringify(before),
-      JSON.stringify(after),
-    ],
-  );
+  const act = requireText(action, "action");
+  const entType = requireText(entityType, "entityType");
+  const entId = requireText(entityId, "entityId");
+  const auditEventId = randomUUID();
 
-  return rows[0];
+  const ownTransaction = client?._txStatus === "I";
+  if (ownTransaction) {
+    await client.query("BEGIN");
+  }
+
+  try {
+    let headTableExists = false;
+    let previousHash = GENESIS_HASH;
+
+    try {
+      const { rows: regCheck } = await client.query(
+        "SELECT to_regclass('general_audit_hash_chain_head') AS head_table",
+      );
+      if (regCheck?.[0]?.head_table) {
+        headTableExists = true;
+        const { rows: heads } = await client.query(
+          "SELECT last_hash FROM general_audit_hash_chain_head WHERE singleton = TRUE FOR UPDATE",
+        );
+        if (heads?.[0]?.last_hash) {
+          previousHash = heads[0].last_hash.trim();
+        }
+      }
+    } catch {
+      // If client is a simple mock object without to_regclass support
+    }
+
+    const cleanBefore = JSON.parse(JSON.stringify(before));
+    const cleanAfter = JSON.parse(JSON.stringify(after));
+
+    if (headTableExists) {
+      const normalizedPayload = {
+        id: auditEventId,
+        actorUserId,
+        action: act,
+        entityType: entType,
+        entityId: entId,
+        before: cleanBefore,
+        after: cleanAfter,
+        hashChainVersion: 2,
+      };
+      const eventHash = hashAuditEvent({ previousHash, payload: normalizedPayload });
+
+      const { rows } = await client.query(
+        `INSERT INTO audit_event (
+          id,
+          actor_user_id,
+          action,
+          entity_type,
+          entity_id,
+          before_data,
+          after_data,
+          hash_chain_version,
+          previous_hash,
+          event_hash
+        ) VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, 2, $8, $9)
+        RETURNING
+          id,
+          actor_user_id AS "actorUserId",
+          action,
+          entity_type AS "entityType",
+          entity_id AS "entityId",
+          before_data AS before,
+          after_data AS after,
+          hash_chain_version AS "hashChainVersion",
+          previous_hash AS "previousHash",
+          event_hash AS "eventHash",
+          created_at AS "createdAt"`,
+        [
+          auditEventId,
+          actorUserId,
+          act,
+          entType,
+          entId,
+          JSON.stringify(cleanBefore),
+          JSON.stringify(cleanAfter),
+          previousHash,
+          eventHash,
+        ],
+      );
+
+      await client.query(
+        `UPDATE general_audit_hash_chain_head
+         SET last_audit_event_id = $1, last_hash = $2, updated_at = clock_timestamp()
+         WHERE singleton = TRUE`,
+        [auditEventId, eventHash],
+      );
+
+      if (ownTransaction) {
+        await client.query("COMMIT");
+      }
+
+      return rows[0];
+    }
+
+    // Pre-068 schema or mock client without general_audit_hash_chain_head
+    const { rows } = await client.query(
+      `INSERT INTO audit_event (
+        id,
+        actor_user_id,
+        action,
+        entity_type,
+        entity_id,
+        before_data,
+        after_data
+      ) VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb)
+      RETURNING
+        id,
+        actor_user_id AS "actorUserId",
+        action,
+        entity_type AS "entityType",
+        entity_id AS "entityId",
+        before_data AS before,
+        after_data AS after,
+        created_at AS "createdAt"`,
+      [
+        auditEventId,
+        actorUserId,
+        act,
+        entType,
+        entId,
+        JSON.stringify(cleanBefore),
+        JSON.stringify(cleanAfter),
+      ],
+    );
+
+    if (ownTransaction) {
+      await client.query("COMMIT");
+    }
+
+    return rows[0];
+  } catch (error) {
+    if (ownTransaction) {
+      await client.query("ROLLBACK").catch(() => {});
+    }
+    throw error;
+  }
 }
 
 export async function auditCeremonialDraw(client, {

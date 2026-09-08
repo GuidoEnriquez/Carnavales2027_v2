@@ -126,13 +126,18 @@ export function createVotingRouter({ requireSession }) {
     ...judge,
     async (request, response) => {
       try {
+        const idempotencyKey = request.header("Idempotency-Key") || request.header("X-Idempotency-Key");
         const result = await saveScore({
           actorUserId: request.user.id,
           ballotId: request.params.ballotId,
           scoreId: request.params.scoreId,
           evaluationState: request.body?.evaluationState,
           score: request.body?.score,
+          operationId: idempotencyKey,
         });
+        if (result?.idempotencyReplay) {
+          response.set("Idempotency-Replay", "true");
+        }
         response.json(result);
       } catch (error) {
         if (sendKnownError(response, error)) return;
@@ -171,10 +176,15 @@ export function createVotingRouter({ requireSession }) {
     ...judge,
     async (request, response) => {
       try {
+        const idempotencyKey = request.header("Idempotency-Key") || request.header("X-Idempotency-Key");
         const result = await submitBallot({
           actorUserId: request.user.id,
           ballotId: request.params.ballotId,
+          operationId: idempotencyKey,
         });
+        if (result?.idempotencyReplay) {
+          response.set("Idempotency-Replay", "true");
+        }
         response.status(200).json(result);
       } catch (error) {
         if (sendKnownError(response, error)) return;
