@@ -96,7 +96,10 @@ export function createVotingRouter({ requireSession }) {
     ...judge,
     async (request, response) => {
       try {
-        response.json(await listJudgeBallots({ userId: request.user.id }));
+        response.json(await listJudgeBallots({
+          userId: request.user.id,
+          includeProgress: request.query.include === "progress",
+        }));
       } catch (error) {
         if (sendKnownError(response, error)) return;
         throw error;

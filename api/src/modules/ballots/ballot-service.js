@@ -401,7 +401,56 @@ export async function getVotingStatus({ eventId, nightId }) {
   };
 }
 
-export async function listJudgeBallots({ userId }) {
+export async function listJudgeBallots({ userId, includeProgress = false }) {
+  if (includeProgress) {
+    const { rows } = await getPool().query(
+      `SELECT b.id, b.status, b.night_id AS "nightId", b.submitted_at AS "submittedAt",
+              b.reopened_at AS "reopenedAt", e.name AS "eventName", n.name AS "nightName",
+              s.name AS "specialtyName",
+              COALESCE(SUM(t.total), 0)::INTEGER AS "totalScores",
+              COALESCE(SUM(t.resolved), 0)::INTEGER AS "resolvedScores",
+              COALESCE(
+                json_agg(
+                  json_build_object(
+                    'troupeId', t.schedule_id,
+                    'troupeName', t.troupe_name,
+                    'brandColor', t.brand_color,
+                    'presentationOrder', t.presentation_order,
+                    'total', t.total,
+                    'resolved', t.resolved
+                  ) ORDER BY t.presentation_order
+                ) FILTER (WHERE t.schedule_id IS NOT NULL),
+                '[]'::json
+              ) AS "troupes"
+         FROM ballot b
+         JOIN judge_profile jp ON jp.id = b.judge_profile_id
+         JOIN judge_assignment ja ON ja.id = b.judge_assignment_id
+                                 AND ja.status = 'ACTIVE' AND ja.assignment_type = 'PRIMARY'
+         JOIN carnival_event e ON e.id = b.event_id
+         JOIN night n ON n.id = b.night_id
+         JOIN event_specialty s ON s.id = b.specialty_id
+         LEFT JOIN LATERAL (
+           SELECT
+             nts.id AS schedule_id,
+             et.name AS troupe_name,
+             et.brand_color AS brand_color,
+             nts.presentation_order,
+             COUNT(bs.id)::INTEGER AS total,
+             COUNT(CASE WHEN bs.evaluation_state <> 'PENDING' THEN 1 END)::INTEGER AS resolved
+           FROM night_troupe_schedule nts
+           JOIN event_troupe et ON et.id = nts.event_troupe_id
+           LEFT JOIN ballot_score bs ON bs.ballot_id = b.id AND bs.night_schedule_id = nts.id
+           WHERE nts.night_id = b.night_id AND nts.event_id = b.event_id AND nts.status = 'SCHEDULED'
+           GROUP BY nts.id, et.name, et.brand_color, nts.presentation_order
+         ) t ON true
+        WHERE jp.user_id = $1
+        GROUP BY b.id, b.status, b.night_id, b.submitted_at, b.reopened_at, e.name, n.name, s.name, n.event_date, n.display_order
+        ORDER BY n.event_date NULLS LAST, n.display_order, s.name`,
+      [requireText(userId, "userId")],
+    );
+    return rows;
+  }
+
   const { rows } = await getPool().query(
     `SELECT b.id, b.status, b.night_id AS "nightId", b.submitted_at AS "submittedAt",
             b.reopened_at AS "reopenedAt", e.name AS "eventName", n.name AS "nightName",
@@ -451,6 +500,7 @@ export async function getBallot({ ballotId, userId }) {
              bs.rubric_id AS "rubricId", bs.night_schedule_id AS "nightScheduleId",
              nts.presentation_order AS "presentationOrder",
              et.name AS "troupeName",
+             et.brand_color AS "brandColor",
              bs.score, bs.evaluation_state AS "evaluationState",
             bs.status, bs.locked_at AS "lockedAt"
        FROM ballot_score bs
@@ -491,6 +541,7 @@ export async function getBallot({ ballotId, userId }) {
        nightScheduleId: s.nightScheduleId,
        presentationOrder: s.presentationOrder,
         troupeName: s.troupeName,
+        brandColor: s.brandColor || null,
         score: s.score,
        evaluationState: s.evaluationState,
       status: s.status,

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "../api/http.js";
+import { ProgressBar } from "../components/ProgressBar.jsx";
+import { StatusPill } from "../components/StatusPill.jsx";
 
 function summarizeTroupes(ballot, scores) {
   const groups = scores.reduce((result, score) => {
@@ -8,6 +10,7 @@ function summarizeTroupes(ballot, scores) {
       ballotId: ballot.id,
       troupeId: id,
       troupeName: score.troupeName ?? ballot.nightName,
+      brandColor: score.brandColor || null,
       nightName: ballot.nightName,
       specialtyName: ballot.specialtyName,
       eventName: ballot.eventName,
@@ -24,17 +27,43 @@ function summarizeTroupes(ballot, scores) {
 }
 
 export function JudgeHomePage({ session }) {
-  const profile = session.judgeProfile;
+  const profile = session?.judgeProfile;
   const [ballots, setBallots] = useState([]);
-  const [loading, setLoading] = useState(() => Boolean(session.user?.id && profile?.registrationStatus === "REGISTERED"));
+  const [loading, setLoading] = useState(() => Boolean(session?.user?.id && profile?.registrationStatus === "REGISTERED"));
+
   useEffect(() => {
-    if (!session.user?.id || profile?.registrationStatus !== "REGISTERED") {
+    if (!session?.user?.id || profile?.registrationStatus !== "REGISTERED") {
       setLoading(false);
       return undefined;
     }
     let current = true;
-    void apiRequest("/api/v1/judge/ballots")
+    void apiRequest("/api/v1/judge/ballots?include=progress")
       .then(async (items) => {
+        const hasDirectTroupes = Array.isArray(items) && items.length > 0 && Array.isArray(items[0].troupes);
+        if (hasDirectTroupes) {
+          const processed = items.map((ballot) => ({
+            ...ballot,
+            total: ballot.totalScores ?? 0,
+            resolved: ballot.resolvedScores ?? 0,
+            troupes: (ballot.troupes || []).map((t) => ({
+              ballotId: ballot.id,
+              troupeId: t.troupeId ?? `ballot-${ballot.id}`,
+              troupeName: t.troupeName ?? ballot.nightName,
+              brandColor: t.brandColor || null,
+              nightName: ballot.nightName,
+              specialtyName: ballot.specialtyName,
+              eventName: ballot.eventName,
+              status: ballot.status,
+              total: t.total ?? 0,
+              resolved: t.resolved ?? 0,
+              presentationOrder: t.presentationOrder ?? 0,
+            })),
+          }));
+          if (current) setBallots(processed);
+          return;
+        }
+
+        // Fallback for mock test environments or legacy endpoints
         const details = await Promise.all(items.map(async (ballot) => {
           try {
             const detail = await apiRequest(`/api/v1/judge/ballots/${ballot.id}`);
@@ -50,32 +79,36 @@ export function JudgeHomePage({ session }) {
       .catch(() => { if (current) setBallots([]); })
       .finally(() => { if (current) setLoading(false); });
     return () => { current = false; };
-  }, [profile?.registrationStatus, session.user?.id]);
+  }, [profile?.registrationStatus, session?.user?.id]);
 
-  const troupes = ballots.flatMap((ballot) => ballot.troupes);
+  const troupes = ballots.flatMap((ballot) => ballot.troupes || []);
   const closed = troupes.filter((troupe) => troupe.status === "SUBMITTED").length;
   const resolved = troupes.reduce((sum, troupe) => sum + troupe.resolved, 0);
   const total = troupes.reduce((sum, troupe) => sum + troupe.total, 0);
   const progress = total > 0 ? Math.round((resolved / total) * 100) : 0;
 
-  const getState = (ballot) => {
-    if (ballot.status === "SUBMITTED") return { label: "Cerrada", icon: "✓", className: "is-closed" };
-    if (ballot.resolved === 0) return { label: "Sin empezar", icon: "○", className: "is-pending" };
-    if (ballot.resolved === ballot.total) return { label: "Lista para revisar", icon: "●", className: "is-ready" };
-    return { label: "En progreso", icon: "●", className: "is-progress" };
+  const getState = (troupe) => {
+    if (troupe.status === "SUBMITTED") return { label: "Cerrada", icon: "✓", className: "is-closed", statusKey: "SUBMITTED" };
+    if (troupe.resolved === 0) return { label: "Sin empezar", icon: "○", className: "is-pending", statusKey: "PENDING" };
+    if (troupe.resolved === troupe.total) return { label: "Lista para revisar", icon: "●", className: "is-ready", statusKey: "SCORED" };
+    return { label: "En progreso", icon: "●", className: "is-progress", statusKey: "ACTIVE" };
   };
 
   return (
     <main className="judge-home judge-operation-shell">
       <section className="judge-home-intro">
         <p className="eyebrow">Noche de competencia</p>
-        <h1>Buenas noches, {session.user?.name?.split(" ")[0] ?? "Jurado"}</h1>
+        <h1>Buenas noches, {session?.user?.name?.split(" ")[0] ?? "Jurado"}</h1>
         <p>{troupes[0] ? `${troupes[0].nightName} · ${troupes[0].specialtyName}` : "Tus planillas habilitadas aparecerán aquí."}</p>
       </section>
       <section className="judge-progress-card" aria-label="Progreso general">
-        <div><span>Progreso general</span><span>Comparsas evaluadas {closed} / {troupes.length}</span></div>
-        <div className="progress-track" aria-label={`${progress}% completado`}><span style={{ inlineSize: `${progress}%` }} /></div>
-        {progress === 100 && (
+        <ProgressBar
+          value={resolved}
+          max={total}
+          label="Progreso general"
+          sublabel={`Comparsas evaluadas ${closed} / ${troupes.length}`}
+        />
+        {progress === 100 && troupes.length > 0 && (
           <div className="judge-completion-message">
             <span className="completion-icon" aria-hidden="true">✓</span>
             <div>
@@ -90,16 +123,56 @@ export function JudgeHomePage({ session }) {
         {!profile && <p>Tu cuenta tiene rol JUDGE, pero no está vinculada a un perfil del padrón. Contactá a un administrador.</p>}
         {profile?.registrationStatus === "SUSPENDED" && <div className="suspension-notice" role="alert"><h2>Acceso suspendido</h2><p>Tus sesiones operativas fueron revocadas. Contactá a la administración para revisar tu estado.</p></div>}
         {profile?.registrationStatus === "REGISTERED" && loading && <p role="status">Cargando tus planillas…</p>}
-         {profile?.registrationStatus === "REGISTERED" && !loading && ballots.length === 0 && <div className="empty-state"><h2>Registro completo</h2><p>Todavía no tenés planillas habilitadas. Una asignación no abre votación por sí sola.</p></div>}
-         {profile?.registrationStatus === "REGISTERED" && troupes.length > 0 && <section aria-label="Mis planillas"><div className="judge-section-heading"><div><p className="eyebrow">Tus comparsas</p><h2>Tu noche de votación</h2></div><span>{troupes.length} comparsas</span></div><div className="judge-ballot-grid">{troupes.map((troupe) => {
-           const state = getState(troupe);
-           const ballotProgress = troupe.total > 0 ? Math.round((troupe.resolved / troupe.total) * 100) : 0;
-           return <article className={`judge-ballot-card ${state.className}`} key={`${troupe.ballotId}-${troupe.troupeId}`}>
-             <div className="judge-ballot-card-header"><div><p className="eyebrow">{troupe.nightName} · {troupe.specialtyName}</p><h3>{troupe.troupeName}</h3></div><span className="judge-status-badge"><span aria-hidden="true">{state.icon}</span> {state.label}</span></div>
-             {troupe.status === "SUBMITTED" ? <p className="judge-locked-copy"><span aria-hidden="true">🔒</span> Planilla confirmada</p> : <p className="judge-item-count">{troupe.resolved}/{troupe.total} ítems completados</p>}
-             <a className="button-link" href={`#/judge/ballot?ballotId=${troupe.ballotId}&troupeId=${encodeURIComponent(troupe.troupeId)}`}>{troupe.status === "SUBMITTED" ? "Ver planilla" : troupe.resolved === 0 ? "Comenzar" : "Continuar"}<span aria-hidden="true"> →</span></a>
-           </article>;
-         })}</div></section>}
+        {profile?.registrationStatus === "REGISTERED" && !loading && ballots.length === 0 && <div className="empty-state"><h2>Registro completo</h2><p>Todavía no tenés planillas habilitadas. Una asignación no abre votación por sí sola.</p></div>}
+        {profile?.registrationStatus === "REGISTERED" && troupes.length > 0 && (
+          <section aria-label="Mis planillas">
+            <div className="judge-section-heading">
+              <div>
+                <p className="eyebrow">Tus comparsas</p>
+                <h2>Tu noche de votación</h2>
+              </div>
+              <span>{troupes.length} comparsas</span>
+            </div>
+            <div className="judge-ballot-grid">
+              {troupes.map((troupe) => {
+                const state = getState(troupe);
+                return (
+                  <article
+                    className={`judge-ballot-card ${state.className}`}
+                    key={`${troupe.ballotId}-${troupe.troupeId}`}
+                  >
+                    {troupe.brandColor && (
+                      <div
+                        className="troupe-brand-stripe"
+                        style={{ backgroundColor: troupe.brandColor }}
+                        aria-hidden="true"
+                      />
+                    )}
+                    <div className="judge-ballot-card-header">
+                      <div>
+                        <p className="eyebrow">{troupe.nightName} · {troupe.specialtyName}</p>
+                        <h3>{troupe.troupeName}</h3>
+                      </div>
+                      <StatusPill status={state.statusKey} label={state.label} />
+                    </div>
+                    {troupe.status === "SUBMITTED" ? (
+                      <p className="judge-locked-copy"><span aria-hidden="true">🔒</span> Planilla confirmada</p>
+                    ) : (
+                      <p className="judge-item-count">{troupe.resolved}/{troupe.total} ítems completados</p>
+                    )}
+                    <a
+                      className="button-link"
+                      href={`#/judge/ballot?ballotId=${troupe.ballotId}&troupeId=${encodeURIComponent(troupe.troupeId)}`}
+                    >
+                      {troupe.status === "SUBMITTED" ? "Ver planilla" : troupe.resolved === 0 ? "Comenzar" : "Continuar"}
+                      <span aria-hidden="true"> →</span>
+                    </a>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        )}
       </section>
     </main>
   );
