@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PageShell } from "../components/PageShell.jsx";
 import { apiRequest } from "../api/http.js";
 
 export function AcceptOperationalInvitationPage({ secret }) {
@@ -57,7 +58,7 @@ export function AcceptOperationalInvitationPage({ secret }) {
   };
 
   return (
-    <main className="container invitation-page">
+    <PageShell layer="brand" className="container invitation-page">
       <div className="card">
         <p className="eyebrow">Acceso operativo</p>
         <h1>Completar registro</h1>
@@ -74,6 +75,6 @@ export function AcceptOperationalInvitationPage({ secret }) {
           <p role="status" aria-live="polite">{message}</p>
         </>}
       </div>
-    </main>
+    </PageShell>
   );
 }

@@ -44,21 +44,6 @@
   color: var(--muted-color);
 }
 
-.ballot-status-open {
-  color: #063b75;
-  background: #dce8ff;
-}
-
-.ballot-status-reopened {
-  color: #603b00;
-  background: #fde7b2;
-}
-
-.ballot-status-submitted {
-  color: #075332;
-  background: #cceedd;
-}
-
 .ballot-list {
   display: grid;
   gap: 1rem;
@@ -67,7 +52,7 @@
 .ballot-troupe {
   border: 1px solid var(--line-color);
   border-inline-start: 6px solid var(--accent-color);
-  border-radius: 0.7rem;
+  border-radius: var(--radius-lg);
   background: var(--card-bg);
   overflow: hidden;
 }
@@ -84,7 +69,7 @@
 
 .ballot-rubric {
   margin: 1rem;
-  border-block-start: 1px solid #d5dae4;
+  border-block-start: 1px solid var(--border-subtle);
   padding-block-start: 0.9rem;
 }
 
@@ -93,14 +78,14 @@
   grid-template-columns: minmax(0, 1fr) minmax(17rem, 30rem);
   align-items: center;
   gap: 1rem;
-  border-block-end: 1px solid #e6eaf0;
+  border-block-end: 1px solid var(--border-subtle);
   padding-block: 0.75rem;
   color: var(--text-color);
   font-size: 1rem;
 }
 
 .score-row small {
-  color: var(--muted);
+  color: var(--muted-color);
   display: block;
   margin-block-start: 0.2rem;
 }
@@ -227,7 +212,7 @@
   display: block;
   block-size: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--accent-primary), #60a5fa);
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-text));
   box-shadow: 0 0 1rem var(--accent-subtle);
 }
 
@@ -306,7 +291,7 @@
 }
 
 .judge-status-badge.is-ready { color: var(--warning-text); }
-.judge-status-badge.is-progress { color: #93c5fd; }
+.judge-status-badge.is-progress { color: var(--accent-text); }
 .judge-status-badge.is-pending { color: var(--text-secondary); }
 .judge-status-badge.is-closed { color: var(--success-text); }
 .judge-status-badge.is-locked { color: var(--text-muted); }
@@ -321,7 +306,7 @@
 .judge-locked-copy {
   margin: 0;
   color: var(--success-text);
-  font-weight: 750;
+  font-weight: 700;
 }
 
 .judge-locked-copy.is-waiting {
@@ -366,9 +351,9 @@ button.button-link:disabled {
   min-block-size: 2.75rem;
   align-items: center;
   margin-block-end: 0.5rem;
-  color: #bfdbfe;
+  color: var(--accent-light);
   font-size: 0.9rem;
-  font-weight: 750;
+  font-weight: 700;
   text-decoration: none;
 }
 
@@ -380,9 +365,9 @@ button.button-link:disabled {
 }
 
 .ballot-status-open {
-  color: #bfdbfe;
-  border-color: rgba(59,130,246,.48);
-  background: rgba(37,99,235,.14);
+  color: var(--accent-light);
+  border-color: var(--accent-hover);
+  background: var(--accent-subtle);
 }
 
 .ballot-status-submitted {
@@ -457,7 +442,7 @@ button.button-link:disabled {
 .score-copy > span {
   color: var(--text-primary);
   font-size: 1.05rem;
-  font-weight: 760;
+  font-weight: 700;
 }
 
 .score-row small {
@@ -506,7 +491,7 @@ button.button-link:disabled {
 
 .not-presented-action {
   min-block-size: 3rem;
-  color: #fecaca;
+  color: var(--danger-light);
   border: 1px solid var(--danger-border);
   background: var(--danger-bg);
   box-shadow: none;
@@ -539,7 +524,7 @@ button.button-link:disabled {
   block-size: 2.25rem;
   place-items: center;
   border-radius: var(--radius-full);
-  color: #052e16;
+  color: var(--success-border);
   background: var(--success-text);
   font-weight: 900;
   flex-shrink: 0;
@@ -620,7 +605,7 @@ button.button-link:disabled {
   block-size: 2.25rem;
   place-items: center;
   border-radius: var(--radius-full);
-  color: #052e16;
+  color: var(--success-border);
   background: var(--success-text);
   font-weight: 900;
 }
@@ -640,7 +625,7 @@ button.button-link:disabled {
 .score-copy-name {
   color: var(--text-primary);
   font-size: 1.05rem;
-  font-weight: 760;
+  font-weight: 700;
 }
 
 .score-anchor {
@@ -760,7 +745,7 @@ button.button-link:disabled {
   border: 1px solid rgba(59,130,246,.35);
   border-radius: var(--radius-md);
   padding: 1rem;
-  color: #dbeafe;
+  color: var(--accent-lighter);
   background: rgba(37,99,235,.12);
   font-size: 1.05rem;
 }
@@ -784,7 +769,7 @@ button.button-link:disabled {
   padding: 1rem 1.25rem;
   margin-block-start: 0.75rem;
   border: 1px solid rgba(34, 197, 94, 0.4);
-  border-radius: 0.75rem;
+  border-radius: var(--radius-lg);
   background: rgba(20, 83, 45, 0.22);
 }
 
@@ -794,8 +779,8 @@ button.button-link:disabled {
   block-size: 2.5rem;
   place-items: center;
   border-radius: 50%;
-  background: #86efac;
-  color: #052e16;
+  background: var(--success-bright);
+  color: var(--success-border);
   font-weight: 900;
   font-size: 1.25rem;
   flex-shrink: 0;
@@ -803,7 +788,7 @@ button.button-link:disabled {
 
 .judge-completion-message strong {
   display: block;
-  color: #86efac;
+  color: var(--success-bright);
   font-size: 1.1rem;
 }
 
@@ -820,9 +805,9 @@ button.button-link:disabled {
   padding: 0.9rem 1.2rem;
   margin-block-end: 1rem;
   border: 1px solid rgba(59, 130, 246, 0.4);
-  border-radius: 0.75rem;
+  border-radius: var(--radius-lg);
   background: rgba(30, 58, 138, 0.25);
-  color: #bfdbfe;
+  color: var(--accent-light);
 }
 
 .readonly-notice > span {
@@ -832,14 +817,14 @@ button.button-link:disabled {
 
 .readonly-notice strong {
   display: block;
-  color: #93c5fd;
+  color: var(--accent-text);
   font-size: 0.98rem;
 }
 
 .readonly-notice p {
   margin: 0.15rem 0 0;
   font-size: 0.84rem;
-  color: #dbeafe;
+  color: var(--accent-lighter);
 }
 
 /* ==========================================================================

@@ -205,7 +205,7 @@ describe("AdminResultsPage", () => {
     expect(netCell).toHaveAttribute("data-label", "Puntaje final neto");
   });
 
-  it("aplica data-layer='brand' y muestra el panel de condiciones previas cuando los resultados no están liberados (RF-200, RF-204)", async () => {
+  it("aplica data-layer='instrument' y muestra el panel de condiciones previas cuando los resultados no están liberados (RF-200, RF-204)", async () => {
     const notReleased = Object.assign(new Error("RESULTS_NOT_RELEASED"), { code: "RESULTS_NOT_RELEASED" });
     apiRequestMock.mockImplementation((path) => {
       if (path === "/api/v1/results/events") return Promise.resolve([event]);
@@ -218,7 +218,7 @@ describe("AdminResultsPage", () => {
 
     await waitFor(() => expect(getByRole("heading", { name: "Condiciones previas para liberar resultados (RF-94a)" })).toBeVisible());
     const main = container.querySelector("main");
-    expect(main).toHaveAttribute("data-layer", "brand");
+    expect(main).toHaveAttribute("data-layer", "instrument");
     expect(getByText(/Votación de todas las jornadas cerrada por el Administrador/)).toBeVisible();
     expect(getByText(/Todas las planillas en estado Confirmada/)).toBeVisible();
     expect(getByText(/Cero ítems pendientes de calificación/)).toBeVisible();

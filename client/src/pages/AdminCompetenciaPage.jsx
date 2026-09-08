@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { PageShell } from "../components/PageShell.jsx";
 import { apiRequest } from "../api/http.js";
+import { StatusPill } from "../components/StatusPill.jsx";
 
 const WriteContext = createContext(null);
 
@@ -38,8 +40,8 @@ export function AdminCompetenciaPage({ event, onBack }) {
 
   return (
     <WriteContext.Provider value={{ writing, setPending }}>
-      <main className="admin-shell" aria-busy={pending} data-layer="instrument">
-        <fieldset aria-label="Configuracion de competencia" disabled={pending} style={{ border: 0, padding: 0, margin: 0, minInlineSize: 0 }}>
+      <PageShell layer="instrument" className="admin-shell" aria-busy={pending}>
+        <fieldset aria-label="Configuracion de competencia" disabled={pending} className="fieldset-reset">
           <header className="event-header">
             <div>
               <p className="eyebrow">Competencia</p>
@@ -68,7 +70,7 @@ export function AdminCompetenciaPage({ event, onBack }) {
           {subPage === "rubrics" && <AdminRubricsSection event={event} />}
           {subPage === "matrix" && <MatrizPlanillasSection event={event} />}
         </fieldset>
-      </main>
+      </PageShell>
     </WriteContext.Provider>
   );
 }
@@ -220,10 +222,10 @@ function AdminTroupesSection({ event }) {
                 <button type="button" className="secondary" onClick={() => setEditing(null)}>Cancelar</button>
               </SaveForm>
             ) : (
-              <div>
-                <strong>{troupe.name}</strong>
-                <span>{troupe.categoryName ?? "Sin tipo"}</span>
-                <span className={troupe.active ? "status-active" : "status-inactive"}>{troupe.active ? "Activa" : "Inactiva"}</span>
+              <div className="troupe-card-content">
+                <strong className="troupe-card-name">{troupe.name}</strong>
+                <span className="troupe-card-category">{troupe.categoryName ?? "Sin tipo"}</span>
+                <StatusPill status={troupe.active ? "ACTIVE" : "SUSPENDED"} label={troupe.active ? "Activa" : "Inactiva"} />
                 {!locked && <button className="secondary" type="button" aria-label={`Editar comparsa ${troupe.name}`} onClick={() => setEditing(troupe.id)}>Editar</button>}
               </div>
             )}
@@ -578,7 +580,7 @@ function AdminRubricsSection({ event }) {
                         {!locked && (
                           <SaveForm resetOnSuccess className="inline-criterion-form" onSubmit={(e) => { const fd = new FormData(e.currentTarget); return saveCriterion(rubric.id, { scoringItemId: item.id, description: fd.get("description"), displayOrder: Number(fd.get("displayOrder")) }); }}>
                             <input name="description" aria-label={`Nuevo criterio para ${item.name}`} placeholder="Nuevo criterio" required />
-                            <input name="displayOrder" aria-label={`Orden del nuevo criterio para ${item.name}`} type="number" min="1" defaultValue="1" required style={{ inlineSize: "4rem" }} />
+                            <input name="displayOrder" aria-label={`Orden del nuevo criterio para ${item.name}`} type="number" min="1" defaultValue="1" required className="input-order" />
                             <button type="submit" aria-label={`Agregar criterio a ${item.name}`}>+</button>
                           </SaveForm>
                         )}

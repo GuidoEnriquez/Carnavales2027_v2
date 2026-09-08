@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { PageShell } from "../components/PageShell.jsx";
 import { apiRequest } from "../api/http.js";
 
 export function AdminVotingPage() {
@@ -104,7 +105,7 @@ export function AdminVotingPage() {
     }
   };
 
-  return <main className="admin-shell voting-page" data-layer="instrument">
+  return <PageShell layer="instrument" className="admin-shell voting-page">
     <header className="event-header">
       <div><p className="eyebrow">Mesa de control</p><h1>Votación por noche</h1></div>
       <div className="voting-pickers">
@@ -237,5 +238,5 @@ export function AdminVotingPage() {
         <div className="pending-dialog-actions"><button data-close-pending-dialog-close type="button" onClick={closePendingDialog}>Volver al control</button></div>
       </div>}
     </dialog>
-  </main>;
+  </PageShell>;
 }

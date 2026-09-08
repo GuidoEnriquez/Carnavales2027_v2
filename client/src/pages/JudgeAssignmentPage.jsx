@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PageShell } from "../components/PageShell.jsx";
 import { apiRequest } from "../api/http.js";
 
 function BuildingIcon() {
@@ -99,7 +100,7 @@ export function JudgeAssignmentPage({ session, onConfirmed }) {
   };
 
   return (
-    <main className="assignment-confirm-page">
+    <PageShell layer="instrument" className="assignment-confirm-page">
       <header className="assignment-confirm-header">
         <div className="assignment-confirm-brand">
           <span className="assignment-confirm-icon" aria-hidden="true"><BuildingIcon /></span>
@@ -166,6 +167,6 @@ export function JudgeAssignmentPage({ session, onConfirmed }) {
 
         <p className="assignment-confirm-footer">Conexión Segura - Protocolo de Jueces V2.4</p>
       </section>
-    </main>
+    </PageShell>
   );
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PageShell } from "../components/PageShell.jsx";
 import { apiRequest } from "../api/http.js";
 import { EventReadinessPanel } from "../features/EventReadinessPanel.jsx";
 
@@ -46,7 +47,7 @@ export function EventConfigurationPage({
   const replace = (setter) => (saved) => setter((current) => current.map((entry) => entry.id === saved.id ? { ...entry, ...saved } : entry));
 
   return (
-    <main className="admin-shell" data-layer="instrument">
+    <PageShell layer="instrument" className="admin-shell">
       <header className="event-header">
         <div>
           <p className="eyebrow">{locked ? "Evento abierto" : "Evento en configuracion"}</p>
@@ -99,6 +100,6 @@ export function EventConfigurationPage({
         refreshKey={readinessRevision}
         onOpened={(openedEvent) => setCurrentEvent((current) => ({ ...current, ...openedEvent }))}
       />
-    </main>
+    </PageShell>
   );
 }

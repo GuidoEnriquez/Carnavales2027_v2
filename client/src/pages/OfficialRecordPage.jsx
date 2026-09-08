@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PageShell } from "../components/PageShell.jsx";
 import { apiRequest } from "../api/http.js";
 import { useSession } from "../auth/session-context.jsx";
 
@@ -118,7 +119,7 @@ export function OfficialRecordPage() {
   const payload = recordData?.payload;
 
   return (
-    <main className="official-record-page" data-layer="brand">
+    <PageShell layer="instrument" className="official-record-page">
       {/* Barra de control y navegación en pantalla (se oculta al imprimir) */}
       <section className="record-controls-panel no-print" aria-label="Controles del acta">
         <div className="record-controls-header">
@@ -342,6 +343,6 @@ export function OfficialRecordPage() {
           </section>
         </article>
       )}
-    </main>
+    </PageShell>
   );
 }

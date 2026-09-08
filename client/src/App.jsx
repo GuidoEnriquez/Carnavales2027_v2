@@ -24,6 +24,7 @@ import { VeedorMonitorPage } from "./pages/VeedorMonitorPage.jsx";
 import { LoginPage } from "./pages/LoginPage.jsx";
 import { PublicResultsPage } from "./pages/PublicResultsPage.jsx";
 import { apiRequest } from "./api/http.js";
+import { EventCard } from "./components/EventCard.jsx";
 import { useEffect, useState } from "react";
 
 function ProtectedShell({ session, children }) {
@@ -49,7 +50,9 @@ function AdminCompetenciaPageWrapper() {
       <div className="card">
         <h1>Competencia</h1>
         <p>Selecciona un evento para administrar su competencia.</p>
-        <ul>{events.map((e) => <li key={e.id}><button onClick={() => setSelectedEvent(e)}>{e.name} ({e.status})</button></li>)}</ul>
+        <div className="event-picker-list" role="list">
+          {events.map((e) => <EventCard key={e.id} event={e} onSelect={setSelectedEvent} />)}
+        </div>
       </div>
     </main>
   );

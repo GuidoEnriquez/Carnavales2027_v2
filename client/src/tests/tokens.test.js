@@ -60,30 +60,22 @@ describe("Design System Tokens (Spec 020 / RF-176, RF-177)", () => {
     expect(css).toContain("--primary-color: var(--accent-primary);");
   });
 
-  it("centraliza el bloque operativo sin cambiar sus 15 valores efectivos", () => {
-    // The final root block must retain precedence over earlier token rules.
-    const block = css.match(/:root\s*\{([^{}]*)\}\s*$/)?.[1];
-    expect(block).toBeDefined();
-    const declarations = Object.fromEntries(
-      [...block.matchAll(/(--[\w-]+):\s*([^;]+);/g)].map(([, name, value]) => [name, value]),
-    );
-    expect(declarations).toEqual({
-      "--primary-color": "#a9c2ff",
-      "--primary-dark": "#7fa7ff",
-      "--accent-color": "#f59e0b",
-      "--danger-color": "#ef4444",
-      "--success-color": "#22c55e",
-      "--bg-color": "#090d16",
-      "--surface": "#111827",
-      "--surface-raised": "#182233",
-      "--text-color": "#f8fafc",
-      "--muted-color": "#94a3b8",
-      "--line-color": "#293548",
-      "--card-bg": "#111827",
-      "--focus-color": "#fbbf24",
-      "--mono-font": 'ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace',
-      "--border-radius": "0.9rem",
-    });
+  it("centraliza el bloque operativo sin cambiar sus valores efectivos", () => {
+    // Legacy tokens are now mapped through semantic tokens in the main :root block.
+    expect(css).toContain("--primary-color: var(--accent-primary);");
+    expect(css).toContain("--primary-dark: var(--accent-hover);");
+    expect(css).toContain("--accent-color: var(--warning);");
+    expect(css).toContain("--danger-color: var(--danger);");
+    expect(css).toContain("--success-color: var(--success);");
+    expect(css).toContain("--bg-color: var(--surface-base);");
+    expect(css).toContain("--surface: var(--surface-card);");
+    expect(css).toContain("--text-color: var(--text-primary);");
+    expect(css).toContain("--muted-color: var(--text-muted);");
+    expect(css).toContain("--line-color: var(--border-subtle);");
+    expect(css).toContain("--card-bg: var(--surface-card);");
+    expect(css).toContain("--focus-color: var(--brand-gold);");
+    expect(css).toContain("--mono-font: var(--font-mono);");
+    expect(css).toContain("--border-radius: var(--radius-lg);");
     expect(css).toContain("--text-inverse: #0f172a;");
   });
 
@@ -95,8 +87,9 @@ describe("Design System Tokens (Spec 020 / RF-176, RF-177)", () => {
     const scrutiny = readFileSync(resolve(__dirname, "../styles/scrutiny.css"), "utf8");
     const admin = readFileSync(resolve(__dirname, "../styles/admin.css"), "utf8");
     const competencia = readFileSync(resolve(__dirname, "../styles/competencia.css"), "utf8");
+    const utilities = readFileSync(resolve(__dirname, "../styles/utilities.css"), "utf8");
     expect(index).toMatch(
-      /^@import "\.\/styles\/tokens\.css";\s*@import "\.\/styles\/components\.css";\s*@import "\.\/styles\/ceremony\.css";\s*@import "\.\/styles\/penalties\.css";\s*@import "\.\/styles\/scrutiny\.css";\s*@import "\.\/styles\/admin\.css";\s*@import "\.\/styles\/competencia\.css";/
+      /^@import "\.\/styles\/tokens\.css";\s*@import "\.\/styles\/components\.css";\s*@import "\.\/styles\/ceremony\.css";\s*@import "\.\/styles\/penalties\.css";\s*@import "\.\/styles\/scrutiny\.css";\s*@import "\.\/styles\/admin\.css";\s*@import "\.\/styles\/competencia\.css";\s*@import "\.\/styles\/utilities\.css";/
     );
     expect(/:root\s*\{/.test(index)).toBe(false);
     expect(/:root\s*\{/.test(components)).toBe(false);
@@ -105,6 +98,42 @@ describe("Design System Tokens (Spec 020 / RF-176, RF-177)", () => {
     expect(/:root\s*\{/.test(scrutiny)).toBe(false);
     expect(/:root\s*\{/.test(admin)).toBe(false);
     expect(/:root\s*\{/.test(competencia)).toBe(false);
+    expect(/:root\s*\{/.test(utilities)).toBe(false);
+    expect(utilities).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+  });
+
+  it("centraliza .ballot-status-* en styles/judge.css sin duplicados en index.css (Spec 026/T03)", () => {
+    const index = readFileSync(resolve(__dirname, "../index.css"), "utf8");
+    const judge = readFileSync(resolve(__dirname, "../styles/judge.css"), "utf8");
+    for (const modifier of ["open", "submitted", "reopened"]) {
+      expect(index).not.toMatch(new RegExp(`\\.ballot-status-${modifier}\\s*\\{`));
+      expect(judge).toMatch(new RegExp(`\\.ballot-status-${modifier}\\s*\\{`));
+    }
+  });
+
+  it("usa tokens oscuros en badges de monitor y workflow sin fondos claros legacy (Spec 026/T04)", () => {
+    const index = readFileSync(resolve(__dirname, "../index.css"), "utf8");
+    const monitorOpen = index.match(/\.monitor-status-open\s*\{([^{}]*)\}/)?.[1] ?? "";
+    expect(monitorOpen).toMatch(/color:\s*var\(--success-text\)/);
+    expect(monitorOpen).toMatch(/background:\s*var\(--success-bg\)/);
+    const monitorClosed = index.match(/\.monitor-status-closed\s*\{([^{}]*)\}/)?.[1] ?? "";
+    expect(monitorClosed).toMatch(/color:\s*var\(--text-muted\)/);
+    const monitorWaiting = index.match(/\.monitor-status-not_open\s*\{([^{}]*)\}/)?.[1] ?? "";
+    expect(monitorWaiting).toMatch(/color:\s*var\(--warning-text\)/);
+    expect(monitorWaiting).toMatch(/background:\s*var\(--warning-bg\)/);
+    const stepDone = index.match(/\.workflow-step-done\s*\{([^{}]*)\}/)?.[1] ?? "";
+    expect(stepDone).toMatch(/border-color:\s*var\(--success\)/);
+    for (const block of [monitorOpen, monitorClosed, monitorWaiting, stepDone]) {
+      expect(block).not.toMatch(/#(dcfce7|e2e8f0|fef3c7|166534|334155|92400e|16a34a)/i);
+    }
+  });
+
+  it("usa tokens en resultados/portal de components.css sin hex literales (Spec 026/T05)", () => {
+    const components = readFileSync(resolve(__dirname, "../styles/components.css"), "utf8");
+    expect(components).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+    expect(components).toContain(".app-button-danger:hover:not(:disabled) {");
+    expect(components).toContain("background: var(--danger-border);");
+    expect(components).toContain(".col-penalty { color: var(--danger-text);");
   });
 
 

@@ -1,6 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { apiRequest } from "../api/http.js";
 import { Dialog } from "../components/Dialog.jsx";
+import { DialogFooter } from "../components/DialogFooter.jsx";
+import { PageShell } from "../components/PageShell.jsx";
 import { Button } from "../components/Button.jsx";
 import { ProgressBar } from "../components/ProgressBar.jsx";
 import { StatusPill } from "../components/StatusPill.jsx";
@@ -279,29 +281,29 @@ export function JudgeBallotPage({ ballotId, troupeId: initialTroupeId }) {
 
   if (!ballotId) {
     return (
-      <main className="container">
+      <PageShell layer="instrument" className="container">
         <div className="card">
           <h1>Planilla no seleccionada</h1>
           <a href="#/judge">Volver a mi panel</a>
         </div>
-      </main>
+      </PageShell>
     );
   }
 
   if (!ballot) {
     return (
-      <main className="container">
+      <PageShell layer="instrument" className="container">
         <div className="card">
           <h1>Planilla de evaluación</h1>
           <p role="status">{message || "Cargando planilla…"}</p>
         </div>
-      </main>
+      </PageShell>
     );
   }
 
   if (isTargetTroupeLocked) {
     return (
-      <main className="container judge-ballot-guard judge-operation-shell" data-layer="instrument">
+      <PageShell layer="instrument" className="container judge-ballot-guard judge-operation-shell">
         <div className="card guard-card">
           <span className="guard-icon" aria-hidden="true">🔒</span>
           <p className="eyebrow">
@@ -326,7 +328,7 @@ export function JudgeBallotPage({ ballotId, troupeId: initialTroupeId }) {
             </a>
           </div>
         </div>
-      </main>
+      </PageShell>
     );
   }
 
@@ -444,7 +446,7 @@ export function JudgeBallotPage({ ballotId, troupeId: initialTroupeId }) {
   };
 
   return (
-    <main className="judge-ballot-page judge-operation-shell" data-layer="instrument">
+    <PageShell layer="instrument" className="judge-ballot-page judge-operation-shell">
       <div className="ballot-layout">
         <aside className="ballot-sidebar" aria-label="Comparsas">
           <nav>
@@ -470,15 +472,8 @@ export function JudgeBallotPage({ ballotId, troupeId: initialTroupeId }) {
                     >
                       {group.brandColor && (
                         <span
-                          className="troupe-color-indicator"
-                          style={{
-                            inlineSize: "10px",
-                            blockSize: "10px",
-                            borderRadius: "50%",
-                            backgroundColor: group.brandColor,
-                            display: "inline-block",
-                            marginInlineEnd: "8px",
-                          }}
+                          className="troupe-color-dot"
+                          style={{ backgroundColor: group.brandColor }}
                           aria-hidden="true"
                         />
                       )}
@@ -502,7 +497,7 @@ export function JudgeBallotPage({ ballotId, troupeId: initialTroupeId }) {
               <h1>{ballot.nightName}</h1>
               <p>{ballot.specialtyName} · {groups.length} comparsa{groups.length === 1 ? "" : "s"}</p>
             </div>
-            <div className="ballot-header-status" style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+            <div className="ballot-header-status">
               <button
                 type="button"
                 className="secondary view-toggle-btn"
@@ -789,11 +784,11 @@ export function JudgeBallotPage({ ballotId, troupeId: initialTroupeId }) {
             </li>
           )}
         </ul>
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "1rem" }}>
+        <DialogFooter>
           <Button variant="secondary" onClick={() => setPendingDialogOpen(false)}>
             Cerrar
           </Button>
-        </div>
+        </DialogFooter>
       </Dialog>
 
       {/* Incomplete Ballot Dialog (attempted submit with pendings) */}
@@ -821,11 +816,11 @@ export function JudgeBallotPage({ ballotId, troupeId: initialTroupeId }) {
             </li>
           ))}
         </ul>
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "1rem" }}>
+        <DialogFooter>
           <Button variant="secondary" onClick={() => setIncompleteDialog(null)}>
             Volver a la planilla
           </Button>
-        </div>
+        </DialogFooter>
       </Dialog>
 
       {/* Segregated "No se presentó" Modal (RF-186) */}
@@ -839,10 +834,10 @@ export function JudgeBallotPage({ ballotId, troupeId: initialTroupeId }) {
           <div className="not-presented-dialog-content">
             <p><strong>{notPresentedConfirm.troupeName}</strong></p>
             <p>{notPresentedConfirm.rubricName} — {notPresentedConfirm.itemName}</p>
-            <p style={{ margin: "1rem 0", padding: "0.75rem", background: "var(--warning-bg)", border: "1px solid var(--warning-border)", borderRadius: "var(--radius-sm)", color: "var(--warning-text)" }}>
+            <p className="warning-inline-alert">
               Esta acción registrará 0 (cero) puntos de manera inmutable.
             </p>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", marginTop: "1rem" }}>
+            <DialogFooter>
               <Button variant="secondary" onClick={() => setNotPresentedConfirm(null)}>
                 Cancelar
               </Button>
@@ -856,7 +851,7 @@ export function JudgeBallotPage({ ballotId, troupeId: initialTroupeId }) {
               >
                 Confirmar
               </Button>
-            </div>
+            </DialogFooter>
           </div>
         )}
       </Dialog>
@@ -871,10 +866,10 @@ export function JudgeBallotPage({ ballotId, troupeId: initialTroupeId }) {
         <div className="submit-dialog-content">
           <p className="eyebrow">Confirmar planilla</p>
           <p>Estás por cerrar la evaluación de <strong>{groups[0]?.troupeName ?? ballot.nightName}</strong>.</p>
-          <p className="confirm-score-display" style={{ margin: "1rem 0", fontSize: "1.25rem" }}>
+          <p className="confirm-score-display">
             Total registrado: <strong>{scoreTotal} puntos</strong>
           </p>
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", marginTop: "1rem" }}>
+          <DialogFooter>
             <Button variant="secondary" onClick={() => setSubmitConfirm(false)} disabled={isSubmitting}>
               Cancelar
             </Button>
@@ -888,9 +883,9 @@ export function JudgeBallotPage({ ballotId, troupeId: initialTroupeId }) {
             >
               Confirmar y cerrar
             </Button>
-          </div>
+          </DialogFooter>
         </div>
       </Dialog>
-    </main>
+    </PageShell>
   );
 }

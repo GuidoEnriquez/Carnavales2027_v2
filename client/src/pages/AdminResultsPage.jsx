@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { PageShell } from "../components/PageShell.jsx";
 import { apiRequest } from "../api/http.js";
 import { CeremonialDrawModal } from "../features/results/CeremonialDrawModal.jsx";
 import { useSession } from "../auth/session-context.jsx";
@@ -121,7 +122,7 @@ export function AdminResultsPage() {
   ];
 
   return (
-    <main className="admin-shell results-page" data-layer="brand">
+    <PageShell layer="instrument" className="admin-shell results-page">
       <header className="event-header">
         <div>
           <p className="eyebrow">Escrutinio autorizado</p>
@@ -260,6 +261,6 @@ export function AdminResultsPage() {
         onClose={() => setModalOpen(false)}
         onResolved={setDrawResult}
       />}
-    </main>
+    </PageShell>
   );
 }

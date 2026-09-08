@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { PageShell } from "../components/PageShell.jsx";
 import { apiRequest } from "../api/http.js";
 import { useSession } from "../auth/session-context.jsx";
 
@@ -240,7 +241,7 @@ export function LoginPage({ onAuthenticated }) {
   };
 
   return (
-    <main className="login-page" data-layer="brand">
+    <PageShell layer="brand" className="login-page">
       <div className="login-orbit login-orbit-left" aria-hidden="true" />
       <div className="login-orbit login-orbit-right" aria-hidden="true" />
       <div className="card login-card">
@@ -279,7 +280,7 @@ export function LoginPage({ onAuthenticated }) {
               </div>
             </label>
             <button className="primary-action" disabled={loading}>
-              {loading ? "Verificando…" : <>Ingresar <span aria-hidden="true">→</span></>}
+              {loading ? "Verificando…" : "Ingresar"}
             </button>
           </form>
         ) : step === "otp" ? (
@@ -347,6 +348,6 @@ export function LoginPage({ onAuthenticated }) {
       <div className="login-device-status" aria-label="Estado del dispositivo">
         <span aria-hidden="true">●</span> Dispositivo conectado
       </div>
-    </main>
+    </PageShell>
   );
 }

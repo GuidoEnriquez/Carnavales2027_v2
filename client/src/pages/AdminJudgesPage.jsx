@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PageShell } from "../components/PageShell.jsx";
 import { apiRequest } from "../api/http.js";
 
 const statusLabels = {
@@ -109,7 +110,7 @@ export function AdminJudgesPage() {
   };
 
   return (
-    <main className="admin-shell roster-page" data-layer="instrument">
+    <PageShell layer="instrument" className="admin-shell roster-page">
       <header className="event-header">
         <div><p className="eyebrow">Identidad y acceso</p><h1>Personas y accesos</h1></div>
         <span className="roster-count">{judges.length} jurados · {operationalProfiles.length} auxiliares</span>
@@ -196,6 +197,6 @@ export function AdminJudgesPage() {
           })}
         </div>}
       </section>}
-    </main>
+    </PageShell>
   );
 }

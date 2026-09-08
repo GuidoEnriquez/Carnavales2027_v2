@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { PageShell } from "../components/PageShell.jsx";
 
 function TrophyIcon() {
   return (
@@ -205,7 +206,7 @@ export function PublicResultsPage({ initialEventId = null }) {
   };
 
   return (
-    <main id="main-content" className="public-portal-container" data-layer="brand">
+    <PageShell layer="brand" id="main-content" className="public-portal-container">
       {/* Barra de cabecera institucional */}
       <header className="public-portal-header">
         <div className="public-header-content">
@@ -491,6 +492,6 @@ export function PublicResultsPage({ initialEventId = null }) {
           Carnavales 2027 — Plataforma de Gestión, Votación y Escrutinio Oficial.
         </p>
       </footer>
-    </main>
+    </PageShell>
   );
 }

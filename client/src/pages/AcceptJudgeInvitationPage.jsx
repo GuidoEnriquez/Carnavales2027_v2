@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PageShell } from "../components/PageShell.jsx";
 import { apiRequest } from "../api/http.js";
 
 export function AcceptJudgeInvitationPage({ secret }) {
@@ -72,7 +73,7 @@ export function AcceptJudgeInvitationPage({ secret }) {
   };
 
   return (
-    <main className="container invitation-page">
+    <PageShell layer="brand" className="container invitation-page">
       <div className="card">
         <p className="eyebrow">Padrón de jurados</p>
         <h1>Completar registro</h1>
@@ -91,10 +92,10 @@ export function AcceptJudgeInvitationPage({ secret }) {
           <p role="status" aria-live="polite">{message}</p>
         </>}
       </div>
-    </main>
+    </PageShell>
   );
 }
 
 export function AcceptedJudgeInvitationPage() {
-  return <main className="container invitation-page"><div className="card"><p className="eyebrow">Padrón de jurados</p><h1>Cuenta creada</h1><p>Iniciá sesión y completá la verificación en dos pasos. Todavía no tenés una asignación para votar.</p><a className="button-link" href="#/login">Continuar al inicio de sesión</a></div></main>;
+  return <PageShell layer="brand" className="container invitation-page"><div className="card"><p className="eyebrow">Padrón de jurados</p><h1>Cuenta creada</h1><p>Iniciá sesión y completá la verificación en dos pasos. Todavía no tenés una asignación para votar.</p><a className="button-link" href="#/login">Continuar al inicio de sesión</a></div></PageShell>;
 }

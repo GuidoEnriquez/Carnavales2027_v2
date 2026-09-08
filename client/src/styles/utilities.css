@@ -1,0 +1,19 @@
+/**
+ * utilities.css — Utilidades internas de layout (Spec 026/T06)
+ *
+ * Solo composición con tokens: sin colores literales ni estilos de
+ * componente. Prefijo `u-` para evitar colisiones. Se importa al final
+ * de `index.css` para componer sobre componentes con igual especificidad.
+ */
+
+.u-flex { display: flex; }
+.u-inline-flex { display: inline-flex; }
+.u-grid { display: grid; }
+.u-flex-col { display: flex; flex-direction: column; }
+.u-items-center { align-items: center; }
+.u-justify-between { justify-content: space-between; }
+.u-justify-center { justify-content: center; }
+.u-justify-end { justify-content: flex-end; }
+.u-gap-2 { gap: var(--space-2); }
+.u-gap-3 { gap: var(--space-3); }
+.u-gap-4 { gap: var(--space-4); }

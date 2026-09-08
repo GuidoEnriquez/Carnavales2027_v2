@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { PageShell } from "../components/PageShell.jsx";
 import { apiRequest } from "../api/http.js";
 
 const POLLING_MS = 15_000;
@@ -167,7 +168,7 @@ export function VeedorMonitorPage() {
   };
 
   return (
-    <main className={`container monitor-page ${isWallboard ? "is-wallboard" : ""}`} data-layer="instrument">
+    <PageShell layer="instrument" className={`container monitor-page ${isWallboard ? "is-wallboard" : ""}`}>
       <header className="monitor-header">
         <div>
           <p className="eyebrow">Supervisión operativa</p>
@@ -192,7 +193,7 @@ export function VeedorMonitorPage() {
           {/* Botón de alternancia de Modo Pared de Sala (RF-195) */}
           <button
             type="button"
-            className={`btn ${isWallboard ? "btn-secondary" : "btn-primary"} wallboard-toggle-btn`}
+            className={`app-button ${isWallboard ? "app-button-secondary" : "app-button-primary"} wallboard-toggle-btn`}
             onClick={() => setIsWallboard((prev) => !prev)}
             aria-pressed={isWallboard}
           >
@@ -233,7 +234,7 @@ export function VeedorMonitorPage() {
               </div>
               <button
                 type="button"
-                className="btn btn-secondary btn-sm"
+                className="app-button app-button-secondary app-button-md"
                 onClick={() => dismissAnomaly(anomaly.id)}
                 aria-label="Descartar alerta"
               >
@@ -354,6 +355,6 @@ export function VeedorMonitorPage() {
           )}
         </>
       )}
-    </main>
+    </PageShell>
   );
 }

@@ -1,3 +1,5 @@
+import { PageShell } from "../components/PageShell.jsx";
+
 export function HomePage({ session }) {
   const roles = session?.roles ?? [];
   const areas = [
@@ -27,7 +29,7 @@ export function HomePage({ session }) {
   ];
 
   return (
-    <main className="container home-page" data-layer="brand">
+    <PageShell layer="brand" className="container home-page">
       <div className="card home-hero-card">
         <p className="eyebrow">Sesión verificada</p>
         <h1>Carnavales Goya <span>2027</span></h1>
@@ -52,6 +54,6 @@ export function HomePage({ session }) {
           )}
         </div>
       </div>
-    </main>
+    </PageShell>
   );
 }

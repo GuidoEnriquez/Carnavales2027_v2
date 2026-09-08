@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PageShell } from "../components/PageShell.jsx";
 import { apiRequest } from "../api/http.js";
 import { ProgressBar } from "../components/ProgressBar.jsx";
 import { StatusPill } from "../components/StatusPill.jsx";
@@ -119,7 +120,7 @@ export function JudgeHomePage({ session }) {
   };
 
   return (
-    <main className="judge-home judge-operation-shell" data-layer="instrument">
+    <PageShell layer="instrument" className="judge-home judge-operation-shell">
       <section className="judge-home-intro">
         <p className="eyebrow">Noche de competencia</p>
         <h1>Buenas noches, {session?.user?.name?.split(" ")[0] ?? "Jurado"}</h1>
@@ -205,7 +206,6 @@ export function JudgeHomePage({ session }) {
                         href={`#/judge/ballot?ballotId=${troupe.ballotId}&troupeId=${encodeURIComponent(troupe.troupeId)}`}
                       >
                         {troupe.status === "SUBMITTED" ? "Ver planilla" : troupe.resolved === 0 ? "Comenzar" : "Continuar"}
-                        <span aria-hidden="true"> →</span>
                       </a>
                     )}
                   </article>
@@ -215,6 +215,6 @@ export function JudgeHomePage({ session }) {
           </section>
         )}
       </section>
-    </main>
+    </PageShell>
   );
 }

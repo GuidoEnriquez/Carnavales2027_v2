@@ -20,7 +20,11 @@
 - Spec 013 implementa suplencias priorizadas, parejas fijas titular/suplente y activación con ADMIN+2FA.
 - Spec 014 implementa gestión de penalizaciones (`troupe_penalty`), deducción en Mejor Comparsa y panel de Comisariato.
 - Spec 015 implementa actas oficiales de escrutinio (`official_scrutiny_record`), hash JCS/SHA-256 (RFC 8785) e impresión notarial (@media print).
-- Todas las specs 001 a 015 están cerradas y validadas; no hay incrementos abiertos activos.
+- Spec 016 implementa supervisión de votación por `VEEDOR` (validación automatizada completa; comprobación manual responsive pendiente).
+- Spec 017 configura la competencia (T01-T03 con evidencia; T04 en curso).
+- Specs 019 a 024 cierran las Fases 1 a 6 del Plan Maestro (seguridad, sistema de diseño, planilla v3, SSE, marca/home por rol, portal público).
+- Spec 025 (votación secuencial por orden de pasada) es propuesta pendiente de aprobación con contradicción spec-vs-validación por resolver.
+- El refactor de diseño del working tree quedó regularizado bajo Spec 026 (T01–T10 validadas; T11 pendiente por falta de navegador). Ver `sdd-status.md`.
 
 ## Artefactos ejecutables
 

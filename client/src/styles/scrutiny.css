@@ -320,6 +320,9 @@
   .no-print,
   .app-navigation,
   header.app-navigation,
+  .app-drawer,
+  .app-drawer-backdrop,
+  .nav-toggle,
   .session-actions,
   button,
   .button-link {

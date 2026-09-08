@@ -1,5 +1,7 @@
 const STATUS_LABELS = {
   OPEN: "Abierta",
+  CONFIGURING: "Configurando",
+  CLOSED: "Cerrada",
   SUBMITTED: "Confirmada",
   REOPENED: "Reabierta",
   REPLACED: "Reemplazada",

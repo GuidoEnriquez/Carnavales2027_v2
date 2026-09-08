@@ -133,15 +133,43 @@
   --primary-dark: var(--accent-hover);
   --accent-color: var(--warning);
   --danger-color: var(--danger);
+  --success-color: var(--success);
   --bg-color: var(--surface-base);
+  --surface: var(--surface-card);
   --text-color: var(--text-primary);
   --muted-color: var(--text-muted);
   --line-color: var(--border-subtle);
   --card-bg: var(--surface-card);
+  --focus-color: var(--brand-gold);
+  --mono-font: var(--font-mono);
   --spacing-sm: var(--space-2);
   --spacing-md: var(--space-4);
   --spacing-lg: var(--space-8);
-  --border-radius: var(--radius-md);
+  --border-radius: var(--radius-lg);
+
+  /* ==========================================================================
+     Tokens de estado extendidos (componentes, connection-status, anomalies)
+     ========================================================================== */
+  --state-success: #4ade80;
+  --state-success-subtle: rgba(74, 222, 128, 0.12);
+  --state-warning: #fcd34d;
+  --state-warning-subtle: rgba(252, 211, 77, 0.12);
+  --state-danger: #f87171;
+  --state-danger-subtle: rgba(248, 113, 113, 0.12);
+
+  /* ==========================================================================
+     Escala de azul (planilla, status pills, scores)
+     ========================================================================== */
+  --accent-text: #93c5fd;
+  --accent-light: #bfdbfe;
+  --accent-lighter: #dbeafe;
+
+  /* ==========================================================================
+     Colores de texto extendidos
+     ========================================================================== */
+  --text-interactive: #e2e8f0;
+  --danger-light: #fecaca;
+  --success-bright: #86efac;
 
   /* Tokens de Marca Carnaval (Spec 023) */
   --brand-gold: #f5b301;
@@ -205,22 +233,5 @@
   }
 }
 
-/* Spec 009 compatibility values, formerly in index.css. Keep after the
-   token rules to preserve the existing cascade without changing the palette. */
-:root {
-  --primary-color: #a9c2ff;
-  --primary-dark: #7fa7ff;
-  --accent-color: #f59e0b;
-  --danger-color: #ef4444;
-  --success-color: #22c55e;
-  --bg-color: #090d16;
-  --surface: #111827;
-  --surface-raised: #182233;
-  --text-color: #f8fafc;
-  --muted-color: #94a3b8;
-  --line-color: #293548;
-  --card-bg: #111827;
-  --focus-color: #fbbf24;
-  --mono-font: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  --border-radius: 0.9rem;
-}
+/* Legacy block removed — all tokens now resolve through the semantic
+   mappings in :root above. */

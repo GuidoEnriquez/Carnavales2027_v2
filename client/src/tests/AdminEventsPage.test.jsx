@@ -22,7 +22,8 @@ describe("AdminEventsPage", () => {
       .mockImplementation(() => new Promise((resolve) => pending.push(resolve)));
 
     render(<AdminEventsPage />);
-    fireEvent.click(await screen.findByRole("button", { name: "Goya (CONFIGURING)" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Configurar evento" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Goya Configurando" }));
 
     expect(await screen.findByText("Cargando configuracion...")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Jornadas" })).not.toBeInTheDocument();
@@ -39,7 +40,8 @@ describe("AdminEventsPage", () => {
       .mockResolvedValue([]);
 
     render(<AdminEventsPage />);
-    fireEvent.click(await screen.findByRole("button", { name: "Goya (CONFIGURING)" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Configurar evento" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Goya Configurando" }));
     expect(await screen.findByRole("heading", { name: "No se pudo cargar la configuracion" })).toBeInTheDocument();
   });
 });

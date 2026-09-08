@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { apiRequest } from "../api/http.js";
 import { RevokePenaltyModal } from "../features/penalties/RevokePenaltyModal.jsx";
+import { PageShell } from "../components/PageShell.jsx";
 
 function getApiErrorMessage(error, defaultMsg = "Ocurrió un error inesperado.") {
   if (error?.code === "RESULTS_ALREADY_RELEASED") {
@@ -212,7 +213,7 @@ export function AdminPenaltiesPage() {
   const selectedEvent = events.find((e) => e.id === eventId);
 
   return (
-    <main className="admin-shell penalties-page">
+    <PageShell layer="instrument" className="admin-shell penalties-page">
       <header className="event-header">
         <div>
           <p className="eyebrow">Comisariato</p>
@@ -418,6 +419,6 @@ export function AdminPenaltiesPage() {
           onRevoked={handleRevokeSuccess}
         />
       )}
-    </main>
+    </PageShell>
   );
 }

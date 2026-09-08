@@ -38,7 +38,7 @@
 .config-section {
   margin-block: 1.25rem;
   border: 1px solid var(--line-color);
-  border-radius: 0.75rem;
+  border-radius: var(--radius-lg);
   background: var(--card-bg);
   padding: clamp(1rem, 3vw, 1.75rem);
   container-type: inline-size;
@@ -47,9 +47,9 @@
 .section-heading {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.5rem 1rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
   margin-block-end: 1.25rem;
 }
 
@@ -75,7 +75,7 @@
 .record,
 .rubric-card {
   border: 1px solid var(--border-subtle);
-  border-radius: 0.6rem;
+  border-radius: var(--radius-md);
   background: var(--surface-card);
   padding: 1rem;
 }
@@ -83,6 +83,22 @@
 .config-card h3,
 .rubric-card h3 {
   margin-block: 0 0.25rem;
+}
+
+.troupe-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.troupe-card-name {
+  font-size: var(--text-lg);
+  line-height: var(--leading-tight);
+}
+
+.troupe-card-category {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
 }
 
 .inline-form {
@@ -211,7 +227,7 @@
 .judge-card {
   border: 1px solid var(--line-color);
   border-inline-start: 5px solid var(--primary-dark);
-  border-radius: 0.65rem;
+  border-radius: var(--radius-lg);
   background: var(--card-bg);
   padding: 1rem;
 }
@@ -284,7 +300,7 @@
 .assignment-card {
   border: 1px solid var(--line-color);
   border-inline-start: 5px solid var(--accent-color);
-  border-radius: 0.65rem;
+  border-radius: var(--radius-lg);
   background: var(--card-bg);
   padding: 1rem;
 }
@@ -315,15 +331,15 @@
   max-inline-size: calc(100vi - 2rem);
   max-block-size: calc(100dvb - 2rem);
   border: 1px solid var(--primary-dark);
-  border-radius: 0.75rem;
+  border-radius: var(--radius-lg);
   padding: 0;
   color: var(--text-color);
   background: var(--card-bg);
-  box-shadow: 0 1.5rem 4rem rgba(24, 58, 120, 0.3);
+  box-shadow: var(--shadow-lg);
 }
 
 .pending-dialog::backdrop {
-  background: rgba(22, 35, 58, 0.64);
+  background: var(--surface-overlay);
 }
 
 .pending-dialog-content {
@@ -391,7 +407,7 @@
   margin-block-end: 1.25rem;
   overflow: hidden;
   border: 1px solid var(--line-color);
-  border-radius: 0.7rem;
+  border-radius: var(--radius-lg);
   background: var(--line-color);
 }
 
@@ -423,7 +439,7 @@
 .operations-summary {
   margin-block: 1.25rem;
   border: 1px solid var(--border-subtle);
-  border-radius: 0.65rem;
+  border-radius: var(--radius-lg);
   padding: 1rem;
   background: var(--surface-card);
 }
@@ -458,6 +474,58 @@
 
 .operations-summary-list .button-link {
   justify-self: start;
+}
+
+.config-event-trigger {
+  margin-block-start: var(--space-4);
+  inline-size: 100%;
+}
+
+/* ==========================================================================
+   Event Picker List (AdminEventsPage — modal selection)
+   ========================================================================== */
+.event-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-block-size: 60vh;
+  overflow-y: auto;
+  padding-inline-end: var(--space-2);
+}
+
+.event-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border-default);
+  border-inline-start: 4px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.event-card:hover {
+  border-inline-start-color: var(--accent-primary);
+  box-shadow: var(--shadow-md);
+}
+
+.event-card:focus-visible {
+  outline: none;
+  border-inline-start-color: var(--accent-primary);
+  box-shadow: var(--focus-ring);
+}
+
+.event-card-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @container (min-width: 38rem) {

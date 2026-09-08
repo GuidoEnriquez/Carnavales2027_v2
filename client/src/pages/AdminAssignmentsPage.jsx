@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PageShell } from "../components/PageShell.jsx";
 import { apiRequest } from "../api/http.js";
 
 const typeLabels = { PRIMARY: "Titular", SUBSTITUTE: "Suplente" };
@@ -118,7 +119,7 @@ export function AdminAssignmentsPage() {
   };
 
   return (
-    <main className="admin-shell assignment-page" data-layer="instrument">
+    <PageShell layer="instrument" className="admin-shell assignment-page">
       <header className="event-header">
         <div><p className="eyebrow">Operación de jurados</p><h1>Cupos y asignaciones</h1></div>
         <label className="event-picker">Evento<select value={eventId} onChange={(event) => setEventId(event.target.value)}>
@@ -167,6 +168,6 @@ export function AdminAssignmentsPage() {
           })}
         </section>
       </>}
-    </main>
+    </PageShell>
   );
 }

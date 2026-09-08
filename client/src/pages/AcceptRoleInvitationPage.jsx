@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PageShell } from "../components/PageShell.jsx";
 import { apiRequest } from "../api/http.js";
 
 export function AcceptRoleInvitationPage({ token }) {
@@ -54,7 +55,7 @@ export function AcceptRoleInvitationPage({ token }) {
   };
 
   return (
-    <main className="container invitation-page">
+    <PageShell layer="brand" className="container invitation-page">
       <div className="card">
         <p className="eyebrow">Acceso operativo</p>
         <h1>Completar registro</h1>
@@ -71,6 +72,6 @@ export function AcceptRoleInvitationPage({ token }) {
           <p role="status" aria-live="polite">{message}</p>
         </>}
       </div>
-    </main>
+    </PageShell>
   );
 }
