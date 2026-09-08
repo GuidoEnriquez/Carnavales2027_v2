@@ -44,7 +44,7 @@ describe("JudgeBallotPage", () => {
     ));
 
     const secondScore = screen.getByLabelText("Comparsa Dos: Presencia");
-    fireEvent.click(within(secondScore).getByRole("button", { name: "8" }));
+    fireEvent.click(within(secondScore).getByRole("button", { name: /8.*Muy bueno/ }));
     fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
     await waitFor(() => expect(apiRequest).toHaveBeenCalledWith(
       "/api/v1/judge/ballots/ballot-1/scores/score-2",

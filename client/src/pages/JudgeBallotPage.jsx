@@ -11,6 +11,10 @@ function groupScores(scores) {
   }, {});
 }
 
+const SCORE_ANCHOR = ["", "Muy malo", "Malo", "Regular", "Aceptable", "Correcto", "Muy correcto", "Bueno", "Muy bueno", "Excelente", "Excelente"];
+
+function scoreAnchor(value) { return SCORE_ANCHOR[value] ?? ""; }
+
 function getPendingItems(scores, details) {
   const scoresById = new Map(scores.map((score) => [score.id, score]));
   const source = details?.length > 0
@@ -62,11 +66,15 @@ export function JudgeBallotPage({ ballotId, troupeId }) {
     }
   }, [pendingDialog]);
 
+  const confirmTriggerRef = useRef(null);
+  const submitTriggerRef = useRef(null);
+
   useEffect(() => {
     const dialog = confirmDialogRef.current;
     if (!dialog) return;
 
     if (confirmModal && !dialog.open) {
+      confirmTriggerRef.current = document.activeElement;
       dialog.showModal();
     } else if (!confirmModal && dialog.open) {
       dialog.close();
@@ -76,8 +84,12 @@ export function JudgeBallotPage({ ballotId, troupeId }) {
   useLayoutEffect(() => {
     const dialog = submitConfirmDialogRef.current;
     if (!dialog) return;
-    if (submitConfirm && !dialog.open) dialog.showModal();
-    else if (!submitConfirm && dialog.open) dialog.close();
+    if (submitConfirm && !dialog.open) {
+      submitTriggerRef.current = document.activeElement;
+      dialog.showModal();
+    } else if (!submitConfirm && dialog.open) {
+      dialog.close();
+    }
   }, [submitConfirm]);
 
   const closePendingDialog = () => {
@@ -199,54 +211,81 @@ export function JudgeBallotPage({ ballotId, troupeId }) {
   const total = ballot.scores.length;
   const progress = total > 0 ? Math.round((resolved / total) * 100) : 0;
   const scoreTotal = ballot.scores.reduce((sum, score) => sum + (typeof score.score === "number" ? score.score : 0), 0);
+  const allScores = ballot.scores.filter((score) => score.evaluationState === "PENDING");
+  const currentScoreIndex = allScores.findIndex((score) => {
+    const el = scoreRefs.current.get(score.id);
+    return el && el.getBoundingClientRect().top <= 200;
+  });
+  const effectiveIndex = currentScoreIndex === -1 ? 0 : currentScoreIndex;
+  const goToScore = (scoreId) => scoreRefs.current.get(scoreId)?.scrollIntoView({ behavior: "smooth", block: "center" });
 
   return <main className="judge-ballot-page judge-operation-shell">
-    <header className="ballot-header">
-      <div><a className="back-link" href="#/judge">← Comparsas</a><p className="eyebrow">Planilla de jurado</p><h1>{ballot.nightName}</h1><p>{ballot.specialtyName} · {groups.length} comparsa{groups.length === 1 ? "" : "s"}</p></div>
-      <div className="ballot-header-status">
-        <span className={`status-pill ballot-status-${ballot.status.toLowerCase()}`}>
-          {ballot.status === "SUBMITTED" ? "✓ Confirmada" : ballot.status === "REOPENED" ? "Reabierta" : "En carga"}
-        </span>
-      </div>
-    </header>
-    <section className="ballot-progress" aria-label="Progreso de la planilla"><div><span>Progreso</span><strong>{resolved} / {total}</strong></div><div className="progress-track"><span style={{ inlineSize: `${progress}%` }} /></div><p>{progress}% completado · {ballot.specialtyName}</p></section>
-    <p className="feedback" role="status" aria-live="polite">{message}</p>
-    {readonly && (
-      <section className="readonly-notice">
-        <span aria-hidden="true">🔒</span>
-        <div>
-          <strong>Planilla confirmada</strong>
-          <p>Esta planilla es solo para consulta y ya no puede modificarse.</p>
+    <div className="ballot-layout">
+      <aside className="ballot-sidebar" aria-label="Comparsas">
+        <nav>
+          <ul>{groups.map((group) => {
+            const groupTotal = Object.values(group.rubrics).reduce((n, r) => n + r.scores.length, 0);
+            const groupResolved = Object.values(group.rubrics).reduce((n, r) => n + r.scores.filter((s) => s.evaluationState !== "PENDING").length, 0);
+            return <li key={group.nightScheduleId}>
+              <button type="button" className="ballot-sidebar-item" onClick={() => goToTroupe(group.nightScheduleId)}>
+                <span className="ballot-sidebar-name">{group.presentationOrder}. {group.troupeName}</span>
+                <span className={`ballot-sidebar-status ${groupResolved === groupTotal ? "is-done" : groupResolved > 0 ? "is-progress" : ""}`}>{groupResolved}/{groupTotal}</span>
+              </button>
+            </li>;
+          })}</ul>
+        </nav>
+      </aside>
+      <div className="ballot-main">
+        <header className="ballot-header">
+          <div><a className="back-link" href="#/judge">← Comparsas</a><p className="eyebrow">Planilla de jurado</p><h1>{ballot.nightName}</h1><p>{ballot.specialtyName} · {groups.length} comparsa{groups.length === 1 ? "" : "s"}</p></div>
+          <div className="ballot-header-status">
+            <span className={`status-pill ballot-status-${ballot.status.toLowerCase()}`}>
+              {ballot.status === "SUBMITTED" ? "✓ Confirmada" : ballot.status === "REOPENED" ? "Reabierta" : "En carga"}
+            </span>
+          </div>
+        </header>
+        <section className="ballot-progress" aria-label="Progreso de la planilla"><div><span>Progreso</span><strong>{resolved} / {total}</strong></div><div className="progress-track"><span style={{ inlineSize: `${progress}%` }} /></div><p>{progress}% completado · {ballot.specialtyName}</p></section>
+        <p className="feedback" role="status" aria-live="polite">{message}</p>
+        {readonly && (
+          <section className="readonly-notice">
+            <span aria-hidden="true">🔒</span>
+            <div>
+              <strong>Planilla confirmada</strong>
+              <p>Esta planilla es solo para consulta y ya no puede modificarse.</p>
+            </div>
+          </section>
+        )}
+        <div className="ballot-workspace">
+          <section className="ballot-list" aria-label="Puntuaciones por comparsa">
+            {groups.map((group) => <article className="ballot-troupe" key={group.nightScheduleId} ref={(element) => { if (element) troupeRefs.current.set(group.nightScheduleId, element); else troupeRefs.current.delete(group.nightScheduleId); }}>
+              <header><p className="eyebrow">Salida {group.presentationOrder}</p><h2>{group.troupeName}</h2></header>
+              {Object.values(group.rubrics).map((rubric) => <section className="ballot-rubric" key={rubric.rubricId}>
+                <h3>{rubric.rubricName}</h3>
+                <p className="rubric-instruction">Seleccioná una puntuación para este criterio.</p>
+                {rubric.scores.map((score) => <div className={`score-row score-state-${score.evaluationState.toLowerCase()}`} key={score.id} ref={(element) => { if (element) scoreRefs.current.set(score.id, element); else scoreRefs.current.delete(score.id); }}>
+                  {score.evaluationState !== "PENDING" ? <><div className="score-copy"><span className="score-copy-name">{score.itemName}</span></div><div className={`locked-score ${score.evaluationState === "NOT_PRESENTED" ? "not-presented" : ""}`} aria-label={`${group.troupeName}: ${score.itemName}, ${score.evaluationState === "NOT_PRESENTED" ? "No se presentó" : `puntuado ${score.score} ${scoreAnchor(score.score)}`}  `}><span aria-hidden="true">{score.evaluationState === "NOT_PRESENTED" ? "⊘" : "✓"}</span><div><strong>{score.evaluationState === "NOT_PRESENTED" ? "No se presentó" : <>{score.score} · {scoreAnchor(score.score)}</>}</strong><small>Decisión bloqueada</small></div></div></> : <div className="score-actions" role="group" aria-label={`${group.troupeName}: ${score.itemName}`}><div className="score-copy"><span className="score-copy-name">{score.itemName}</span></div><div className="score-grid">{[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => <button key={value} type="button" disabled={readonly || score.status === "LOCKED" || Boolean(busy)} onClick={() => setConfirmModal({ scoreId: score.id, evaluationState: "SCORED", score: value, itemContext: { troupeName: group.troupeName, rubricName: rubric.rubricName, itemName: score.itemName } })}>{value} <span className="score-anchor">{scoreAnchor(value)}</span></button>)}</div><div className="not-presented-separator" aria-hidden="true"><hr /></div><button type="button" className="not-presented-action" disabled={readonly || score.status === "LOCKED" || Boolean(busy)} onClick={() => setConfirmModal({ scoreId: score.id, evaluationState: "NOT_PRESENTED", score: 0, itemContext: { troupeName: group.troupeName, rubricName: rubric.rubricName, itemName: score.itemName } })}>No se presentó</button></div>}
+                </div>)}
+              </section>)}
+            </article>)}
+          </section>
         </div>
-      </section>
-    )}
-    <div className="ballot-workspace">
-      <section className="ballot-list" aria-label="Puntuaciones por comparsa">
-        {groups.map((group) => <article className="ballot-troupe" key={group.nightScheduleId} ref={(element) => { if (element) troupeRefs.current.set(group.nightScheduleId, element); else troupeRefs.current.delete(group.nightScheduleId); }}>
-          <header><p className="eyebrow">Salida {group.presentationOrder}</p><h2>{group.troupeName}</h2></header>
-          {Object.values(group.rubrics).map((rubric) => <section className="ballot-rubric" key={rubric.rubricId}>
-            <h3>{rubric.rubricName}</h3>
-            <p className="rubric-instruction">Seleccioná una puntuación para este criterio.</p>
-            {rubric.scores.map((score) => <div className={`score-row score-state-${score.evaluationState.toLowerCase()}`} key={score.id} ref={(element) => { if (element) scoreRefs.current.set(score.id, element); else scoreRefs.current.delete(score.id); }}>
-              {score.evaluationState !== "PENDING" ? <div className={`locked-score ${score.evaluationState === "NOT_PRESENTED" ? "not-presented" : ""}`} aria-label={`${group.troupeName}: ${score.itemName}, ${score.evaluationState === "NOT_PRESENTED" ? "No se presentó" : `puntuado ${score.score}`}`}><span aria-hidden="true">{score.evaluationState === "NOT_PRESENTED" ? "⊘" : "✓"}</span><strong>{score.evaluationState === "NOT_PRESENTED" ? "No se presentó" : score.score}</strong><small>Decisión bloqueada</small></div> : <div className="score-actions" role="group" aria-label={`${group.troupeName}: ${score.itemName}`}>
-                <div className="score-grid">{[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => <button key={value} type="button" disabled={readonly || score.status === "LOCKED" || Boolean(busy)} onClick={() => setConfirmModal({ scoreId: score.id, evaluationState: "SCORED", score: value, itemContext: { troupeName: group.troupeName, rubricName: rubric.rubricName, itemName: score.itemName } })}>{value}</button>)}</div>
-                <button type="button" className="not-presented-action" disabled={readonly || score.status === "LOCKED" || Boolean(busy)} onClick={() => setConfirmModal({ scoreId: score.id, evaluationState: "NOT_PRESENTED", score: 0, itemContext: { troupeName: group.troupeName, rubricName: rubric.rubricName, itemName: score.itemName } })}>No se presentó</button>
-              </div>}
-            </div>)}
-          </section>)}
-        </article>)}
-      </section>
+        {!readonly && allScores.length > 0 && <nav className="ballot-item-nav" aria-label="Navegación entre ítems">
+          <button type="button" disabled={effectiveIndex <= 0} onClick={() => goToScore(allScores[Math.max(0, effectiveIndex - 1)].id)}>← Anterior</button>
+          <span className="ballot-item-nav-counter">{effectiveIndex + 1} / {allScores.length} pendientes</span>
+          <button type="button" disabled={effectiveIndex >= allScores.length - 1} onClick={() => goToScore(allScores[Math.min(allScores.length - 1, effectiveIndex + 1)].id)}>Siguiente →</button>
+        </nav>}
+        <footer className="ballot-footer">
+          <a className="secondary button-link" href="#/judge">← Comparsas</a>
+          <span className="save-indicator" role="status" aria-live="polite">{message === "Decisión confirmada en el servidor." ? <><span aria-hidden="true">✓</span> Guardado</> : message === "No hay conexión. Volvé a intentarlo para registrar la decisión." ? <><span aria-hidden="true">⚠</span> Error de guardado — reintentá</> : null}</span>
+          {!readonly && <button ref={submitButtonRef} type="button" disabled={Boolean(busy)} onClick={() => {
+            const pendingItems = getPendingItems(ballot.scores);
+            if (pendingItems.length > 0) setPendingDialog(pendingItems);
+            else setSubmitConfirm(true);
+          }}>{busy === "submit" ? "Confirmando…" : "Confirmar planilla"}</button>}
+          {readonly && <section className="locked-sheet" aria-label="Planilla confirmada"><span aria-hidden="true">✓</span><div><strong>Planilla confirmada</strong><p>Total registrado: {scoreTotal} puntos · Evaluación cerrada</p></div></section>}
+        </footer>
+      </div>
     </div>
-    <footer className="ballot-footer">
-      <a className="secondary button-link" href="#/judge">← Anterior</a>
-      <span className="save-indicator"><span aria-hidden="true">●</span> Guardado local</span>
-      {!readonly && <button ref={submitButtonRef} type="button" disabled={Boolean(busy)} onClick={() => {
-        const pendingItems = getPendingItems(ballot.scores);
-        if (pendingItems.length > 0) setPendingDialog(pendingItems);
-        else setSubmitConfirm(true);
-      }}>{busy === "submit" ? "Confirmando…" : "Confirmar planilla"}</button>}
-      {readonly && <section className="locked-sheet" aria-label="Planilla confirmada"><span aria-hidden="true">✓</span><div><strong>Planilla confirmada</strong><p>Total registrado: {scoreTotal} puntos · Evaluación cerrada</p></div></section>}
-    </footer>
     <dialog
       ref={pendingDialogRef}
       className="pending-dialog"
@@ -271,15 +310,17 @@ export function JudgeBallotPage({ ballotId, troupeId }) {
       className="pending-dialog confirm-dialog"
       aria-modal="true"
       aria-labelledby="confirm-modal-title"
+      aria-describedby="confirm-modal-description"
       onCancel={(event) => { event.preventDefault(); setConfirmModal(null); }}
+      onClose={() => { confirmTriggerRef.current?.focus(); }}
     >
       {confirmModal && <div className="pending-dialog-content">
         <p className="eyebrow">Confirmación de voto</p>
         <h2 id="confirm-modal-title">¿Confirmás esta decisión?</h2>
         <p><strong>{confirmModal.itemContext.troupeName}</strong></p>
         <p>{confirmModal.itemContext.rubricName} - {confirmModal.itemContext.itemName}</p>
-        <p className="confirm-score-display">{confirmModal.evaluationState === "NOT_PRESENTED" ? "Confirmar 0 - No se presentó" : <>Puntuación: <strong>{confirmModal.score}</strong></>}</p>
-        <p className="sync-warning">Una vez confirmada, esta decisión no podrá modificarse.</p>
+        <p className="confirm-score-display">{confirmModal.evaluationState === "NOT_PRESENTED" ? "Confirmar 0 - No se presentó" : <>Puntuación: <strong>{confirmModal.score} · {scoreAnchor(confirmModal.score)}</strong></>}</p>
+        <p className="sync-warning" id="confirm-modal-description">Una vez confirmada, esta decisión no podrá modificarse.</p>
         <div className="pending-dialog-actions modal-actions">
           <button type="button" className="secondary" onClick={() => setConfirmModal(null)} disabled={Boolean(busy)}>Cancelar</button>
           <button type="button" onClick={() => {
@@ -289,13 +330,13 @@ export function JudgeBallotPage({ ballotId, troupeId }) {
         </div>
       </div>}
     </dialog>
-    <dialog ref={submitConfirmDialogRef} className="pending-dialog confirm-dialog" aria-modal="true" aria-labelledby="submit-confirm-title" onCancel={(event) => { event.preventDefault(); setSubmitConfirm(false); }}>
+    <dialog ref={submitConfirmDialogRef} className="pending-dialog confirm-dialog" aria-modal="true" aria-labelledby="submit-confirm-title" aria-describedby="submit-confirm-description" onCancel={(event) => { event.preventDefault(); setSubmitConfirm(false); }} onClose={() => { submitTriggerRef.current?.focus(); }}>
       <div className="pending-dialog-content">
         <p className="eyebrow">Confirmar planilla</p>
         <h2 id="submit-confirm-title">Cierre definitivo</h2>
         <p>Estás por cerrar la evaluación de <strong>{groups[0]?.troupeName ?? ballot.nightName}</strong>.</p>
         <p className="confirm-score-display">Total: <strong>{scoreTotal} puntos</strong></p>
-        <p className="sync-warning">Una vez confirmada, esta planilla no podrá modificarse.</p>
+        <p className="sync-warning" id="submit-confirm-description">Una vez confirmada, esta planilla no podrá modificarse.</p>
         <div className="pending-dialog-actions modal-actions"><button type="button" className="secondary" onClick={() => setSubmitConfirm(false)} disabled={Boolean(busy)}>Cancelar</button><button type="button" onClick={() => { setSubmitConfirm(false); void submit(); }} disabled={Boolean(busy)}>Confirmar y cerrar</button></div>
       </div>
     </dialog>
