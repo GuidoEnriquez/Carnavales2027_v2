@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { apiRequest } from "../api/http.js";
 import { useSession } from "../auth/session-context.jsx";
 
-function goToRoleHome(session) {
+export function goToRoleHome(session) {
   if (session.status !== "authenticated") return false;
   if (session.roles?.length === 1 && session.roles[0] === "ADMIN") window.location.hash = "#/admin/events";
   else if (session.roles?.length === 1 && session.roles[0] === "JUDGE") window.location.hash = "#/judge";
@@ -240,7 +240,7 @@ export function LoginPage({ onAuthenticated }) {
   };
 
   return (
-    <main className="login-page">
+    <main className="login-page" data-layer="brand">
       <div className="login-orbit login-orbit-left" aria-hidden="true" />
       <div className="login-orbit login-orbit-right" aria-hidden="true" />
       <div className="card login-card">
@@ -279,7 +279,7 @@ export function LoginPage({ onAuthenticated }) {
               </div>
             </label>
             <button className="primary-action" disabled={loading}>
-              {loading ? "Verificando…" : <>Ingresar <span aria-hidden="true">→]</span></>}
+              {loading ? "Verificando…" : <>Ingresar <span aria-hidden="true">→</span></>}
             </button>
           </form>
         ) : step === "otp" ? (

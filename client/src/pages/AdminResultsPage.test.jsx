@@ -204,4 +204,25 @@ describe("AdminResultsPage", () => {
     expect(penaltiesCell).toHaveAttribute("data-label", "Penalizaciones");
     expect(netCell).toHaveAttribute("data-label", "Puntaje final neto");
   });
+
+  it("aplica data-layer='brand' y muestra el panel de condiciones previas cuando los resultados no están liberados (RF-200, RF-204)", async () => {
+    const notReleased = Object.assign(new Error("RESULTS_NOT_RELEASED"), { code: "RESULTS_NOT_RELEASED" });
+    apiRequestMock.mockImplementation((path) => {
+      if (path === "/api/v1/results/events") return Promise.resolve([event]);
+      if (path === "/api/v1/results/events/event-1/troupes") return Promise.resolve([]);
+      if (path === "/api/v1/events/event-1/results") return Promise.reject(notReleased);
+      return Promise.reject(new Error(`request inesperado: ${path}`));
+    });
+
+    const { container, getByRole, getByText } = render(<AdminResultsPage />);
+
+    await waitFor(() => expect(getByRole("heading", { name: "Condiciones previas para liberar resultados (RF-94a)" })).toBeVisible());
+    const main = container.querySelector("main");
+    expect(main).toHaveAttribute("data-layer", "brand");
+    expect(getByText(/Votación de todas las jornadas cerrada por el Administrador/)).toBeVisible();
+    expect(getByText(/Todas las planillas en estado Confirmada/)).toBeVisible();
+    expect(getByText(/Cero ítems pendientes de calificación/)).toBeVisible();
+    expect(getByText(/Rol autorizado: Escrutinio/)).toBeVisible();
+  });
 });
+

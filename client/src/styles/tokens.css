@@ -134,6 +134,12 @@
   --spacing-md: var(--space-4);
   --spacing-lg: var(--space-8);
   --border-radius: var(--radius-md);
+
+  /* Tokens de Marca Carnaval (Spec 023) */
+  --brand-gold: #f5b301;
+  --brand-magenta: #e11d74;
+  --brand-cyan: #14b8a6;
+  --brand-seal: #8f2e22;
 }
 
 /* ==========================================================================
@@ -146,6 +152,7 @@
   --accent-subtle: rgba(225, 29, 116, 0.18);
   --accent-secondary: #f5b301; /* Dorado */
   --accent-tertiary: #14b8a6;  /* Turquesa */
+  --accent-seal: var(--brand-seal); /* Sello notarial */
   --focus-ring: 0 0 0 3px rgba(225, 29, 116, 0.6);
 
   --primary-color: var(--accent-primary);

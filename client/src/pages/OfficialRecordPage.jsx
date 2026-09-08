@@ -118,7 +118,7 @@ export function OfficialRecordPage() {
   const payload = recordData?.payload;
 
   return (
-    <main className="official-record-page">
+    <main className="official-record-page" data-layer="brand">
       {/* Barra de control y navegación en pantalla (se oculta al imprimir) */}
       <section className="record-controls-panel no-print" aria-label="Controles del acta">
         <div className="record-controls-header">

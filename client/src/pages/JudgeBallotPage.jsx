@@ -365,7 +365,7 @@ export function JudgeBallotPage({ ballotId, troupeId }) {
   };
 
   return (
-    <main className="judge-ballot-page judge-operation-shell">
+    <main className="judge-ballot-page judge-operation-shell" data-layer="instrument">
       <div className="ballot-layout">
         <aside className="ballot-sidebar" aria-label="Comparsas">
           <nav>

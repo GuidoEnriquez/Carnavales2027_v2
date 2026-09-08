@@ -167,7 +167,7 @@ export function VeedorMonitorPage() {
   };
 
   return (
-    <main className={`container monitor-page ${isWallboard ? "is-wallboard" : ""}`}>
+    <main className={`container monitor-page ${isWallboard ? "is-wallboard" : ""}`} data-layer="instrument">
       <header className="monitor-header">
         <div>
           <p className="eyebrow">Supervisión operativa</p>

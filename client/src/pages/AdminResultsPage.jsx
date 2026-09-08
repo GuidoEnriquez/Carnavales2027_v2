@@ -121,7 +121,7 @@ export function AdminResultsPage() {
   ];
 
   return (
-    <main className="admin-shell results-page">
+    <main className="admin-shell results-page" data-layer="brand">
       <header className="event-header">
         <div>
           <p className="eyebrow">Escrutinio autorizado</p>
@@ -161,6 +161,30 @@ export function AdminResultsPage() {
                <div><strong>{step.label}</strong><span>{step.state === "done" ? "Listo" : step.state === "current" ? "En curso" : step.state === "skipped" ? "No requerido" : "Bloqueado"}</span></div>
              </li>)}
            </ol>
+
+           {!result && (
+             <section className="release-conditions-card" aria-label="Condiciones para liberación de resultados">
+               <h3>Condiciones previas para liberar resultados (RF-94a)</h3>
+               <ul className="release-conditions-list">
+                 <li className={selectedEvent.status === "CLOSED" || releaseAvailable ? "is-met" : "is-pending"}>
+                   <span className="condition-bullet" aria-hidden="true">{selectedEvent.status === "CLOSED" || releaseAvailable ? "✓" : "○"}</span>
+                   <span>Votación de todas las jornadas cerrada por el Administrador.</span>
+                 </li>
+                 <li className={releaseAvailable ? "is-met" : "is-pending"}>
+                   <span className="condition-bullet" aria-hidden="true">{releaseAvailable ? "✓" : "○"}</span>
+                   <span>Todas las planillas en estado Confirmada (SUBMITTED) o Reemplazada (REPLACED).</span>
+                 </li>
+                 <li className={releaseAvailable ? "is-met" : "is-pending"}>
+                   <span className="condition-bullet" aria-hidden="true">{releaseAvailable ? "✓" : "○"}</span>
+                   <span>Cero ítems pendientes de calificación (SCORED o NOT_PRESENTED completos).</span>
+                 </li>
+                 <li className={canRelease ? "is-met" : "is-warning"}>
+                   <span className="condition-bullet" aria-hidden="true">{canRelease ? "✓" : "🔒"}</span>
+                   <span>Rol autorizado: Escrutinio (SCRUTINEER) o Escribanía (ESCRIBANO) con 2FA verificado.</span>
+                 </li>
+               </ul>
+             </section>
+           )}
 
            {tie && (
             <section className="tie-breaker-panel" aria-labelledby="tie-breaker-title">

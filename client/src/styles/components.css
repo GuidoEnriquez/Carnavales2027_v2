@@ -810,4 +810,173 @@
   font-size: var(--text-base);
 }
 
+/* ==========================================================================
+   Capa de Marca y Experiencia por Rol (Spec 023)
+   ========================================================================== */
+
+[data-layer="brand"] {
+  --font-display: "Inter", system-ui, sans-serif;
+}
+
+[data-layer="brand"] h1 span {
+  color: var(--brand-gold);
+}
+
+[data-layer="brand"] .login-card {
+  border-color: rgba(225, 29, 116, 0.35);
+  box-shadow: 0 8px 32px 0 rgba(225, 29, 116, 0.15), 0 2px 8px 0 rgba(0, 0, 0, 0.6);
+}
+
+[data-layer="brand"] .login-kicker {
+  color: var(--brand-cyan);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Home por Rol (RF-202) */
+.home-page {
+  max-inline-size: 1100px;
+  margin-inline: auto;
+  padding-block: var(--space-6);
+}
+
+.home-hero-card {
+  padding: var(--space-8);
+  border: 1px solid rgba(225, 29, 116, 0.25);
+  border-radius: var(--radius-xl);
+  background: radial-gradient(circle at top right, rgba(225, 29, 116, 0.08), transparent 40%),
+              radial-gradient(circle at bottom left, rgba(20, 184, 166, 0.06), transparent 40%),
+              var(--surface-card);
+}
+
+.home-subtitle {
+  color: var(--text-secondary);
+  font-size: var(--text-lg);
+  margin-block: var(--space-2) var(--space-6);
+}
+
+.role-area-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-4);
+  margin-block-start: var(--space-6);
+}
+
+.role-area-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.role-area-card:hover {
+  border-color: var(--brand-magenta);
+  transform: translateY(-2px);
+}
+
+.role-area-pill {
+  display: inline-block;
+  font-size: var(--text-xs);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--accent-subtle);
+  color: var(--brand-magenta);
+  border: 1px solid rgba(225, 29, 116, 0.3);
+}
+
+.role-area-desc {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  margin: 0;
+  flex-grow: 1;
+}
+
+.empty-roles-notice {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: var(--space-8);
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-lg);
+}
+
+/* Condiciones para Liberar Resultados (RF-204) */
+.release-conditions-card {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  background: var(--surface-raised);
+  margin-block: var(--space-4);
+}
+
+.release-conditions-card h3 {
+  font-size: var(--text-base);
+  margin-block: 0 var(--space-3);
+  color: var(--text-primary);
+}
+
+.release-conditions-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.release-conditions-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+}
+
+.release-conditions-list li.is-met {
+  background: rgba(22, 163, 74, 0.1);
+  color: var(--success-text);
+  border-color: rgba(22, 163, 74, 0.25);
+}
+
+.release-conditions-list li.is-pending {
+  background: rgba(217, 119, 6, 0.1);
+  color: var(--warning-text);
+  border-color: rgba(217, 119, 6, 0.25);
+}
+
+.release-conditions-list li.is-warning {
+  background: rgba(220, 38, 38, 0.1);
+  color: var(--danger-text);
+  border-color: rgba(220, 38, 38, 0.25);
+}
+
+.condition-bullet {
+  font-weight: 700;
+  font-size: var(--text-base);
+  line-height: 1;
+}
+
+/* Accesibilidad y Reducción de Movimiento (RF-205) */
+@media (prefers-reduced-motion: reduce) {
+  .login-orbit {
+    animation: none !important;
+    display: none !important;
+  }
+  .role-area-card:hover {
+    transform: none !important;
+  }
+}
+
+
 
