@@ -3,7 +3,7 @@
 ## Estado
 
 - **Fase SDD:** Especificación aprobada para desarrollo (Fase 2 del Plan Maestro).
-- **Fuente:** `PLAN-maestro.md` §2.1, §2.3 y Fase 2; `docs/constitution.md` (Principio 8: Operación inclusiva en campo); Specs 009 y 018.
+- **Fuente:** `PLAN-maestro.md` §2.1, §2.3 y Fase 2; `docs/constitution.md` (Principio 8: Operación inclusiva en campo); Spec 009.
 - **Relación:** Establece la base de tokens, capas visuales, accesibilidad y componentes atómicos compartidos sin alterar las reglas de negocio, persistencia, contratos de API ni invariantes existentes. Habilita el rediseño de la planilla v3 (Spec 021) y el tiempo real (Spec 022).
 
 ---

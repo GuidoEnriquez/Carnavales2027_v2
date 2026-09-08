@@ -3,7 +3,7 @@
 ## Estado
 
 - **Fase SDD:** Especificación aprobada para desarrollo (Fase 3 del Plan Maestro).
-- **Fuente:** `PLAN-maestro.md` §2.2 y Fase 3; Specs 004, 006, 007, 009, 012, 018 y 020.
+- **Fuente:** `PLAN-maestro.md` §2.2 y Fase 3; Specs 004, 006, 007, 009, 012 y 020 (reemplaza y absorbe la propuesta preliminar de Spec 018).
 - **Relación:** Evoluciona la interfaz de puntuación del jurado sobre la base de tokens y componentes de Spec 020. Mantiene intactas las reglas de negocio e inmutabilidad estricta (Specs 004, 006 y 007), la operación 100% online (Spec 012) y la idempotencia en persistencia (Spec 019).
 
 ---
