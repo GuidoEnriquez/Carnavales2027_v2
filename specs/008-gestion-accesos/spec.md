@@ -12,6 +12,7 @@ Implementar la infraestructura para que el rol `ADMIN` pueda gestionar invitacio
 
 ## Requisitos Fundamentales (RF)
 - **RF-63:** El sistema debe contar en su diccionario con los roles de aplicación: `JUDGE`, `VEEDOR`, `COMISARIO`, `SCRUTINEER` y `ADMIN`.
+  - **Corrección posterior (2026-09-07):** el diccionario de roles se amplió con `ESCRIBANO` fuera de este incremento, mediante la iniciativa de Perfiles Operativos (`PLAN-operational-profiles.md`, migraciones 064-065) y las migraciones 055/057 de rol. RF-63 se conserva como evidencia histórica de lo validado en Spec 008; `ESCRIBANO` no pasó por este incremento numerado. Ver `docs/source-map.md`.
 - **RF-64:** Solo un usuario con rol `ADMIN` puede invitar a nuevos usuarios operativos.
 - **RF-65:** Las invitaciones deben ser seguras, utilizando un sistema de token (link) de un uso que expire y que permita al invitado definir su propia contraseña al momento de registrarse. El sistema solo puede persistir el hash del token y nunca el valor utilizable.
 - **RF-66:** El número de invitaciones generables por el Administrador para roles operativos es ilimitado por defecto.

@@ -34,7 +34,7 @@
 
 - `POST /api/v1/events/{eventId}/tie-breaker/ceremonial-draw`:
   - Valida `eventId` y body `{ remainingTroupeIds: string[] }`.
-  - Verifica 2FA y rol `ADMIN`, `SCRUTINEER` o `ESCRIBANO`.
+  - Verifica 2FA y rol `SCRUTINEER` o `ESCRIBANO` exclusivamente; `ADMIN` recibe 403 (RF-103). *(Corregido 2026-09-07: esta fila describía por error `ADMIN, SCRUTINEER o ESCRIBANO`, contradiciendo el propio RF-103 y la decisión de separación de funciones registrada en `clarifications.md`. Ver `validation.md`.)*
   - Verifica `results_release` para el evento (RF-94 + Spec 010).
   - Verifica que el empate siga vigente llamando a `determineBestTroupe` con los mismos rankings (mitiga `TIE_BREAKER_STALE`).
   - Verifica que `remainingTroupeIds` coincida exactamente con el pool vigente (RF-99).

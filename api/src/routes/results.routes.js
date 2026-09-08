@@ -50,7 +50,8 @@ export function createResultsRouter({ requireSession }) {
   });
 
   // Spec 011 — Sorteo ceremonial con conteo regresivo (criterio 3 de desempate).
-  // Roles: ADMIN, SCRUTINEER o ESCRIBANO. 2FA obligatorio.
+  // Roles: SCRUTINEER o ESCRIBANO exclusivamente (RF-103); ADMIN recibe 403.
+  // 2FA obligatorio.
   const ceremonialAuthorized = [
     requireSession,
     requireTwoFactor,

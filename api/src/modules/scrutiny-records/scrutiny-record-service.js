@@ -112,10 +112,19 @@ export async function certifyScrutinyRecord({
     const penalties = await fetchConsolidatedPenalties({ eventId: id, client });
     const rubricRankings = computeRubricRankings(scores);
     const overallRanking = computeOverallRanking(scores, penalties);
-    let bestTroupe = determineBestTroupe({ overallRanking, rubricRankings });
 
-    // Si el empate requiere sorteo ceremonial, verificar si ya fue realizado
-    if (bestTroupe.status === "REQUIRES_CEREMONIAL_DRAW") {
+    // determineBestTroupe() nunca devuelve un `status`: si el empate no se
+    // resuelve por criterios 1/2, resolveTieBreaker() LANZA
+    // TIE_BREAKER_REQUIRES_MANUAL_DRAW. Ese es el punto real donde hay que
+    // verificar si el sorteo ceremonial (Spec 011) ya fue registrado.
+    let bestTroupe;
+    try {
+      bestTroupe = determineBestTroupe({ overallRanking, rubricRankings });
+    } catch (error) {
+      if (error.code !== "TIE_BREAKER_REQUIRES_MANUAL_DRAW") {
+        throw error;
+      }
+
       const { rows: drawRows } = await client.query(
         `SELECT id AS "auditEventId",
                 after_data->>'winnerTroupeId' AS "winnerTroupeId",
@@ -131,9 +140,9 @@ export async function certifyScrutinyRecord({
       );
 
       if (drawRows.length === 0) {
-        const error = new Error("TIE_BREAKER_PENDING");
-        error.code = "TIE_BREAKER_PENDING";
-        throw error;
+        const pendingError = new Error("TIE_BREAKER_PENDING");
+        pendingError.code = "TIE_BREAKER_PENDING";
+        throw pendingError;
       }
 
       const draw = drawRows[0];

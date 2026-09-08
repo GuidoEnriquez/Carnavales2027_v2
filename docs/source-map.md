@@ -15,6 +15,7 @@
 - Spec 015: actas oficiales y certificación de escrutinio (`official_scrutiny_record`, migración 063): sello criptográfico JCS/SHA-256 (RFC 8785), inmutabilidad estricta por triggers en BD, segregación estricta de funciones (ADMIN solo lectura; emisión exclusiva `SCRUTINEER`/`ESCRIBANO` con 2FA), vista notarial imprimible (`@media print`) y firmas hológrafas. Cerrada el 2026-09-03.
 - Spec 016: supervisión de votación por `VEEDOR`: endpoint agregado, guard de rol, vista con polling y redirect post-login. Validación automatizada completada; comprobación manual responsive pendiente.
 - Spec 017: configuración de competencia. Decisión de producto del 2026-09-07: cada criterio nuevo pertenece a un ítem puntuable; `event_category` se reutiliza como tipo de participación; solo `DRAFT` es editable; `required` y `allow_not_presented` son metadata futura. La relación entre apertura y `PUBLISHED`/`LOCKED` queda `[NECESITA ACLARACIÓN]`.
+- Spec 018: refinamiento UX de la planilla del jurado. Critique de diseño (2026-09-07) identificó 5 hallazgos P0/P1: grilla de 11 opciones, nombre de ítem invisible, falta de palabra-ancla, indicador de guardado estático, sin navegación por ítems/sidebar. Implementación completada (T01-T06); comprobación manual responsive pendiente.
 - Diferido: publicación externa de resultados (portal público) y Offline-First operativo. Spec 005 conserva compatibilidad exploratoria, no capacidad aceptada.
 - Ampliacion Spec 017 solicitada en esta sesion: plan integral registrado para ejecucion por unidades; T07 cubre RF-145/RF-146 y RNF-34. RF-147 a RF-152 corresponden al alcance restante; las decisiones pendientes de apertura, versiones y fechas no se consideran aprobadas implicitamente.
 - Spec 017 / T08: RF-132/RF-139/RF-149 implementados para items/criterios; migracion 067 preserva NULL historicos e impide nuevos. Reordenamiento conserva unicidad por rubro y no cambia readiness ni apertura. Evidencia detallada en validation.md.
@@ -169,6 +170,7 @@ Por decisión de producto del 2026-09-01, la regla de subsanación conocida como
 - Los títulos de tickets no se interpretan como reglas completas.
 - Ante conflicto entre una copia de Obsidian y Jira/Confluence actual, se documenta como `[NECESITA ACLARACIÓN]` antes del plan o código.
 - La visión funcional objetivo se divide en incrementos verticales: cierre I1; usuarios y jurados; programación y nominaciones; votación; futura conexión/sincronización Offline-First; supervisión y penalizaciones; escrutinio/resultados; actas/reportes.
+- Cada incremento numeró sus RF de forma independiente: 22 números colisionan entre specs con contenido distinto. Ver [`docs/rf-index.md`](rf-index.md) antes de citar un RF por número solo; usar el prefijo `Spec-NNN/RF-xx` para los números listados ahí.
 
 ## Artefactos Perfiles Operativos (2026-09-03)
 

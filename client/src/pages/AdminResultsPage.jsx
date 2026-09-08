@@ -29,8 +29,7 @@ export function AdminResultsPage() {
     void apiRequest("/api/v1/results/events").then((items) => {
       if (!active) return;
       setEvents(items);
-      const testEvent = items.find((item) => item.name === "test_prueba");
-      setEventId(testEvent?.id ?? items[0]?.id ?? "");
+      setEventId(items[0]?.id ?? "");
     }).catch(() => {
       if (active) {
         setEvents([]);

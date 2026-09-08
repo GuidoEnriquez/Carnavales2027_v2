@@ -28,7 +28,7 @@
 | RF-100 | `useCountdown.js`, `CeremonialDrawModal.jsx` y tests cubren countdown 5→0 y revelación (T03, T04). |
 | RF-101 | `crypto.randomInt()` y nonce de trazabilidad (T01). |
 | RF-102 | Cadena JCS/SHA-256, migración 058 y prueba de auditoría (T01, T02). |
-| RF-103 | 2FA + `ADMIN`, `SCRUTINEER`, `ESCRIBANO`; invitación ESCRIBANO probada por API (T02). |
+| RF-103 | 2FA + `SCRUTINEER`/`ESCRIBANO` exclusivamente; `ADMIN` recibe `403 RESULTS_ACCESS_DENIED` en GET y POST. Invitación ESCRIBANO probada por API (T02). **Corrección 2026-09-07:** esta fila certificaba `ADMIN, SCRUTINEER, ESCRIBANO` como roles autorizados, contradiciendo el propio RF-103 (spec.md) y la decisión de separación de funciones de `clarifications.md` ("ADMIN no debe ver ni operar el escrutinio"). El middleware (`require-ceremonial-draw-access.js`) admitía `ADMIN` por error desde su implementación original; el test de API lo probaba sin detectarlo como desviación. Corregido y re-verificado: `api/src/tests/results-ceremonial-draw.test.js` ahora exige 403 para `ADMIN` en ambos métodos. |
 | RF-104 | Unique index parcial 054, bloqueo del evento y rechazo de duplicado (T02). |
 | RF-105 | Modal con foco inicial, Tab trap, Escape y revelación persistente (T04). Comprobación manual completada en T06. |
 | RF-106 | `GET` endpoint, `useCeremonialDraw.loadRecorded`, recuperación en modal y vista (T08). |

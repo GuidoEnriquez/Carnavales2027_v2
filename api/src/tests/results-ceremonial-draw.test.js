@@ -190,9 +190,17 @@ test("API sorteo ceremonial: autoriza, sortea y audita; impide duplicado y pool 
     assert.equal(recordedResult.auditEventId, result.auditEventId);
     assert.ok(recordedResult.recordedAt);
 
-    const adminDuplicate = await fetch(path, { method: "POST", headers: jsonHeaders("admin"), body: JSON.stringify(body) });
-    assert.equal(adminDuplicate.status, 409);
-    assert.equal((await adminDuplicate.json()).code, "TIE_BREAKER_ALREADY_DRAWN");
+    // RF-103 / clarifications.md: ADMIN queda excluido del sorteo ceremonial
+    // por separación de funciones, igual que de liberar resultados y
+    // certificar el acta. Corregido 2026-09-07: el middleware admitía ADMIN
+    // por error (ver require-ceremonial-draw-access.js).
+    const adminPost = await fetch(path, { method: "POST", headers: jsonHeaders("admin"), body: JSON.stringify(body) });
+    assert.equal(adminPost.status, 403);
+    assert.equal((await adminPost.json()).code, "RESULTS_ACCESS_DENIED");
+
+    const adminGet = await fetch(path, { headers: jsonHeaders("admin") });
+    assert.equal(adminGet.status, 403);
+    assert.equal((await adminGet.json()).code, "RESULTS_ACCESS_DENIED");
 
     const duplicate = await fetch(path, { method: "POST", headers: jsonHeaders("scrutineer"), body: JSON.stringify(body) });
     assert.equal(duplicate.status, 409);
