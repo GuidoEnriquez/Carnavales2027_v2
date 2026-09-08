@@ -104,7 +104,7 @@ export function AdminVotingPage() {
     }
   };
 
-  return <main className="admin-shell voting-page">
+  return <main className="admin-shell voting-page" data-layer="instrument">
     <header className="event-header">
       <div><p className="eyebrow">Mesa de control</p><h1>Votación por noche</h1></div>
       <div className="voting-pickers">
@@ -124,6 +124,101 @@ export function AdminVotingPage() {
         <div className="section-heading"><div><h2>Ventana de votación</h2><p>La apertura crea las planillas pendientes. El cierre exige que todas estén completas y confirma las que sigan en carga.</p></div></div>
         <div className="event-actions"><button type="button" disabled={Boolean(busy)} onClick={() => void action("open", () => apiRequest(`/api/v1/events/${eventId}/nights/${nightId}/voting/open`, { method: "POST" }), (result) => `${result.ballotsCreated} planilla(s) habilitada(s).`)}>Abrir votación</button><button ref={closeButtonRef} className="danger-action" type="button" disabled={Boolean(busy)} onClick={() => void action("close", () => apiRequest(`/api/v1/events/${eventId}/nights/${nightId}/voting/close`, { method: "POST" }), (result) => `${result.autoSubmitted} planilla(s) confirmada(s) al cerrar.`)}>Cerrar votación</button></div>
       </section>
+      {status?.troupes && status.troupes.length > 0 && (
+        <section className="config-section runway-control-section" aria-label="Control de pista y orden de pasada">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">Desfile en vivo</p>
+              <h2>Control de pista y orden de pasada</h2>
+              <p>Monitoreo secuencial del desfile y avance de votación de jurados según orden oficial de salida.</p>
+            </div>
+            <div className="event-actions">
+              <button
+                type="button"
+                className="refresh-runway-btn"
+                disabled={Boolean(busy)}
+                onClick={() => void refreshNight()}
+                aria-label="Actualizar estado de pista"
+              >
+                Actualizar pista
+              </button>
+            </div>
+          </div>
+
+          {status.activeTroupe ? (
+            <div className="runway-active-card">
+              <div className="runway-active-header">
+                <div>
+                  <span className="runway-order-badge">Salida #{status.activeTroupe.presentationOrder}</span>
+                  <h3 className="runway-active-name" style={{ color: status.activeTroupe.brandColor || "inherit" }}>
+                    {status.activeTroupe.troupeName}
+                  </h3>
+                </div>
+                <span className="status-pill status-pill-active">EN PISTA</span>
+              </div>
+              <div className="runway-progress-wrapper">
+                <div className="runway-progress-labels">
+                  <span>Votos de jurados registrados</span>
+                  <strong>{status.activeTroupe.resolvedScores} / {status.activeTroupe.totalScores}</strong>
+                </div>
+                <progress
+                  className="runway-progress-bar"
+                  max={status.activeTroupe.totalScores || 1}
+                  value={status.activeTroupe.resolvedScores}
+                  aria-label={`Progreso de votos para ${status.activeTroupe.troupeName}`}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="runway-all-completed-card">
+              <span className="status-pill status-pill-submitted">DESFILE FINALIZADO</span>
+              <p>Todas las comparsas de la noche han completado su pasada y cuentan con votos resueltos.</p>
+            </div>
+          )}
+
+          <div className="runway-troupes-grid" aria-label="Cronograma de pasadas">
+            {status.troupes.map((troupe) => {
+              const pct = troupe.totalScores > 0 ? Math.round((troupe.resolvedScores / troupe.totalScores) * 100) : 0;
+              const isCurrent = status.activeTroupe?.scheduleId === troupe.scheduleId;
+              const isDone = troupe.status === "COMPLETED";
+
+              return (
+                <article
+                  key={troupe.scheduleId}
+                  className={`runway-troupe-card ${isCurrent ? "is-current" : ""} ${isDone ? "is-completed" : "is-waiting"}`}
+                >
+                  <div className="runway-troupe-header">
+                    <span className="troupe-order">#{troupe.presentationOrder}</span>
+                    <strong className="troupe-name" style={{ color: troupe.brandColor || "inherit" }}>
+                      {troupe.troupeName}
+                    </strong>
+                    <span
+                      className={`status-pill ${
+                        isDone
+                          ? "status-pill-submitted"
+                          : isCurrent
+                            ? "status-pill-active"
+                            : "status-pill-pending"
+                      }`}
+                    >
+                      {isDone ? "COMPLETADA" : isCurrent ? "EN PISTA" : "EN ESPERA"}
+                    </span>
+                  </div>
+                  <div className="runway-troupe-progress">
+                    <div className="runway-troupe-meta">
+                      <span>Progreso</span>
+                      <span>{troupe.resolvedScores}/{troupe.totalScores} ({pct}%)</span>
+                    </div>
+                    <div className="troupe-mini-bar" role="progressbar" aria-valuenow={pct} aria-valuemin="0" aria-valuemax="100">
+                      <div className="troupe-mini-fill" style={{ inlineSize: `${pct}%` }} />
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
       <section className="assignment-grid" aria-label="Planillas de la noche">
         {ballots.length === 0 && <p className="empty-state">Todavía no hay planillas para esta noche.</p>}
         {ballots.map((ballot) => <article className="assignment-card" key={ballot.id}>

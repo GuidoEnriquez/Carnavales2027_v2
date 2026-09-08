@@ -291,7 +291,21 @@ export function LoginPage({ onAuthenticated }) {
             </div>
             <div className="otp-input-group" role="group" aria-label="Código de verificación" onPaste={handleOtpPaste}>
               {otpValues.map((val, i) => (
-                <input key={i} ref={(el) => { otpRefs.current[i] = el; }} type="text" inputMode="numeric" pattern="[0-9]" maxLength="1" autoComplete={i === 0 ? "one-time-code" : "off"} value={val} onChange={(e) => handleOtpChange(i, e.target.value)} onKeyDown={(e) => handleOtpKeyDown(i, e)} disabled={loading} required />
+                <input
+                  key={i}
+                  ref={(el) => { otpRefs.current[i] = el; }}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]"
+                  maxLength="1"
+                  autoComplete={i === 0 ? "one-time-code" : "off"}
+                  value={val}
+                  onChange={(e) => handleOtpChange(i, e.target.value)}
+                  onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                  disabled={loading}
+                  required
+                  aria-label={`Dígito ${i + 1} de 6`}
+                />
               ))}
             </div>
             <button disabled={loading}>Verificar código</button>

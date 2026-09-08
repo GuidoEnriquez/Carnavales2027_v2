@@ -196,4 +196,18 @@ describe("LoginPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Ocultar contraseña" }));
     expect(passwordInput).toHaveAttribute("type", "password");
   });
+
+  it("asigna nombres accesibles individuales a cada uno de los 6 dígitos del código OTP", async () => {
+    apiRequest.mockResolvedValueOnce({ twoFactorRedirect: true }).mockResolvedValueOnce({});
+    render(<LoginPage onAuthenticated={vi.fn()} />);
+
+    fireEvent.change(screen.getByLabelText("Usuario / DNI"), { target: { value: "admin@example.test" } });
+    fireEvent.change(screen.getByLabelText("Contraseña"), { target: { value: "local-password" } });
+    fireEvent.click(screen.getByRole("button", { name: "Ingresar" }));
+
+    await screen.findByLabelText("Código de verificación");
+    for (let i = 1; i <= 6; i++) {
+      expect(screen.getByRole("textbox", { name: `Dígito ${i} de 6` })).toBeInTheDocument();
+    }
+  });
 });

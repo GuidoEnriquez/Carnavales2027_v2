@@ -118,7 +118,7 @@ export function AdminAssignmentsPage() {
   };
 
   return (
-    <main className="admin-shell assignment-page">
+    <main className="admin-shell assignment-page" data-layer="instrument">
       <header className="event-header">
         <div><p className="eyebrow">Operación de jurados</p><h1>Cupos y asignaciones</h1></div>
         <label className="event-picker">Evento<select value={eventId} onChange={(event) => setEventId(event.target.value)}>

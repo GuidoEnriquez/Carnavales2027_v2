@@ -8,6 +8,19 @@ vi.mock("../api/http.js", () => ({ apiRequest: vi.fn() }));
 describe("AdminAssignmentsPage", () => {
   afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
+  it("renderiza bajo la capa de instrumento data-layer='instrument' (RF-177)", async () => {
+    apiRequest.mockImplementation((path) => {
+      if (path === "/api/v1/events") return Promise.resolve([{ id: "event-1", name: "Carnaval", status: "CONFIGURING" }]);
+      if (path === "/api/v1/judges") return Promise.resolve([]);
+      if (path.endsWith("/nights")) return Promise.resolve([]);
+      if (path.endsWith("/specialties")) return Promise.resolve([]);
+      if (path.endsWith("/judge-assignments")) return Promise.resolve({ quotas: [], assignments: [] });
+      return Promise.resolve({});
+    });
+    const { container } = render(<AdminAssignmentsPage />);
+    expect(container.querySelector("main.admin-shell")).toHaveAttribute("data-layer", "instrument");
+  });
+
   it("configura un cupo y conserva la gestión separada de votos", async () => {
     apiRequest.mockImplementation((path) => {
       if (path === "/api/v1/events") return Promise.resolve([{ id: "event-1", name: "Carnaval", status: "CONFIGURING" }]);

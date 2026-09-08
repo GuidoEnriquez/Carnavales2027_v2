@@ -8,6 +8,12 @@ vi.mock("../api/http.js", () => ({ apiRequest: vi.fn() }));
 describe("AdminVotingPage", () => {
   afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
+  it("renderiza bajo la capa de instrumento data-layer='instrument' (RF-177)", async () => {
+    apiRequest.mockImplementation(() => Promise.resolve([]));
+    const { container } = render(<AdminVotingPage />);
+    expect(container.querySelector("main.admin-shell")).toHaveAttribute("data-layer", "instrument");
+  });
+
   it("abre y cierra sin exponer puntuaciones ni controles de reapertura", async () => {
     apiRequest.mockImplementation((path, options) => {
       if (path === "/api/v1/events") return Promise.resolve([{ id: "event-1", name: "Carnaval", status: "OPEN" }]);
@@ -66,5 +72,55 @@ describe("AdminVotingPage", () => {
     const reopenedDialog = await screen.findByRole("dialog", { name: "Faltan votos por resolver" });
     fireEvent(reopenedDialog, new Event("cancel", { bubbles: true, cancelable: true }));
     await waitFor(() => expect(closeButton).toHaveFocus());
+  });
+
+  it("visualiza la comparsa activa en pista y el cronograma secuencial de pasadas (RF-194)", async () => {
+    apiRequest.mockImplementation((path) => {
+      if (path === "/api/v1/events") return Promise.resolve([{ id: "event-1", name: "Carnaval", status: "OPEN" }]);
+      if (path === "/api/v1/events/event-1/nights") return Promise.resolve([{ id: "night-1", name: "Noche 1", kind: "COMPETITION", status: "OPEN" }]);
+      if (path.endsWith("/voting/status")) return Promise.resolve({
+        nightId: "night-1",
+        nightStatus: "OPEN",
+        counts: { OPEN: 2, SUBMITTED: 1, REOPENED: 0 },
+        total: 3,
+        troupes: [
+          { scheduleId: "sch-1", presentationOrder: 1, troupeName: "Comparsa Fénix", brandColor: "#e11d48", totalScores: 10, resolvedScores: 10, status: "COMPLETED" },
+          { scheduleId: "sch-2", presentationOrder: 2, troupeName: "Comparsa Samba Show", brandColor: "#2563eb", totalScores: 10, resolvedScores: 4, status: "IN_RUNWAY" },
+          { scheduleId: "sch-3", presentationOrder: 3, troupeName: "Comparsa Bella Samba", brandColor: "#16a34a", totalScores: 10, resolvedScores: 0, status: "WAITING" },
+        ],
+        activeTroupe: {
+          scheduleId: "sch-2",
+          presentationOrder: 2,
+          troupeName: "Comparsa Samba Show",
+          brandColor: "#2563eb",
+          totalScores: 10,
+          resolvedScores: 4,
+          status: "IN_RUNWAY",
+        },
+      });
+      if (path.endsWith("/voting/ballots")) return Promise.resolve([]);
+      return Promise.resolve({});
+    });
+
+    render(<AdminVotingPage />);
+
+    expect(await screen.findByRole("heading", { name: "Control de pista y orden de pasada" })).toBeInTheDocument();
+    expect(screen.getByText("Salida #2")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Comparsa Samba Show" })).toBeInTheDocument();
+    expect(screen.getAllByText("EN PISTA").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("4 / 10")).toBeInTheDocument();
+
+    // Cronograma secuencial
+    expect(screen.getByText("COMPLETADA")).toBeInTheDocument();
+    expect(screen.getByText("EN ESPERA")).toBeInTheDocument();
+    expect(screen.getByText("Comparsa Fénix")).toBeInTheDocument();
+    expect(screen.getByText("Comparsa Bella Samba")).toBeInTheDocument();
+
+    // Botón de actualización de pista
+    const refreshBtn = screen.getByRole("button", { name: "Actualizar estado de pista" });
+    fireEvent.click(refreshBtn);
+    await waitFor(() => {
+      expect(apiRequest).toHaveBeenCalledWith("/api/v1/events/event-1/nights/night-1/voting/status");
+    });
   });
 });

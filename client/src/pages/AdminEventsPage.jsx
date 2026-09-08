@@ -91,8 +91,8 @@ export function AdminEventsPage() {
   }[status] ?? "Revisar el estado operativo del evento.");
 
   if (selected) {
-    if (configurationLoading) return <main className="container"><p>Cargando configuracion...</p></main>;
-    if (configurationError) return <main className="container"><div className="card"><h1>No se pudo cargar la configuracion</h1><p>No se muestran formularios para evitar trabajar sobre datos incompletos.</p><button type="button" onClick={() => { setConfigurationLoading(true); setSelected({ ...selected }); }}>Reintentar</button> <button className="secondary" type="button" onClick={() => setSelected(null)}>Volver a eventos</button></div></main>;
+    if (configurationLoading) return <main className="container" data-layer="instrument"><p>Cargando configuracion...</p></main>;
+    if (configurationError) return <main className="container" data-layer="instrument"><div className="card"><h1>No se pudo cargar la configuracion</h1><p>No se muestran formularios para evitar trabajar sobre datos incompletos.</p><button type="button" onClick={() => { setConfigurationLoading(true); setSelected({ ...selected }); }}>Reintentar</button> <button className="secondary" type="button" onClick={() => setSelected(null)}>Volver a eventos</button></div></main>;
     return (
       <EventConfigurationPage
         key={selected.id}
@@ -105,7 +105,7 @@ export function AdminEventsPage() {
   }
 
   return (
-    <main className="container">
+    <main className="container" data-layer="instrument">
       <div className="card">
         <h1>Carnavales 2027</h1>
         <h2>Administracion de eventos</h2>

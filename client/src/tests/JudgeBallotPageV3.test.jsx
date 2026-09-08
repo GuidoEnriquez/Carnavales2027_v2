@@ -262,7 +262,7 @@ describe("JudgeBallotPage v3 (Spec 021)", () => {
     fireEvent.keyDown(window, { key: "8" });
 
     const score1 = screen.getByRole("group", { name: "Comparsa Verde: Ritmo y Cadencia" });
-    const btn8 = within(score1).getByRole("radio", { name: "Confirmar" });
+    const btn8 = await within(score1).findByRole("radio", { name: "Confirmar" });
     expect(btn8).toHaveClass("is-staged");
 
     // Press 'Enter' on keyboard

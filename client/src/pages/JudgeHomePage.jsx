@@ -26,6 +26,29 @@ function summarizeTroupes(ballot, scores) {
   return Object.values(groups).sort((left, right) => left.presentationOrder - right.presentationOrder);
 }
 
+export function isTroupeLockedInSequence(troupeIndex, troupesList) {
+  const current = troupesList[troupeIndex];
+  if (!current || current.status === "SUBMITTED") {
+    return false;
+  }
+
+  for (let j = 0; j < troupeIndex; j++) {
+    const prior = troupesList[j];
+    const sameNight = (current.nightName && prior.nightName)
+      ? current.nightName === prior.nightName
+      : current.ballotId === prior.ballotId;
+
+    if (sameNight) {
+      const isPriorComplete = prior.status === "SUBMITTED" || (prior.total > 0 && prior.resolved >= prior.total);
+      if (!isPriorComplete) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+
 export function JudgeHomePage({ session }) {
   const profile = session?.judgeProfile;
   const [ballots, setBallots] = useState([]);
@@ -87,7 +110,8 @@ export function JudgeHomePage({ session }) {
   const total = troupes.reduce((sum, troupe) => sum + troupe.total, 0);
   const progress = total > 0 ? Math.round((resolved / total) * 100) : 0;
 
-  const getState = (troupe) => {
+  const getState = (troupe, isLocked) => {
+    if (isLocked) return { label: "En espera", icon: "🔒", className: "is-locked", statusKey: "LOCKED" };
     if (troupe.status === "SUBMITTED") return { label: "Cerrada", icon: "✓", className: "is-closed", statusKey: "SUBMITTED" };
     if (troupe.resolved === 0) return { label: "Sin empezar", icon: "○", className: "is-pending", statusKey: "PENDING" };
     if (troupe.resolved === troupe.total) return { label: "Lista para revisar", icon: "●", className: "is-ready", statusKey: "SCORED" };
@@ -95,7 +119,7 @@ export function JudgeHomePage({ session }) {
   };
 
   return (
-    <main className="judge-home judge-operation-shell">
+    <main className="judge-home judge-operation-shell" data-layer="instrument">
       <section className="judge-home-intro">
         <p className="eyebrow">Noche de competencia</p>
         <h1>Buenas noches, {session?.user?.name?.split(" ")[0] ?? "Jurado"}</h1>
@@ -134,8 +158,9 @@ export function JudgeHomePage({ session }) {
               <span>{troupes.length} comparsas</span>
             </div>
             <div className="judge-ballot-grid">
-              {troupes.map((troupe) => {
-                const state = getState(troupe);
+              {troupes.map((troupe, index) => {
+                const isLocked = isTroupeLockedInSequence(index, troupes);
+                const state = getState(troupe, isLocked);
                 return (
                   <article
                     className={`judge-ballot-card ${state.className}`}
@@ -155,18 +180,34 @@ export function JudgeHomePage({ session }) {
                       </div>
                       <StatusPill status={state.statusKey} label={state.label} />
                     </div>
-                    {troupe.status === "SUBMITTED" ? (
+                    {isLocked ? (
+                      <p className="judge-locked-copy is-waiting">
+                        <span aria-hidden="true">🔒</span> Se habilitará al completar la comparsa anterior
+                      </p>
+                    ) : troupe.status === "SUBMITTED" ? (
                       <p className="judge-locked-copy"><span aria-hidden="true">🔒</span> Planilla confirmada</p>
                     ) : (
                       <p className="judge-item-count">{troupe.resolved}/{troupe.total} ítems completados</p>
                     )}
-                    <a
-                      className="button-link"
-                      href={`#/judge/ballot?ballotId=${troupe.ballotId}&troupeId=${encodeURIComponent(troupe.troupeId)}`}
-                    >
-                      {troupe.status === "SUBMITTED" ? "Ver planilla" : troupe.resolved === 0 ? "Comenzar" : "Continuar"}
-                      <span aria-hidden="true"> →</span>
-                    </a>
+                    {isLocked ? (
+                      <button
+                        type="button"
+                        className="button-link is-disabled"
+                        disabled
+                        aria-disabled="true"
+                        title="Se habilitará al completar la comparsa anterior"
+                      >
+                        <span>🔒 En espera de pasada</span>
+                      </button>
+                    ) : (
+                      <a
+                        className="button-link"
+                        href={`#/judge/ballot?ballotId=${troupe.ballotId}&troupeId=${encodeURIComponent(troupe.troupeId)}`}
+                      >
+                        {troupe.status === "SUBMITTED" ? "Ver planilla" : troupe.resolved === 0 ? "Comenzar" : "Continuar"}
+                        <span aria-hidden="true"> →</span>
+                      </a>
+                    )}
                   </article>
                 );
               })}

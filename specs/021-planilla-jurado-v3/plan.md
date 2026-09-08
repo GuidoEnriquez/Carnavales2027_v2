@@ -28,3 +28,25 @@
 - Pruebas unitarias de `JudgeBallotPage` verificando doble tap, "No se presentó", estado granular y barra fija.
 - Verificación en viewports operativos (390×844, 768×1024, 1440×900).
 - Suite completa de tests API, BD y Cliente.
+
+### 4. T07 — Refinamiento Visual y Tokens Semánticos en Flujo de Jurados:
+- Aplicar `data-layer="instrument"` en `JudgeHomePage.jsx`.
+- Sustituir variables legacy (`--primary-color`, `--line-color`, `--surface`, `--muted-color`) y colores hexadecimales fijos en `client/src/index.css` por tokens semánticos oficiales (`--surface-card`, `--border-default`, `--border-subtle`, `--text-primary`, `--success-text`, `--warning-text`).
+- Reemplazar altura fija de 19rem en `.judge-ballot-card` por `min-block-size: auto` con padding fluido `clamp(1rem, 3vw, 1.6rem)`.
+- Añadir pruebas de regresión en `client/src/tests/tokens.test.js` y `client/src/tests/JudgeHomePage.test.jsx`.
+
+### 5. T08 — Ergonomía Móvil 390px y Compensación de Scroll para Barra Fija Inferior:
+- Declarar `padding-block-end: calc(5.5rem + env(safe-area-inset-bottom, 0px))` en `.judge-ballot-page`.
+- Asegurar `min-block-size: var(--touch-target-min)` (48px) en `.nav-btn` y `.faltantes-btn`.
+- Implementar adaptación fluida responsive en `@media (max-width: 480px)` para `.ballot-bottom-bar`, `.bottom-bar-content` y `.bottom-bar-nav-btns`.
+- Añadir regresiones automatizadas en `client/src/tests/tokens.test.js`.
+
+### 6. T09 — Estabilidad Física y Eliminación de CLS en Grilla 1–10:
+- Fijar `min-block-size: 68px` en `.score-option-btn` para absorber el badge de confirmación sin deformar la grilla.
+- Configurar transiciones suaves y focus ring accesible (`:focus-visible` con `var(--focus-ring)`).
+- Añadir pruebas automatizadas en `tokens.test.js` y verificar comportamiento en `JudgeBallotPageV3.test.jsx`.
+
+### 7. T10 — Pulido Accesible del Diálogo de Faltantes y Touch Targets de Salto Directo:
+- Estandarizar `.pending-item-jump-btn` con `min-block-size: var(--touch-target-min)` (48px) y `border-inline-start: 3px solid var(--warning)`.
+- Añadir estados `:hover` y `:focus-visible` con `var(--focus-ring)` y transiciones suaves.
+- Añadir pruebas automatizadas en `tokens.test.js` y verificar suite completa.

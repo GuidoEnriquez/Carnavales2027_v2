@@ -17,6 +17,15 @@ const registered = {
 describe("AdminJudgesPage", () => {
   afterEach(() => { cleanup(); vi.clearAllMocks(); vi.restoreAllMocks(); });
 
+  it("renderiza bajo la capa de instrumento data-layer='instrument' (RF-177)", async () => {
+    apiRequest.mockImplementation((path) => {
+      if (path === "/api/v1/operational-profiles" || path === "/api/v1/judges") return Promise.resolve([]);
+      return Promise.resolve({});
+    });
+    const { container } = render(<AdminJudgesPage />);
+    expect(container.querySelector("main.admin-shell")).toHaveAttribute("data-layer", "instrument");
+  });
+
   it("crea un perfil sin especialidad y actualiza el padrón", async () => {
     let judgeRequests = 0;
     apiRequest.mockImplementation((path, options) => {

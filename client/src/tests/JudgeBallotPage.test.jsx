@@ -98,4 +98,56 @@ describe("JudgeBallotPage", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Confirmar y cerrar" }));
     expect(await screen.findByRole("dialog", { name: "Faltan decisiones por resolver" })).toBeInTheDocument();
   });
+
+  it("bloquea acceso directo por URL a una comparsa en espera y redirige a la comparsa activa (RF-191)", async () => {
+    apiRequest.mockResolvedValue(ballot);
+    render(<JudgeBallotPage ballotId="ballot-1" troupeId="schedule-2" />);
+
+    expect(await screen.findByRole("heading", { name: "Comparsa en espera de pasada", level: 1 })).toBeInTheDocument();
+    expect(screen.getByText(/Debes calificar y confirmar los rubros de/i)).toBeInTheDocument();
+    expect(screen.getByText("Comparsa Uno")).toBeInTheDocument();
+
+    expect(screen.queryByRole("group", { name: "Comparsa Dos: Presencia" })).not.toBeInTheDocument();
+
+    const redirectLink = screen.getByRole("link", { name: /Ir a comparsa actual/i });
+    expect(redirectLink).toHaveAttribute("href", "#/judge/ballot?ballotId=ballot-1&troupeId=schedule-1");
+
+    fireEvent.click(redirectLink);
+
+    expect(screen.queryByRole("heading", { name: "Comparsa en espera de pasada" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Comparsa Uno", level: 2 })).toBeInTheDocument();
+  });
+
+  it("despliega banner de continuidad al completar el último ítem de una comparsa y avanza a la siguiente (RF-192)", async () => {
+    onlineApi();
+    render(<JudgeBallotPage ballotId="ballot-1" troupeId="schedule-1" />);
+    await screen.findByRole("heading", { name: "Comparsa Uno", level: 2 });
+
+    fireEvent.click(screen.getAllByRole("button", { name: "No se presentó" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
+
+    const banner = await screen.findByRole("region", { name: "Pasada completada" });
+    expect(within(banner).getByText(/¡Completaste la evaluación de Comparsa Uno!/i)).toBeInTheDocument();
+    expect(within(banner).getByText(/Siguiente comparsa en pista:/i)).toBeInTheDocument();
+    expect(within(banner).getByText("Comparsa Dos")).toBeInTheDocument();
+
+    const nextBtn = within(banner).getByRole("button", { name: /Comenzar siguiente pasada/i });
+    fireEvent.click(nextBtn);
+
+    expect(screen.queryByRole("region", { name: "Pasada completada" })).not.toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Comparsa Dos: Presencia" })).toBeInTheDocument();
+  });
+
+  it("muestra comparsa posterior como bloqueada en la barra lateral y en la lista (RF-190, RF-191)", async () => {
+    apiRequest.mockResolvedValue(ballot);
+    render(<JudgeBallotPage ballotId="ballot-1" troupeId="schedule-1" />);
+    await screen.findByRole("heading", { name: "Comparsa Uno", level: 2 });
+
+    const sidebarItems = screen.getAllByRole("button", { name: /Comparsa/ });
+    const comparsaDosSidebar = sidebarItems.find((el) => el.textContent.includes("Comparsa Dos"));
+    expect(comparsaDosSidebar).toBeDisabled();
+    expect(comparsaDosSidebar).toHaveAttribute("aria-disabled", "true");
+
+    expect(screen.getByText(/Se habilitará automáticamente al completar la comparsa anterior \(Comparsa Uno\)/i)).toBeInTheDocument();
+  });
 });

@@ -1,0 +1,222 @@
+/* Spec 011: sorteo ceremonial y resultados.
+   Reglas desacopladas de index.css para modularización arquitectónica. */
+.ceremonial-draw-overlay {
+  position: fixed;
+  z-index: 30;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  padding: 1rem;
+  background: rgba(2, 6, 23, .78);
+  backdrop-filter: blur(.25rem);
+}
+
+.ceremonial-draw-modal {
+  inline-size: min(100%, 36rem);
+  max-block-size: calc(100dvb - 2rem);
+  overflow: auto;
+  border: 1px solid var(--line-color);
+  border-radius: 1rem;
+  color: var(--text-color);
+  background: var(--surface-raised);
+  box-shadow: 0 1.5rem 5rem rgba(0, 0, 0, .62);
+}
+
+.ceremonial-draw-content {
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1.25rem, 5vw, 2.25rem);
+}
+
+.ceremonial-draw-content > * { margin: 0; }
+
+.ceremonial-draw-content h2 {
+  font-size: clamp(1.7rem, 6vw, 2.5rem);
+  letter-spacing: -.04em;
+}
+
+.ceremonial-draw-content p:not(.eyebrow) { color: var(--muted-color); line-height: 1.55; }
+
+.ceremonial-draw-pool {
+  display: grid;
+  gap: .6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ceremonial-draw-pool li {
+  border: 1px solid var(--line-color);
+  border-inline-start: 4px solid var(--accent-color);
+  border-radius: .65rem;
+  padding: .85rem 1rem;
+  color: #e2e8f0;
+  background: #0d1523;
+  font-weight: 750;
+}
+
+.ceremonial-draw-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+}
+
+.ceremonial-draw-actions > * { flex: 1 1 12rem; }
+
+.countdown-display {
+  display: grid;
+  min-block-size: clamp(9rem, 32vw, 13rem);
+  place-items: center;
+  border: 1px solid rgba(169, 194, 255, .34);
+  border-radius: 1rem;
+  color: var(--primary-color);
+  background: #071727;
+  font-size: clamp(5rem, 22vw, 9rem);
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.ceremonial-draw-error {
+  border-inline-start: 4px solid var(--danger-color);
+  padding: .75rem 1rem;
+  color: #fecaca !important;
+  background: rgba(127, 29, 29, .25);
+}
+
+.winner-reveal {
+  display: grid;
+  gap: .75rem;
+  justify-items: center;
+  text-align: center;
+}
+
+.winner-reveal-label {
+  color: var(--success-color);
+  font-family: var(--mono-font);
+  font-size: .8rem;
+  font-weight: 850;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.winner-reveal strong {
+  color: #fff;
+  font-size: clamp(2rem, 9vw, 3.75rem);
+  letter-spacing: -.05em;
+  overflow-wrap: anywhere;
+}
+
+.winner-reveal small { color: var(--muted-color); }
+
+.winner-reveal button { inline-size: 100%; margin-block-start: .75rem; }
+
+.results-page { display: grid; gap: 1rem; }
+
+.results-page .event-header > label { min-inline-size: min(100%, 18rem); }
+
+.results-intro h2 { margin: 0 0 .35rem; font-size: clamp(1.8rem, 5vw, 3rem); }
+
+.tie-breaker-panel {
+  display: grid;
+  gap: 1rem;
+  border: 1px solid rgba(245, 158, 11, .52);
+  border-inline-start: 5px solid var(--accent-color);
+  border-radius: 1rem;
+  padding: clamp(1rem, 4vw, 1.5rem);
+  background: linear-gradient(135deg, rgba(120, 53, 15, .25), var(--surface));
+}
+
+.tie-breaker-panel h2 { margin: 0 0 .35rem; font-size: clamp(1.5rem, 4vw, 2.2rem); }
+
+.tie-breaker-pool,
+.results-table { display: grid; gap: .65rem; margin: 0; padding: 0; list-style: none; }
+
+.tie-breaker-pool li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: .5rem 1rem;
+  align-items: center;
+  border: 1px solid var(--line-color);
+  border-radius: .7rem;
+  padding: .85rem 1rem;
+  background: #0d1523;
+}
+
+.tie-breaker-pool li span { color: var(--muted-color); font-family: var(--mono-font); font-size: .8rem; }
+
+.results-ranking { display: grid; gap: 1rem; }
+
+.results-header-row {
+  display: grid;
+  grid-template-columns: 3rem minmax(9rem, 1fr) 7rem 7.5rem 8.5rem;
+  gap: .5rem 1rem;
+  padding: .5rem 1rem;
+  color: var(--muted-color);
+  font-family: var(--mono-font);
+  font-size: .8rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  align-items: center;
+}
+
+.results-row {
+  display: grid;
+  grid-template-columns: 3rem minmax(9rem, 1fr) 7rem 7.5rem 8.5rem;
+  gap: .5rem 1rem;
+  align-items: center;
+  border: 1px solid var(--line-color);
+  border-radius: .7rem;
+  padding: .85rem 1rem;
+  background: #0d1523;
+}
+
+.results-rank { color: var(--primary-color); font-family: var(--mono-font); font-weight: 850; }
+
+.results-troupe-name { color: #fff; font-weight: 700; }
+
+.results-num-col { text-align: end; }
+
+.results-col-gross { color: var(--text-color); font-family: var(--mono-font); font-size: .92rem; text-align: end; }
+
+.results-col-penalties { color: #f87171; font-family: var(--mono-font); font-size: .92rem; text-align: end; }
+
+.results-col-net { color: #60a5fa; font-family: var(--mono-font); font-size: 1.05rem; font-weight: 800; text-align: end; }
+
+.results-winner { margin: 0; color: #86efac; font-size: 1.15rem; }
+
+@media (max-width: 36rem) {
+  .ceremonial-draw-overlay { place-items: end center; padding: .65rem; }
+  .ceremonial-draw-modal { max-block-size: calc(100dvb - 1.3rem); }
+  .ceremonial-draw-actions { display: grid; }
+  .ceremonial-draw-actions > * { inline-size: 100%; }
+  .results-page .event-header > label { inline-size: 100%; }
+  .results-header-row { display: none; }
+  .tie-breaker-pool li,
+  .results-row {
+    grid-template-columns: 2.5rem 1fr;
+    gap: .35rem .65rem;
+  }
+  .results-troupe-name { grid-column: 2; }
+  .results-col-gross,
+  .results-col-penalties,
+  .results-col-net {
+    grid-column: 2;
+    text-align: start;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: .85rem;
+    padding: .15rem 0;
+  }
+  .results-col-gross::before { content: attr(data-label) ": "; color: var(--muted-color); font-size: .78rem; }
+  .results-col-penalties::before { content: attr(data-label) ": "; color: var(--muted-color); font-size: .78rem; }
+  .results-col-net::before { content: attr(data-label) ": "; color: var(--muted-color); font-size: .78rem; }
+  .results-col-net {
+    font-size: .95rem;
+    border-top: 1px dashed rgba(255, 255, 255, .1);
+    padding-top: .35rem;
+    margin-top: .15rem;
+  }
+}

@@ -41,3 +41,37 @@
 - [x] Ejecutar build de producción del cliente (`npm run build`).
 - [x] Documentar evidencias en `specs/021-planilla-jurado-v3/validation.md`.
 - [x] Actualizar `docs/sdd-status.md` y `docs/source-map.md`.
+
+## T07 — Capa Instrumento y Tokens Semánticos en Panel de Jurados y Planilla (RF-176, RF-177, RF-184)
+
+- [x] Añadir `data-layer="instrument"` en `JudgeHomePage.jsx`.
+- [x] Migrar variables legacy y colores hardcodeados de `.judge-ballot-card`, `.locked-score`, `.locked-sheet` y `.ballot-troupe` en `index.css` a tokens semánticos.
+- [x] Sustituir `min-block-size: 19rem` por `min-block-size: auto` con `padding: clamp(1rem, 3vw, 1.6rem)` en `.judge-ballot-card`.
+- [x] Agregar regresiones de adopción de tokens en `tokens.test.js` y verificar atributo `data-layer` en `JudgeHomePage.test.jsx`.
+- [x] Ejecutar suite completa de tests de cliente y build de producción.
+- [x] Documentar evidencias en `validation.md`.
+
+## T08 — Ergonomía Móvil 390px y Compensación de Scroll para Barra Fija Inferior (RF-188, RF-189)
+
+- [x] Añadir compensación de scroll `padding-block-end` en `.judge-ballot-page` para evitar que la barra fija inferior oculte el contenido o el pie.
+- [x] Aplicar `min-block-size: var(--touch-target-min)` (48px) y estilos de interacción táctil en `.nav-btn` y `.faltantes-btn`.
+- [x] Implementar reglas responsive en `@media (max-width: 480px)` para que la barra inferior encaje sin desborde ni cortes en 390×844.
+- [x] Añadir pruebas de regresión en `tokens.test.js`.
+- [x] Ejecutar suite completa de tests de cliente y build de producción.
+- [x] Documentar evidencias en `validation.md`.
+
+## T09 — Estabilidad Física y Eliminación de CLS en Grilla 1–10 (RF-185)
+
+- [x] Ajustar `min-block-size: 68px` en `.score-option-btn` para absorción estable del badge de confirmación.
+- [x] Aplicar `:focus-visible` con `var(--focus-ring)` y transiciones suaves.
+- [x] Añadir pruebas de regresión en `tokens.test.js`.
+- [x] Ejecutar suite completa de tests de cliente y build de producción.
+- [x] Documentar evidencias en `validation.md`.
+
+## T10 — Pulido Accesible del Diálogo de Faltantes y Touch Targets de Salto Directo (RF-188)
+
+- [x] Aplicar `min-block-size: var(--touch-target-min)` (48px) y `border-inline-start: 3px solid var(--warning)` en `.pending-item-jump-btn`.
+- [x] Configurar `:focus-visible` con `box-shadow: var(--focus-ring)` en `.pending-item-jump-btn`.
+- [x] Añadir pruebas de regresión en `tokens.test.js`.
+- [x] Ejecutar suite completa de tests de cliente y build de producción.
+- [x] Documentar evidencias en `validation.md`.

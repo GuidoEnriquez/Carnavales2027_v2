@@ -1,0 +1,351 @@
+/* Spec 015 — Actas Oficiales y Escrutinio Notarial
+   Reglas desacopladas de index.css para modularización arquitectónica. */
+.official-record-page {
+  max-inline-size: 58rem;
+  margin-inline: auto;
+  padding: 1.5rem 1rem;
+}
+
+.record-controls-panel {
+  background: var(--card-bg, #1e293b);
+  border: 1px solid var(--line-color, rgba(148, 163, 184, 0.2));
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  margin-block-end: 1.5rem;
+}
+
+.record-controls-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.record-event-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.record-event-selector select {
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.35rem;
+}
+
+.record-pending-card {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  background: var(--card-bg, #1e293b);
+  border: 1px solid var(--line-color, rgba(148, 163, 184, 0.2));
+  border-radius: 0.75rem;
+}
+
+.record-pending-card .pending-icon {
+  font-size: 3rem;
+  display: block;
+  margin-block-end: 0.5rem;
+}
+
+.record-certify-box {
+  margin-block-start: 1.5rem;
+}
+
+.record-certify-box .certify-btn {
+  font-size: 1.05rem;
+  padding: 0.75rem 1.5rem;
+  margin-block-start: 0.75rem;
+}
+
+.official-record-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1.25rem;
+  margin-block-start: 1.5rem;
+  background: rgba(30, 58, 138, 0.25);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  border-radius: 0.75rem;
+}
+
+.official-record-banner h3 {
+  margin: 0 0 0.25rem;
+  color: #93c5fd;
+}
+
+.official-record-banner p {
+  margin: 0;
+  color: #bfdbfe;
+  font-size: 0.88rem;
+}
+
+/* Documento Notarial Formal */
+.official-record-document {
+  background: #ffffff;
+  color: #0f172a;
+  border-radius: 0.5rem;
+  padding: 2.5rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  font-family: var(--serif-font, Georgia, "Times New Roman", serif);
+  line-height: 1.6;
+}
+
+.record-doc-header {
+  text-align: center;
+  border-block-end: 2px solid #0f172a;
+  padding-block-end: 1.25rem;
+  margin-block-end: 1.5rem;
+}
+
+.record-header-republic .republic-text {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.12rem;
+  color: #334155;
+  margin: 0;
+}
+
+.record-header-republic .municipality-text {
+  font-size: 0.75rem;
+  letter-spacing: 0.08rem;
+  color: #64748b;
+  margin: 0.15rem 0 0;
+}
+
+.record-title {
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: 0.05rem;
+  margin: 0.75rem 0 0.35rem;
+  color: #020617;
+}
+
+.record-number-badge {
+  font-family: var(--mono-font, monospace);
+  font-weight: 700;
+  color: #1e40af;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.record-seal-banner {
+  border: 2px dashed #16a34a;
+  background: #f0fdf4;
+  padding: 0.9rem 1.2rem;
+  border-radius: 0.5rem;
+  margin-block-end: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.seal-badge {
+  background: #16a34a;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 0.25rem;
+  letter-spacing: 0.05rem;
+}
+
+.seal-hash-label {
+  font-size: 0.78rem;
+  color: #166534;
+  margin: 0.25rem 0 0;
+  font-weight: 600;
+}
+
+.seal-hash {
+  display: block;
+  font-family: var(--mono-font, monospace);
+  font-size: 0.78rem;
+  color: #0f172a;
+  word-break: break-all;
+  background: rgba(22, 163, 74, 0.1);
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.2rem;
+  margin-block-start: 0.15rem;
+}
+
+.seal-meta p {
+  margin: 0.2rem 0;
+  font-size: 0.82rem;
+  color: #1e293b;
+}
+
+.record-intro-narrative {
+  text-align: justify;
+  margin-block-end: 1.75rem;
+  font-size: 0.95rem;
+  text-indent: 2rem;
+}
+
+.record-section {
+  margin-block-end: 1.75rem;
+}
+
+.record-section h2 {
+  font-size: 1.15rem;
+  border-block-end: 1px solid #cbd5e1;
+  padding-block-end: 0.35rem;
+  margin-block-end: 0.75rem;
+  color: #0f172a;
+}
+
+.record-troupes-list {
+  list-style: square;
+  padding-inline-start: 1.5rem;
+  margin: 0.5rem 0;
+  font-size: 0.92rem;
+}
+
+.record-judges-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 0.6rem;
+  font-size: 0.88rem;
+}
+
+.record-judge-item {
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.35rem;
+}
+
+.record-judge-item strong {
+  display: block;
+  color: #0f172a;
+}
+
+.record-judge-item span {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.record-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  margin-block-start: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.record-table th,
+.record-table td {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #94a3b8;
+  text-align: start;
+}
+
+.record-table th {
+  background: #f1f5f9;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.record-table .code-cell {
+  font-family: var(--mono-font, monospace);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.record-table .highlight {
+  font-weight: 700;
+  background: #f8fafc;
+}
+
+.overall-table .winner-row {
+  background: #f0fdf4;
+}
+
+.winner-tag {
+  display: inline-block;
+  background: #16a34a;
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.2rem;
+  margin-inline-start: 0.5rem;
+}
+
+.record-signatures-section {
+  margin-block-start: 3rem;
+  page-break-inside: avoid;
+}
+
+.signatures-intro {
+  font-size: 0.9rem;
+  text-align: justify;
+  margin-block-end: 2.5rem;
+}
+
+.signatures-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 2.5rem 1.5rem;
+}
+
+.signature-slot {
+  text-align: center;
+}
+
+.sig-line {
+  border-block-start: 1px solid #0f172a;
+  inline-size: 85%;
+  margin-inline: auto;
+  margin-block-end: 0.4rem;
+}
+
+.sig-name {
+  font-weight: 700;
+  font-size: 0.88rem;
+  margin: 0;
+  color: #0f172a;
+}
+
+.sig-role {
+  font-size: 0.78rem;
+  color: #64748b;
+  margin: 0.15rem 0 0;
+}
+
+/* Reglas de Impresión (@media print) */
+@media print {
+  .no-print,
+  .app-navigation,
+  header.app-navigation,
+  .session-actions,
+  button,
+  .button-link {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .official-record-page {
+    max-inline-size: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .official-record-document {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+  }
+
+  .record-section,
+  .record-signatures-section,
+  .record-table {
+    page-break-inside: avoid;
+  }
+}

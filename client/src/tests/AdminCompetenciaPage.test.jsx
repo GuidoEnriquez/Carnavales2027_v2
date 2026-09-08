@@ -46,6 +46,12 @@ describe("AdminCompetenciaPage", () => {
     vi.resetAllMocks();
   });
 
+  it("renderiza bajo la capa de instrumento data-layer='instrument' (RF-177)", () => {
+    mockCompetitionData();
+    const { container } = render(<AdminCompetenciaPage event={{ id: "event-1", name: "Carnaval", status: "CONFIGURING" }} />);
+    expect(container.querySelector("main.admin-shell")).toHaveAttribute("data-layer", "instrument");
+  });
+
   it("usa categorias existentes como tipos de participacion", async () => {
     mockCompetitionData();
     render(<AdminCompetenciaPage event={{ id: "event-1", name: "Carnaval", status: "CONFIGURING" }} />);

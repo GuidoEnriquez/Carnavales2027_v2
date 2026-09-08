@@ -47,3 +47,58 @@
 - Todas las suites de tests (API, DB, Cliente) aprobadas al 100%.
 - Cero fugas de secretos o credenciales.
 
+## Validación T07 — Capa Instrumento y Tokens Semánticos en Flujo de Jurados
+
+- **Fecha:** 2026-09-08
+- **Alcance:**
+  - Inclusión de `data-layer="instrument"` en `JudgeHomePage.jsx`.
+  - Migración a tokens semánticos en `index.css`: `.judge-ballot-card`, `.locked-score`, `.locked-score.not-presented`, `.locked-sheet`, `.progress-track`, `.ballot-troupe`, `.ballot-rubric`.
+  - Eliminación de la altura rígida de 19rem en `.judge-ballot-card` por dimensionamiento fluido (`min-block-size: auto` y padding `clamp()`).
+- **Pruebas Automatizadas:**
+  - `tokens.test.js`: 32/32 tests aprobados (incluyendo 4 tests nuevos de adopción de tokens en jurados).
+  - `JudgeHomePage.test.jsx`: 5/5 tests aprobados (incluyendo test de `data-layer="instrument"`).
+  - `JudgeBallotPageV3.test.jsx`: 6/6 tests aprobados.
+  - Suite completa de cliente: 229/229 tests aprobados en 40 suites.
+  - Build de producción: exitoso en 869ms (68 módulos transformados).
+  - `git diff --check`: 0 errores.
+
+## Validación T08 — Ergonomía Móvil 390px y Compensación de Scroll para Barra Fija Inferior
+
+- **Fecha:** 2026-09-08
+- **Alcance:**
+  - Inclusión de `padding-block-end: calc(5.5rem + env(safe-area-inset-bottom, 0px))` en `.judge-ballot-page` para eliminar el solapamiento de la barra flotante sobre los controles finales.
+  - Target táctil accesible garantizado (`min-block-size: var(--touch-target-min)` = 48px) en `.nav-btn` y `.faltantes-btn`.
+  - Adaptación fluida en viewports móviles (≤ 480px) con `@media (max-width: 480px)`.
+- **Pruebas Automatizadas:**
+  - `tokens.test.js`: 34/34 tests aprobados (incluyendo 2 tests de compensación de scroll y touch targets en barra inferior).
+  - `JudgeBallotPageV3.test.jsx`: 6/6 tests aprobados.
+  - Suite completa de cliente: 231/231 tests aprobados en 40 suites (6.32 s).
+  - Build de producción: exitoso en 857ms (68 módulos transformados; CSS 95.68 kB, JS 372.15 kB).
+  - `git diff --check`: 0 errores.
+
+## Validación T09 — Estabilidad Física y Eliminación de CLS en Grilla 1–10
+
+- **Fecha:** 2026-09-08
+- **Alcance:**
+  - Establecimiento de `min-block-size: 68px` en `.score-option-btn`, eliminando saltos de altura vertical o desajustes entre filas al activar el badge de confirmación.
+  - Accesibilidad de foco mediante `:focus-visible` con `var(--focus-ring)`.
+- **Pruebas Automatizadas:**
+  - `tokens.test.js`: 35/35 tests aprobados (incluyendo test de estabilidad física y foco visible en grilla).
+  - `JudgeBallotPageV3.test.jsx`: 6/6 tests aprobados.
+  - Suite completa de cliente: 232/232 tests aprobados en 40 suites (6.81 s).
+  - Build de producción: exitoso en 906ms (68 módulos transformados; CSS 96.05 kB, JS 372.15 kB).
+  - `git diff --check`: 0 errores.
+
+## Validación T10 — Pulido Accesible del Diálogo de Faltantes y Touch Targets de Salto Directo
+
+- **Fecha:** 2026-09-08
+- **Alcance:**
+  - Aplicación de `min-block-size: var(--touch-target-min)` (48px) y `border-inline-start: 3px solid var(--warning)` en `.pending-item-jump-btn` en `components.css`.
+  - Configuración de padding ergonómico (`var(--space-3) var(--space-4)`), hover y foco visible accesible (`:focus-visible` con `box-shadow: var(--focus-ring); border-color: var(--accent-primary)`).
+  - Optimización táctil y visual para jurados en dispositivos móviles, tablets y navegación por teclado en el diálogo de ítems pendientes.
+- **Pruebas Automatizadas:**
+  - `tokens.test.js`: 36/36 tests aprobados (incluyendo test de target táctil 48px, borde de advertencia y foco visible en `.pending-item-jump-btn`).
+  - `JudgeBallotPageV3.test.jsx`: 6/6 tests aprobados.
+  - Suite completa de cliente: 233/233 tests aprobados en 40 suites (6.10 s).
+  - Build de producción: exitoso en 857ms (68 módulos transformados; CSS 96.54 kB, JS 372.15 kB).
+  - `git diff --check`: 0 errores.

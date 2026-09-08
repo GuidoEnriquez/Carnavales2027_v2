@@ -8,6 +8,11 @@ vi.mock("../api/http.js", () => ({ apiRequest: vi.fn() }));
 describe("EventConfigurationPage", () => {
   afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
+  it("renderiza bajo la capa de instrumento data-layer='instrument' (RF-177)", () => {
+    const { container } = render(<EventConfigurationPage event={{ id: "event-1", status: "CONFIGURING" }} />);
+    expect(container.querySelector("main.admin-shell")).toHaveAttribute("data-layer", "instrument");
+  });
+
   it("muestra solo datos del evento y jornadas, sin rubros ni comparsas", () => {
     render(<EventConfigurationPage event={{ id: "event-1", status: "CONFIGURING" }} />);
     expect(screen.getByRole("heading", { name: "Datos del evento" })).toBeInTheDocument();

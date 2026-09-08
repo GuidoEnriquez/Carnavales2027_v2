@@ -52,8 +52,9 @@ function getPendingItems(scores, details) {
   });
 }
 
-export function JudgeBallotPage({ ballotId, troupeId }) {
+export function JudgeBallotPage({ ballotId, troupeId: initialTroupeId }) {
   const [ballot, setBallot] = useState(null);
+  const [selectedTroupeId, setSelectedTroupeId] = useState(initialTroupeId || "");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [viewMode, setViewMode] = useState(() => {
@@ -67,6 +68,7 @@ export function JudgeBallotPage({ ballotId, troupeId }) {
   const [pendingDialogOpen, setPendingDialogOpen] = useState(false);
   const [incompleteDialog, setIncompleteDialog] = useState(null);
   const [submitConfirm, setSubmitConfirm] = useState(false);
+  const [continuityPrompt, setContinuityPrompt] = useState(null); // { completedTroupeName, nextTroupeName, nextNightScheduleId }
 
   const scoreRefs = useRef(new Map());
   const troupeRefs = useRef(new Map());
@@ -77,6 +79,12 @@ export function JudgeBallotPage({ ballotId, troupeId }) {
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);
+
+  useEffect(() => {
+    if (initialTroupeId) {
+      setSelectedTroupeId(initialTroupeId);
+    }
+  }, [initialTroupeId]);
 
   const loadBallot = async () => {
     if (!ballotId) return;
@@ -99,11 +107,35 @@ export function JudgeBallotPage({ ballotId, troupeId }) {
   }, [ballotId]);
 
   useEffect(() => {
-    if (!ballot || !troupeId) return;
+    if (!ballot || !selectedTroupeId) return;
+    const firstScoreIdx = ballot.scores.findIndex((s) => s.nightScheduleId === selectedTroupeId);
+    if (firstScoreIdx !== -1) {
+      setActiveItemIndex(firstScoreIdx);
+    }
     requestAnimationFrame(() => {
-      troupeRefs.current.get(troupeId)?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+      troupeRefs.current.get(selectedTroupeId)?.scrollIntoView?.({ behavior: "smooth", block: "start" });
     });
-  }, [ballot, troupeId]);
+  }, [ballot, selectedTroupeId]);
+
+  const readonly = ballot?.status === "SUBMITTED";
+  const groups = ballot ? Object.values(groupScores(ballot.scores)).sort((left, right) => left.presentationOrder - right.presentationOrder) : [];
+  const activeGroup = ballot && !readonly
+    ? groups.find((group) => {
+        const allScores = Object.values(group.rubrics).flatMap((r) => r.scores);
+        return allScores.some((s) => s.evaluationState === "PENDING");
+      })
+    : null;
+
+  const targetGroup = ballot && selectedTroupeId
+    ? groups.find((g) => g.nightScheduleId === selectedTroupeId || String(g.nightScheduleId) === String(selectedTroupeId))
+    : null;
+
+  const isTargetTroupeLocked = Boolean(
+    !readonly &&
+    targetGroup &&
+    activeGroup &&
+    targetGroup.presentationOrder > activeGroup.presentationOrder
+  );
 
   const saveDecision = async (scoreId, evaluationState, score) => {
     if (!ballot) return;
@@ -127,6 +159,24 @@ export function JudgeBallotPage({ ballotId, troupeId }) {
         [scoreId]: { status: "saved" },
       }));
       setMessage("Decisión confirmada en el servidor.");
+
+      // Check if this save completed the troupe (RF-192)
+      const currentScore = ballot.scores.find((s) => s.id === scoreId);
+      if (currentScore) {
+        const troupeScores = ballot.scores.filter((s) => s.nightScheduleId === currentScore.nightScheduleId);
+        const remainingAfterSave = troupeScores.filter((s) => s.id !== scoreId && s.evaluationState === "PENDING").length;
+        if (remainingAfterSave === 0) {
+          const currentGroupIdx = groups.findIndex((g) => g.nightScheduleId === currentScore.nightScheduleId);
+          if (currentGroupIdx !== -1 && currentGroupIdx < groups.length - 1) {
+            const nextGroup = groups[currentGroupIdx + 1];
+            setContinuityPrompt({
+              completedTroupeName: currentScore.troupeName,
+              nextTroupeName: nextGroup.troupeName,
+              nextNightScheduleId: nextGroup.nightScheduleId,
+            });
+          }
+        }
+      }
     } catch (error) {
       if (!mountedRef.current) return;
       const errorMsg = error.code === "NETWORK_ERROR"
@@ -249,8 +299,37 @@ export function JudgeBallotPage({ ballotId, troupeId }) {
     );
   }
 
-  const readonly = ballot.status === "SUBMITTED";
-  const groups = Object.values(groupScores(ballot.scores)).sort((left, right) => left.presentationOrder - right.presentationOrder);
+  if (isTargetTroupeLocked) {
+    return (
+      <main className="container judge-ballot-guard judge-operation-shell" data-layer="instrument">
+        <div className="card guard-card">
+          <span className="guard-icon" aria-hidden="true">🔒</span>
+          <p className="eyebrow">
+            Salida {targetGroup.presentationOrder} · {targetGroup.troupeName}
+          </p>
+          <h1>Comparsa en espera de pasada</h1>
+          <p className="guard-description">
+            Debes calificar y confirmar los rubros de <strong>{activeGroup.troupeName}</strong> antes de acceder a esta planilla.
+          </p>
+          <div className="guard-actions">
+            <a
+              className="button button-primary button-link"
+              href={`#/judge/ballot?ballotId=${ballotId}&troupeId=${encodeURIComponent(activeGroup.nightScheduleId)}`}
+              onClick={() => {
+                setSelectedTroupeId(activeGroup.nightScheduleId);
+              }}
+            >
+              Ir a comparsa actual →
+            </a>
+            <a className="button button-secondary button-link" href="#/judge">
+              ← Volver a mis comparsas
+            </a>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   const resolved = ballot.scores.filter((score) => score.evaluationState !== "PENDING").length;
   const total = ballot.scores.length;
   const progress = total > 0 ? Math.round((resolved / total) * 100) : 0;
@@ -371,14 +450,19 @@ export function JudgeBallotPage({ ballotId, troupeId }) {
           <nav>
             <ul>
               {groups.map((group) => {
+                const isGroupLocked = Boolean(!readonly && activeGroup && group.presentationOrder > activeGroup.presentationOrder);
                 const groupTotal = Object.values(group.rubrics).reduce((n, r) => n + r.scores.length, 0);
                 const groupResolved = Object.values(group.rubrics).reduce((n, r) => n + r.scores.filter((s) => s.evaluationState !== "PENDING").length, 0);
                 return (
                   <li key={group.nightScheduleId}>
                     <button
                       type="button"
-                      className="ballot-sidebar-item"
+                      className={`ballot-sidebar-item ${isGroupLocked ? "is-locked" : ""}`}
+                      disabled={isGroupLocked}
+                      aria-disabled={isGroupLocked ? "true" : undefined}
+                      title={isGroupLocked ? "En espera de pasada" : undefined}
                       onClick={() => {
+                        if (isGroupLocked) return;
                         goToTroupe(group.nightScheduleId);
                         const firstScore = Object.values(group.rubrics)[0]?.scores[0];
                         if (firstScore) goToScore(firstScore.id);
@@ -399,8 +483,8 @@ export function JudgeBallotPage({ ballotId, troupeId }) {
                         />
                       )}
                       <span className="ballot-sidebar-name">{group.presentationOrder}. {group.troupeName}</span>
-                      <span className={`ballot-sidebar-status ${groupResolved === groupTotal ? "is-done" : groupResolved > 0 ? "is-progress" : ""}`}>
-                        {groupResolved}/{groupTotal}
+                      <span className={`ballot-sidebar-status ${isGroupLocked ? "is-locked" : groupResolved === groupTotal ? "is-done" : groupResolved > 0 ? "is-progress" : ""}`}>
+                        {isGroupLocked ? "🔒" : `${groupResolved}/${groupTotal}`}
                       </span>
                     </button>
                   </li>
@@ -442,6 +526,50 @@ export function JudgeBallotPage({ ballotId, troupeId }) {
 
           <p className="feedback" role="status" aria-live="polite">{message}</p>
 
+          {continuityPrompt && (
+            <section
+              className="troupe-continuity-banner"
+              role="region"
+              aria-label="Pasada completada"
+            >
+              <div className="continuity-banner-content">
+                <div className="continuity-banner-info">
+                  <span className="continuity-icon" aria-hidden="true">🎉</span>
+                  <div>
+                    <strong>¡Completaste la evaluación de {continuityPrompt.completedTroupeName}!</strong>
+                    <p>Siguiente comparsa en pista: <strong>{continuityPrompt.nextTroupeName}</strong></p>
+                  </div>
+                </div>
+                <div className="continuity-banner-actions">
+                  <button
+                    type="button"
+                    className="button button-primary continuity-next-btn"
+                    onClick={() => {
+                      const nextId = continuityPrompt.nextNightScheduleId;
+                      setContinuityPrompt(null);
+                      setSelectedTroupeId(nextId);
+                      window.location.hash = `#/judge/ballot?ballotId=${ballotId}&troupeId=${encodeURIComponent(nextId)}`;
+                      goToTroupe(nextId);
+                      const nextGrp = groups.find((g) => g.nightScheduleId === nextId);
+                      const firstScore = nextGrp ? Object.values(nextGrp.rubrics)[0]?.scores[0] : null;
+                      if (firstScore) goToScore(firstScore.id);
+                    }}
+                  >
+                    Comenzar siguiente pasada ({continuityPrompt.nextTroupeName}) →
+                  </button>
+                  <button
+                    type="button"
+                    className="button button-secondary continuity-dismiss-btn"
+                    onClick={() => setContinuityPrompt(null)}
+                    aria-label="Cerrar aviso de continuidad"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              </div>
+            </section>
+          )}
+
           {readonly && (
             <section className="readonly-notice">
               <span aria-hidden="true">🔒</span>
@@ -454,73 +582,105 @@ export function JudgeBallotPage({ ballotId, troupeId }) {
 
           <div className="ballot-workspace">
             {/* Card Mode (Tarjeta a tarjeta) */}
-            {viewMode === "card" && activeScore && (
-              <section className="ballot-card-mode" aria-label={`Evaluación: ${activeScore.troupeName} - ${activeScore.itemName}`}>
-                <div className="ballot-card-header">
-                  {activeScore.brandColor && (
-                    <div
-                      className="troupe-brand-stripe"
-                      style={{ backgroundColor: activeScore.brandColor }}
-                      aria-hidden="true"
-                    />
-                  )}
-                  <p className="eyebrow">Salida {activeScore.presentationOrder} · {ballot.specialtyName}</p>
-                  <h2>{activeScore.troupeName}</h2>
-                  <p className="card-rubric-name">{activeScore.rubricName}</p>
-                </div>
+            {viewMode === "card" && activeScore && (() => {
+              const isCardScoreLocked = Boolean(
+                !readonly &&
+                activeGroup &&
+                activeScore.presentationOrder > activeGroup.presentationOrder
+              );
+              return (
+                <section className="ballot-card-mode" aria-label={`Evaluación: ${activeScore.troupeName} - ${activeScore.itemName}`}>
+                  <div className="ballot-card-header">
+                    {activeScore.brandColor && (
+                      <div
+                        className="troupe-brand-stripe"
+                        style={{ backgroundColor: activeScore.brandColor }}
+                        aria-hidden="true"
+                      />
+                    )}
+                    <p className="eyebrow">Salida {activeScore.presentationOrder} · {ballot.specialtyName}</p>
+                    <h2>{activeScore.troupeName}</h2>
+                    <p className="card-rubric-name">{activeScore.rubricName}</p>
+                  </div>
 
-                <div className="card-item-body">
-                  <h3 className="card-item-title">{activeScore.itemName}</h3>
-                  <p className="rubric-instruction">Seleccioná una puntuación para este criterio.</p>
-                  {renderScoreDecision(activeScore, activeScore.troupeName, activeScore.rubricName)}
-                </div>
-              </section>
-            )}
+                  <div className="card-item-body">
+                    {isCardScoreLocked ? (
+                      <div className="troupe-locked-card">
+                        <span aria-hidden="true" className="troupe-locked-icon">🔒</span>
+                        <strong>Comparsa en espera de pasada</strong>
+                        <p className="troupe-locked-copy">
+                          Se habilitará automáticamente al completar la comparsa anterior ({activeGroup?.troupeName}).
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <h3 className="card-item-title">{activeScore.itemName}</h3>
+                        <p className="rubric-instruction">Seleccioná una puntuación para este criterio.</p>
+                        {renderScoreDecision(activeScore, activeScore.troupeName, activeScore.rubricName)}
+                      </>
+                    )}
+                  </div>
+                </section>
+              );
+            })()}
 
             {/* List Mode (Lista completa jerárquica) */}
             {viewMode === "list" && (
               <section className="ballot-list" aria-label="Puntuaciones por comparsa">
-                {groups.map((group) => (
-                  <article
-                    className="ballot-troupe"
-                    key={group.nightScheduleId}
-                    style={group.brandColor ? { borderInlineStartColor: group.brandColor } : undefined}
-                    ref={(el) => {
-                      if (el) troupeRefs.current.set(group.nightScheduleId, el);
-                      else troupeRefs.current.delete(group.nightScheduleId);
-                    }}
-                  >
-                    {group.brandColor && (
-                      <div
-                        className="troupe-brand-stripe"
-                        style={{ backgroundColor: group.brandColor }}
-                        aria-hidden="true"
-                      />
-                    )}
-                    <header>
-                      <p className="eyebrow">Salida {group.presentationOrder}</p>
-                      <h2>{group.troupeName}</h2>
-                    </header>
-                    {Object.values(group.rubrics).map((rubric) => (
-                      <section className="ballot-rubric" key={rubric.rubricId}>
-                        <h3>{rubric.rubricName}</h3>
-                        <p className="rubric-instruction">Seleccioná una puntuación para este criterio.</p>
-                        {rubric.scores.map((score) => (
-                          <div
-                            className={`score-row score-state-${score.evaluationState.toLowerCase()}`}
-                            key={score.id}
-                            ref={(el) => {
-                              if (el) scoreRefs.current.set(score.id, el);
-                              else scoreRefs.current.delete(score.id);
-                            }}
-                          >
-                            {renderScoreDecision(score, group.troupeName, rubric.rubricName)}
-                          </div>
-                        ))}
-                      </section>
-                    ))}
-                  </article>
-                ))}
+                {groups.map((group) => {
+                  const isGroupLocked = Boolean(!readonly && activeGroup && group.presentationOrder > activeGroup.presentationOrder);
+                  return (
+                    <article
+                      className={`ballot-troupe ${isGroupLocked ? "is-locked" : ""}`}
+                      key={group.nightScheduleId}
+                      style={group.brandColor ? { borderInlineStartColor: group.brandColor } : undefined}
+                      ref={(el) => {
+                        if (el) troupeRefs.current.set(group.nightScheduleId, el);
+                        else troupeRefs.current.delete(group.nightScheduleId);
+                      }}
+                    >
+                      {group.brandColor && (
+                        <div
+                          className="troupe-brand-stripe"
+                          style={{ backgroundColor: group.brandColor }}
+                          aria-hidden="true"
+                        />
+                      )}
+                      <header>
+                        <p className="eyebrow">Salida {group.presentationOrder}</p>
+                        <h2>{group.troupeName}</h2>
+                      </header>
+                      {isGroupLocked ? (
+                        <div className="troupe-locked-card">
+                          <span aria-hidden="true" className="troupe-locked-icon">🔒</span>
+                          <strong>Comparsa en espera de pasada</strong>
+                          <p className="troupe-locked-copy">
+                            Se habilitará automáticamente al completar la comparsa anterior ({activeGroup?.troupeName}).
+                          </p>
+                        </div>
+                      ) : (
+                        Object.values(group.rubrics).map((rubric) => (
+                          <section className="ballot-rubric" key={rubric.rubricId}>
+                            <h3>{rubric.rubricName}</h3>
+                            <p className="rubric-instruction">Seleccioná una puntuación para este criterio.</p>
+                            {rubric.scores.map((score) => (
+                              <div
+                                className={`score-row score-state-${score.evaluationState.toLowerCase()}`}
+                                key={score.id}
+                                ref={(el) => {
+                                  if (el) scoreRefs.current.set(score.id, el);
+                                  else scoreRefs.current.delete(score.id);
+                                }}
+                              >
+                                {renderScoreDecision(score, group.troupeName, rubric.rubricName)}
+                              </div>
+                            ))}
+                          </section>
+                        ))
+                      )}
+                    </article>
+                  );
+                })}
               </section>
             )}
           </div>

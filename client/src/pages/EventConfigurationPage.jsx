@@ -46,7 +46,7 @@ export function EventConfigurationPage({
   const replace = (setter) => (saved) => setter((current) => current.map((entry) => entry.id === saved.id ? { ...entry, ...saved } : entry));
 
   return (
-    <main className="admin-shell">
+    <main className="admin-shell" data-layer="instrument">
       <header className="event-header">
         <div>
           <p className="eyebrow">{locked ? "Evento abierto" : "Evento en configuracion"}</p>

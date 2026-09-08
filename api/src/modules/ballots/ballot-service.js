@@ -90,7 +90,8 @@ async function saveScoreLocked(client, { ballot, actorUserId, ballotId, scoreId,
   const decision = requireEvaluationDecision(evaluationState, score);
   if (ballot.status === "SUBMITTED") throw new Error("BALLOT_ALREADY_SUBMITTED");
   const { rows: scores } = await client.query(
-    `SELECT bs.id, bs.status, bs.evaluation_state AS "evaluationState" FROM ballot_score bs
+    `SELECT bs.id, bs.status, bs.evaluation_state AS "evaluationState", bs.night_schedule_id AS "nightScheduleId"
+       FROM ballot_score bs
       WHERE bs.id = $1 AND bs.ballot_id = $2 FOR UPDATE`,
     [scoreId, ballotId],
   );
@@ -100,6 +101,32 @@ async function saveScoreLocked(client, { ballot, actorUserId, ballotId, scoreId,
     const error = new Error("SCORE_IMMUTABLE");
     error.code = "SCORE_IMMUTABLE";
     throw error;
+  }
+
+  // RF-193: Precedencia estricta por orden de pasada (Spec 025)
+  if (scores[0].nightScheduleId) {
+    const { rows: currentSched } = await client.query(
+      `SELECT presentation_order AS "presentationOrder" FROM night_troupe_schedule WHERE id = $1`,
+      [scores[0].nightScheduleId],
+    );
+    const order = currentSched[0]?.presentationOrder;
+    if (typeof order === "number") {
+      const { rows: priorPending } = await client.query(
+        `SELECT 1
+           FROM ballot_score bs
+           JOIN night_troupe_schedule nts ON nts.id = bs.night_schedule_id
+          WHERE bs.ballot_id = $1
+            AND bs.evaluation_state = 'PENDING'
+            AND nts.presentation_order < $2
+          LIMIT 1`,
+        [ballotId, order],
+      );
+      if (priorPending.length > 0) {
+        const error = new Error("TROUPE_PRECEDENCE_REQUIRED");
+        error.code = "TROUPE_PRECEDENCE_REQUIRED";
+        throw error;
+      }
+    }
   }
   const { rows } = await client.query(
     `UPDATE ballot_score
@@ -413,12 +440,71 @@ export async function getVotingStatus({ eventId, nightId }) {
   );
   const counts = { OPEN: 0, SUBMITTED: 0, REOPENED: 0, REPLACED: 0 };
   for (const row of rows) counts[row.status] = row.count;
+
+  const { rows: troupeRows } = await getPool().query(
+    `SELECT
+       nts.id AS "scheduleId",
+       nts.presentation_order AS "presentationOrder",
+       et.name AS "troupeName",
+       et.brand_color AS "brandColor",
+       COUNT(bs.id)::INTEGER AS "totalScores",
+       COUNT(CASE WHEN bs.evaluation_state <> 'PENDING' THEN 1 END)::INTEGER AS "resolvedScores"
+     FROM night_troupe_schedule nts
+     JOIN event_troupe et ON et.id = nts.event_troupe_id
+     LEFT JOIN ballot b ON b.night_id = nts.night_id AND b.event_id = nts.event_id AND b.status IN ('OPEN', 'SUBMITTED', 'REOPENED')
+     LEFT JOIN ballot_score bs ON bs.ballot_id = b.id AND bs.night_schedule_id = nts.id
+    WHERE nts.night_id = $1 AND nts.event_id = $2 AND nts.status = 'SCHEDULED'
+    GROUP BY nts.id, et.name, et.brand_color, nts.presentation_order
+    ORDER BY nts.presentation_order ASC`,
+    [nid, id],
+  );
+
+  let foundActive = false;
+  let activeTroupe = null;
+  const troupes = troupeRows.map((tr) => {
+    const total = tr.totalScores;
+    const resolved = tr.resolvedScores;
+    const isCompleted = total > 0 && resolved === total;
+    let troupeStatus = "WAITING";
+    if (isCompleted) {
+      troupeStatus = "COMPLETED";
+    } else if (!foundActive && total > 0) {
+      troupeStatus = "IN_RUNWAY";
+      foundActive = true;
+    }
+
+    const item = {
+      scheduleId: tr.scheduleId,
+      presentationOrder: tr.presentationOrder,
+      troupeName: tr.troupeName,
+      brandColor: tr.brandColor || null,
+      totalScores: total,
+      resolvedScores: resolved,
+      status: troupeStatus,
+    };
+
+    if (troupeStatus === "IN_RUNWAY") {
+      activeTroupe = item;
+    }
+    return item;
+  });
+
+  if (!activeTroupe && troupes.length > 0 && troupes.some((t) => t.status !== "COMPLETED")) {
+    const firstPending = troupes.find((t) => t.status !== "COMPLETED");
+    if (firstPending) {
+      firstPending.status = "IN_RUNWAY";
+      activeTroupe = firstPending;
+    }
+  }
+
   return {
     nightId: nid,
     nightStatus: nights[0].status,
     votingStatus: windows[0]?.status ?? "NOT_OPEN",
     counts,
     total: counts.OPEN + counts.SUBMITTED + counts.REOPENED,
+    troupes,
+    activeTroupe,
   };
 }
 

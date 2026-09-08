@@ -109,7 +109,7 @@ export function AdminJudgesPage() {
   };
 
   return (
-    <main className="admin-shell roster-page">
+    <main className="admin-shell roster-page" data-layer="instrument">
       <header className="event-header">
         <div><p className="eyebrow">Identidad y acceso</p><h1>Personas y accesos</h1></div>
         <span className="roster-count">{judges.length} jurados · {operationalProfiles.length} auxiliares</span>

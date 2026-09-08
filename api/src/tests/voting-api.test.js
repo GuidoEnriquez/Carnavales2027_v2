@@ -162,6 +162,15 @@ test("API votación: ciclo completo de planilla", {
     const statusData = await statusRes.json();
     assert.equal(statusData.counts.OPEN, 1);
     assert.equal(statusData.total, 1);
+    assert.equal(Array.isArray(statusData.troupes), true);
+    assert.equal(statusData.troupes.length, 2);
+    assert.equal(statusData.troupes[0].presentationOrder, 1);
+    assert.equal(statusData.troupes[0].troupeName, "Comparsa 1");
+    assert.equal(statusData.troupes[0].status, "IN_RUNWAY");
+    assert.equal(statusData.troupes[1].presentationOrder, 2);
+    assert.equal(statusData.troupes[1].troupeName, "Comparsa 2");
+    assert.equal(statusData.troupes[1].status, "WAITING");
+    assert.equal(statusData.activeTroupe?.presentationOrder, 1);
 
     // 4. List night ballots → 200
     const listRes = await fetch(`${baseUrl}/api/v1/events/${event.id}/nights/${night.id}/voting/ballots`, { headers: adminHeaders });
@@ -354,6 +363,8 @@ test("API votación: ciclo completo de planilla", {
     const finalData = await finalStatus.json();
     assert.equal(finalData.counts.OPEN, 0);
     assert.equal(finalData.votingStatus, "CLOSED");
+    assert.equal(finalData.troupes[0].status, "COMPLETED");
+    assert.equal(finalData.activeTroupe, null);
     const reopenWindow = await fetch(`${baseUrl}/api/v1/events/${event.id}/nights/${night.id}/voting/open`, {
       method: "POST", headers: adminHeaders,
     });
@@ -441,6 +452,8 @@ test("API votación: juez no puede abrir votación", {
       votingStatus: "NOT_OPEN",
       counts: { OPEN: 0, SUBMITTED: 0, REOPENED: 0, REPLACED: 0 },
       total: 0,
+      troupes: [],
+      activeTroupe: null,
     });
   });
 });

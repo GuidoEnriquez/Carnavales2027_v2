@@ -78,14 +78,22 @@
   --surface-raised: #1e293b;
   --surface-overlay: rgba(9, 13, 22, 0.85);
 
+  /* Field surfaces retain the distinct login/OTP treatment. */
+  --surface-input: #0d1523;
+  --surface-login-input: #304258;
+  --surface-hover-subtle: rgba(148, 163, 184, 0.1); /* Neutral navigation hover, not active state. */
+
   --text-primary: #f8fafc;
   --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
   --text-inverse: #0f172a;
+  --text-on-primary: #082b61; /* Legacy primary button text and icons. */
+  --text-on-accent: #ffffff; /* Solid accent actions; not print backgrounds. */
 
   --border-subtle: #1e293b;
   --border-default: #334155;
   --border-strong: #475569;
+  --border-input: rgba(148, 163, 184, 0.34); /* Login/OTP field borders. */
 
   /* ==========================================================================
      Estados operativos semánticos
@@ -195,4 +203,24 @@
     --text-muted: #cbd5e1;
     --focus-ring: 0 0 0 4px #ffffff;
   }
+}
+
+/* Spec 009 compatibility values, formerly in index.css. Keep after the
+   token rules to preserve the existing cascade without changing the palette. */
+:root {
+  --primary-color: #a9c2ff;
+  --primary-dark: #7fa7ff;
+  --accent-color: #f59e0b;
+  --danger-color: #ef4444;
+  --success-color: #22c55e;
+  --bg-color: #090d16;
+  --surface: #111827;
+  --surface-raised: #182233;
+  --text-color: #f8fafc;
+  --muted-color: #94a3b8;
+  --line-color: #293548;
+  --card-bg: #111827;
+  --focus-color: #fbbf24;
+  --mono-font: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --border-radius: 0.9rem;
 }

@@ -38,7 +38,7 @@ export function AdminCompetenciaPage({ event, onBack }) {
 
   return (
     <WriteContext.Provider value={{ writing, setPending }}>
-      <main className="admin-shell" aria-busy={pending}>
+      <main className="admin-shell" aria-busy={pending} data-layer="instrument">
         <fieldset aria-label="Configuracion de competencia" disabled={pending} style={{ border: 0, padding: 0, margin: 0, minInlineSize: 0 }}>
           <header className="event-header">
             <div>

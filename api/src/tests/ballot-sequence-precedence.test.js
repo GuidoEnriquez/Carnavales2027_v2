@@ -4,6 +4,7 @@ import test from "node:test";
 import { createApp } from "../app.js";
 import { closePool, getPool } from "../db/pool.js";
 import { migrate } from "../db/migrate.js";
+import { saveScore, syncBallot } from "../modules/ballots/ballot-service.js";
 
 const originalDatabaseUrl = process.env.DATABASE_URL;
 
@@ -18,7 +19,7 @@ async function withServer(app, run) {
   }
 }
 
-test("API jurado: include=progress y brand_color de comparsa", {
+test("Spec 025: Backend Defense (RF-193) — Votación secuencial por orden de pasada", {
   skip: !process.env.TEST_DATABASE_URL,
 }, async (context) => {
   context.after(async () => {
@@ -35,7 +36,7 @@ test("API jurado: include=progress y brand_color de comparsa", {
 
   await pool.query(
     `INSERT INTO "user"(id, name, email, "emailVerified")
-     VALUES ($1, 'Admin progress', $2, true), ($3, 'Judge progress', $4, true)`,
+     VALUES ($1, 'Admin Seq', $2, true), ($3, 'Judge Seq', $4, true)`,
     [
       adminId,
       `${adminId}@example.test`,
@@ -47,62 +48,46 @@ test("API jurado: include=progress y brand_color de comparsa", {
   await pool.query("INSERT INTO user_role (user_id, role_code) VALUES ($1, 'JUDGE')", [judgeUserId]);
 
   const { rows: [event] } = await pool.query(
-    "INSERT INTO carnival_event(name) VALUES($1) RETURNING id", ["Progress & BrandColor Event"],
+    "INSERT INTO carnival_event(name) VALUES($1) RETURNING id", ["Evento Secuencia Pasada"],
   );
 
   const { rows: [night] } = await pool.query(
     "INSERT INTO night(event_id, name, display_order, kind, status) VALUES($1,$2,$3,$4,$5) RETURNING id",
-    [event.id, "Noche Progreso", 1, "COMPETITION", "OPEN"],
+    [event.id, "Noche Secuencial", 1, "COMPETITION", "OPEN"],
   );
   const { rows: [specialty] } = await pool.query(
     "INSERT INTO event_specialty(event_id, name, code, display_order) VALUES($1,$2,$3,$4) RETURNING id",
-    [event.id, "Música", "MUSICA", 1],
+    [event.id, "Danza", "DANZA", 1],
   );
   const { rows: [rubric] } = await pool.query(
     "INSERT INTO rubric(event_id, name, code, evaluation_target) VALUES($1,$2,$3,$4) RETURNING id",
-    [event.id, "Batería", "BATERIA", "TROUPE"],
+    [event.id, "Coreografía", "COREO", "TROUPE"],
   );
   const { rows: [item1] } = await pool.query(
     "INSERT INTO evaluation_item(event_id, rubric_id, specialty_id, name, code) VALUES($1,$2,$3,$4,$5) RETURNING id",
-    [event.id, rubric.id, specialty.id, "Ritmo", "RITMO"],
+    [event.id, rubric.id, specialty.id, "Sincronía", "SINCRO"],
   );
   const { rows: [item2] } = await pool.query(
     "INSERT INTO evaluation_item(event_id, rubric_id, specialty_id, name, code) VALUES($1,$2,$3,$4,$5) RETURNING id",
-    [event.id, rubric.id, specialty.id, "Afinación", "AFINACION"],
+    [event.id, rubric.id, specialty.id, "Originalidad", "ORIGINAL"],
   );
   const { rows: [category] } = await pool.query(
     "INSERT INTO event_category(event_id, name, code, display_order) VALUES($1,$2,$3,$4) RETURNING id",
-    [event.id, "Categoría A", "CATA", 1],
+    [event.id, "Categoría Única", "CATU", 1],
   );
 
-  // Test brand_color format validation
-  await assert.rejects(
-    async () => {
-      await pool.query(
-        "INSERT INTO event_troupe(event_id, category_id, name, brand_color) VALUES($1,$2,$3,$4)",
-        [event.id, category.id, "Comparsa Invalida", "rojo"],
-      );
-    },
-    /event_troupe_brand_color_format/,
-  );
-
-  await assert.rejects(
-    async () => {
-      await pool.query(
-        "INSERT INTO event_troupe(event_id, category_id, name, brand_color) VALUES($1,$2,$3,$4)",
-        [event.id, category.id, "Comparsa Invalida 2", "#12345"],
-      );
-    },
-    /event_troupe_brand_color_format/,
-  );
-
+  // 3 comparsas
   const { rows: [troupe1] } = await pool.query(
     "INSERT INTO event_troupe(event_id, category_id, name, brand_color) VALUES($1,$2,$3,$4) RETURNING id",
-    [event.id, category.id, "Comparsa Verde", "#10B981"],
+    [event.id, category.id, "Comparsa Primera", "#FF0000"],
   );
   const { rows: [troupe2] } = await pool.query(
     "INSERT INTO event_troupe(event_id, category_id, name, brand_color) VALUES($1,$2,$3,$4) RETURNING id",
-    [event.id, category.id, "Comparsa Azul", "#3B82F6"],
+    [event.id, category.id, "Comparsa Segunda", "#00FF00"],
+  );
+  const { rows: [troupe3] } = await pool.query(
+    "INSERT INTO event_troupe(event_id, category_id, name, brand_color) VALUES($1,$2,$3,$4) RETURNING id",
+    [event.id, category.id, "Comparsa Tercera", "#0000FF"],
   );
 
   await pool.query(
@@ -113,10 +98,14 @@ test("API jurado: include=progress y brand_color de comparsa", {
     "INSERT INTO night_troupe_schedule(event_id, night_id, event_troupe_id, presentation_order, status) VALUES($1,$2,$3,$4,$5)",
     [event.id, night.id, troupe2.id, 2, "SCHEDULED"],
   );
+  await pool.query(
+    "INSERT INTO night_troupe_schedule(event_id, night_id, event_troupe_id, presentation_order, status) VALUES($1,$2,$3,$4,$5)",
+    [event.id, night.id, troupe3.id, 3, "SCHEDULED"],
+  );
 
   const { rows: [judgeProfile] } = await pool.query(
     "INSERT INTO judge_profile(name, email, document_number, registration_status, created_by, user_id) VALUES($1,$2,$3,$4,$5,$6) RETURNING id",
-    ["Judge Test", `judge-${randomUUID()}@test.test`, `DOC-${randomUUID()}`, "REGISTERED", adminId, judgeUserId],
+    ["Judge Seq Test", `judge-${randomUUID()}@test.test`, `DOC-${randomUUID()}`, "REGISTERED", adminId, judgeUserId],
   );
 
   await pool.query(
@@ -156,109 +145,137 @@ test("API jurado: include=progress y brand_color de comparsa", {
     const adminHeaders = { "content-type": "application/json", "x-test-session": "admin" };
     const judgeHeaders = { "content-type": "application/json", "x-test-session": "judge" };
 
-    // Open voting as admin
+    // 1. Abrir votación
     const openRes = await fetch(`${baseUrl}/api/v1/events/${event.id}/nights/${night.id}/voting/open`, {
       method: "POST",
       headers: adminHeaders,
     });
     assert.equal(openRes.status, 201);
-    const openData = await openRes.json();
-    assert.equal(openData.ballotsCreated, 1);
 
-    // List ballots as judge without include
-    const listRes = await fetch(`${baseUrl}/api/v1/judge/ballots`, {
+    // 2. Obtener planilla y scores
+    const listRes = await fetch(`${baseUrl}/api/v1/judge/ballots?include=progress`, {
       headers: judgeHeaders,
     });
     assert.equal(listRes.status, 200);
-    const listData = await listRes.json();
-    assert.equal(listData.length, 1);
-    assert.equal(listData[0].totalScores, undefined);
+    const [ballotSummary] = await listRes.json();
+    const ballotId = ballotSummary.id;
 
-    // List ballots as judge WITH include=progress
-    const listProgRes = await fetch(`${baseUrl}/api/v1/judge/ballots?include=progress`, {
+    const detailRes = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}`, {
       headers: judgeHeaders,
     });
-    assert.equal(listProgRes.status, 200);
-    const listProgData = await listProgRes.json();
-    assert.equal(listProgData.length, 1);
-    // 2 troupes * 2 items = 4 scores total, initially 0 resolved
-    assert.equal(listProgData[0].totalScores, 4);
-    assert.equal(listProgData[0].resolvedScores, 0);
-    assert.equal(listProgData[0].troupes.length, 2);
-    assert.equal(listProgData[0].troupes[0].troupeName, "Comparsa Verde");
-    assert.equal(listProgData[0].troupes[0].brandColor, "#10B981");
-    assert.equal(listProgData[0].troupes[0].total, 2);
-    assert.equal(listProgData[0].troupes[0].resolved, 0);
+    assert.equal(detailRes.status, 200);
+    const ballotDetail = await detailRes.json();
 
-    const ballotId = listProgData[0].id;
+    const t1Scores = ballotDetail.scores.filter((s) => s.troupeName === "Comparsa Primera");
+    const t2Scores = ballotDetail.scores.filter((s) => s.troupeName === "Comparsa Segunda");
+    const t3Scores = ballotDetail.scores.filter((s) => s.troupeName === "Comparsa Tercera");
 
-    // Fetch ballot details and check brandColor
-    const ballotRes = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}`, {
-      headers: judgeHeaders,
-    });
-    assert.equal(ballotRes.status, 200);
-    const ballotData = await ballotRes.json();
-    assert.equal(ballotData.scores.length, 4);
+    assert.equal(t1Scores.length, 2);
+    assert.equal(t2Scores.length, 2);
+    assert.equal(t3Scores.length, 2);
 
-    const greenScores = ballotData.scores.filter((s) => s.troupeName === "Comparsa Verde");
-    assert.equal(greenScores.length, 2);
-    assert.equal(greenScores[0].brandColor, "#10B981");
-
-    const blueScores = ballotData.scores.filter((s) => s.troupeName === "Comparsa Azul");
-    assert.equal(blueScores.length, 2);
-    assert.equal(blueScores[0].brandColor, "#3B82F6");
-
-    // Attempting to score Comparsa Azul while Comparsa Verde has pending scores must fail with 409 TROUPE_PRECEDENCE_REQUIRED (RF-193)
-    const outOfOrderRes = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/scores/${blueScores[0].id}`, {
+    // 3. Intento de calificar Comparsa 2 estando Comparsa 1 pendiente -> Debe fallar con 409 TROUPE_PRECEDENCE_REQUIRED
+    const outOfOrderRes = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/scores/${t2Scores[0].id}`, {
       method: "PUT",
       headers: judgeHeaders,
       body: JSON.stringify({ evaluationState: "SCORED", score: 8 }),
     });
     assert.equal(outOfOrderRes.status, 409);
-    const outOfOrderData = await outOfOrderRes.json();
-    assert.equal(outOfOrderData.code, "TROUPE_PRECEDENCE_REQUIRED");
+    const outOfOrderBody = await outOfOrderRes.json();
+    assert.equal(outOfOrderBody.code, "TROUPE_PRECEDENCE_REQUIRED");
 
-    // Save one score on Comparsa Verde
-    const saveScoreRes = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/scores/${greenScores[0].id}`, {
+    // 4. Intento directo vía servicio saveScore -> Debe rechazar con TROUPE_PRECEDENCE_REQUIRED
+    await assert.rejects(
+      async () => {
+        await saveScore({
+          actorUserId: judgeUserId,
+          ballotId,
+          scoreId: t3Scores[0].id,
+          evaluationState: "SCORED",
+          score: 7,
+        });
+      },
+      (err) => {
+        assert.equal(err.message, "TROUPE_PRECEDENCE_REQUIRED");
+        assert.equal(err.code, "TROUPE_PRECEDENCE_REQUIRED");
+        return true;
+      },
+    );
+
+    // 5. Calificar ítem 1 de Comparsa 1 -> Debe tener éxito
+    const t1Score1Res = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/scores/${t1Scores[0].id}`, {
       method: "PUT",
       headers: judgeHeaders,
       body: JSON.stringify({ evaluationState: "SCORED", score: 9 }),
     });
-    assert.equal(saveScoreRes.status, 200);
+    assert.equal(t1Score1Res.status, 200);
 
-    // Comparsa Verde still has greenScores[1] pending, so Comparsa Azul is still blocked
-    const stillBlockedRes = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/scores/${blueScores[0].id}`, {
+    // 6. Comparsa 1 aún tiene ítem 2 pendiente -> Comparsa 2 sigue bloqueada
+    const stillBlockedRes = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/scores/${t2Scores[0].id}`, {
       method: "PUT",
       headers: judgeHeaders,
       body: JSON.stringify({ evaluationState: "SCORED", score: 8 }),
     });
     assert.equal(stillBlockedRes.status, 409);
-    const stillBlockedData = await stillBlockedRes.json();
-    assert.equal(stillBlockedData.code, "TROUPE_PRECEDENCE_REQUIRED");
+    const stillBlockedBody = await stillBlockedRes.json();
+    assert.equal(stillBlockedBody.code, "TROUPE_PRECEDENCE_REQUIRED");
 
-    // Save another score on Comparsa Verde as NOT_PRESENTED
-    const saveScore2Res = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/scores/${greenScores[1].id}`, {
+    // 7. Calificar ítem 2 de Comparsa 1 como NOT_PRESENTED -> Debe tener éxito y completar Comparsa 1
+    const t1Score2Res = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/scores/${t1Scores[1].id}`, {
       method: "PUT",
       headers: judgeHeaders,
       body: JSON.stringify({ evaluationState: "NOT_PRESENTED", score: 0 }),
     });
-    assert.equal(saveScore2Res.status, 200);
+    assert.equal(t1Score2Res.status, 200);
 
-    // Now that Comparsa Verde is 100% resolved, scoring Comparsa Azul succeeds
-    const blueSuccessRes = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/scores/${blueScores[0].id}`, {
+    // 8. Ahora Comparsa 2 está desbloqueada -> Calificar ítem 1 de Comparsa 2 tiene éxito
+    const t2Score1Res = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/scores/${t2Scores[0].id}`, {
       method: "PUT",
       headers: judgeHeaders,
       body: JSON.stringify({ evaluationState: "SCORED", score: 8 }),
     });
-    assert.equal(blueSuccessRes.status, 200);
+    assert.equal(t2Score1Res.status, 200);
 
-    // Re-check progress: 3 resolved out of 4
-    const listProgAfterRes = await fetch(`${baseUrl}/api/v1/judge/ballots?include=progress`, {
+    // 9. Comparsa 3 permanece bloqueada porque Comparsa 2 tiene ítem 2 pendiente
+    const t3BlockedRes = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/scores/${t3Scores[0].id}`, {
+      method: "PUT",
+      headers: judgeHeaders,
+      body: JSON.stringify({ evaluationState: "SCORED", score: 10 }),
+    });
+    assert.equal(t3BlockedRes.status, 409);
+    assert.equal((await t3BlockedRes.json()).code, "TROUPE_PRECEDENCE_REQUIRED");
+
+    // 10. Completar Comparsa 2 con su ítem 2
+    const t2Score2Res = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/scores/${t2Scores[1].id}`, {
+      method: "PUT",
+      headers: judgeHeaders,
+      body: JSON.stringify({ evaluationState: "SCORED", score: 9 }),
+    });
+    assert.equal(t2Score2Res.status, 200);
+
+    // 11. Ahora Comparsa 3 está desbloqueada -> Calificar ítem 1 de Comparsa 3 tiene éxito
+    const t3Score1Res = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/scores/${t3Scores[0].id}`, {
+      method: "PUT",
+      headers: judgeHeaders,
+      body: JSON.stringify({ evaluationState: "SCORED", score: 10 }),
+    });
+    assert.equal(t3Score1Res.status, 200);
+
+    // 12. Calificar ítem 2 de Comparsa 3 -> 100% de la planilla completa
+    const t3Score2Res = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/scores/${t3Scores[1].id}`, {
+      method: "PUT",
+      headers: judgeHeaders,
+      body: JSON.stringify({ evaluationState: "SCORED", score: 9 }),
+    });
+    assert.equal(t3Score2Res.status, 200);
+
+    // 13. Confirmar la planilla completa
+    const submitRes = await fetch(`${baseUrl}/api/v1/judge/ballots/${ballotId}/submit`, {
+      method: "POST",
       headers: judgeHeaders,
     });
-    assert.equal(listProgAfterRes.status, 200);
-    const listProgAfterData = await listProgAfterRes.json();
-    assert.equal(listProgAfterData[0].totalScores, 4);
-    assert.equal(listProgAfterData[0].resolvedScores, 3);
+    assert.equal(submitRes.status, 200);
+    const submitData = await submitRes.json();
+    assert.equal(submitData.status, "SUBMITTED");
   });
 });

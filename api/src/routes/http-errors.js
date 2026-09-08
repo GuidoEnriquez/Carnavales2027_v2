@@ -136,6 +136,7 @@ export function sendKnownError(response, error) {
     "BALLOT_SCORE_IMMUTABLE",
     "SCORE_IMMUTABLE",
     "SCORE_NOT_FOUND",
+    "TROUPE_PRECEDENCE_REQUIRED",
     "EVENT_NOT_OPEN",
     "NIGHT_NOT_OPEN",
     "VOTING_COMPETITION_ONLY",
