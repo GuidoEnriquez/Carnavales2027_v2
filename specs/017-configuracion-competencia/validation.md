@@ -6,7 +6,7 @@
 - T01 completada el 2026-09-07.
 - T02 completada automaticamente.
 - T03 completada el 2026-09-07.
-- T04 en curso: se corrige la declaracion prematura de completitud; falta comprobacion responsive y resolver hallazgos de inspeccion.
+- T04 en curso: falta solo la comprobacion manual responsive; los hallazgos de inspeccion sobre `expectedSubjectType` quedaron resueltos en T07 (control de tipo de sujeto, `null` para TROUPE y pruebas de regresion parametrizadas).
 - T05 continúa bloqueada por la aclaración COC sobre `PUBLISHED`/`LOCKED`.
 - T06 continúa en curso por la comprobación manual responsive y revisión final de alcance.
 - T07 y T08 completadas con evidencia automatizada. T09-T11 pendientes; no se cierra el plan integral.
@@ -20,6 +20,7 @@
 | API/DB completa | `node --import=file:///C:/Users/modob/AppData/Local/Temp/opencode/spec017-test-env.mjs --test --test-concurrency=1` | 111 tests aprobados, 0 fallidos, base aislada `carnavales_spec017_validation_20260907`. |
 | API específica | `node --import=file:///C:/Users/modob/AppData/Local/Temp/opencode/spec017-test-env.mjs --test --test-concurrency=1 src/tests/categories-api.test.js` | 1 aprobado, 0 fallidos. |
 | Cliente específico | `node node_modules/vitest/vitest.mjs run src/tests/AdminCompetenciaPage.test.jsx src/tests/EventReadinessPanel.test.jsx --reporter=verbose` | 8 tests aprobados, 0 fallidos. |
+| Re-run 2026-09-10 (T04) | `npx vitest run src/tests/AdminCompetenciaPage.test.jsx` + `npm test` + `npm run build` | AdminCompetenciaPage 33/33; suite cliente 41 archivos / 258 tests; build Vite exitoso (71 módulos). |
 | Migración | `node --import=file:///C:/Users/modob/AppData/Local/Temp/opencode/spec017-test-env.mjs src/db/migrate.js` y segunda ejecución | Migraciones 001–066 aplicadas en base aislada; segunda ejecución sin migraciones pendientes. |
 | Migracion y restricciones T02 | Runner Node sobre base aislada + `src/db/tests/migrate.test.js` y `competition-configuration.test.js` | 4 aprobados, 0 fallidos; cadena fresca 001-066 y segunda ejecucion sin pendientes. |
 | Compatibilidad T02 | Runner Node sobre base aislada + resultados DB/API, sorteo, penalizaciones y actas | 16 aprobados, 0 fallidos. |

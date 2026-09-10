@@ -44,7 +44,7 @@
 
 **Hecho cuando:** pruebas UI, build y comprobacion responsive proporcional pasan.
 
-**Evidencia:** pruebas cliente completas 31 archivos, 109 tests; build Vite exitoso. La comprobacion manual responsive sigue pendiente y bloquea el cierre de T04. La inspeccion posterior detecto falta del control expectedSubjectType para rubros NOMINATION; requiere correccion y prueba de regresion.
+**Evidencia:** pruebas cliente completas 41 archivos, 258 tests; build Vite exitoso. La comprobacion manual responsive sigue pendiente y bloquea el cierre de T04. El hallazgo de falta del control `expectedSubjectType` para rubros NOMINATION fue resuelto en T07: el control admite los seis valores soportados (PERSON, COUPLE, GROUP, FIGURE, ELEMENT, OTHER), se envia null para TROUPE y cuenta con pruebas de regresion parametrizadas en `AdminCompetenciaPage.test.jsx` (it.each de creacion y edicion; 33/33 aprobados el 2026-09-10).
 
 ## T05 - Implementar estados de configuracion y competencia
 
