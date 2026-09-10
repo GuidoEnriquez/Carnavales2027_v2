@@ -2,6 +2,14 @@
 
 ## Decisiones registradas
 
+### T08 — Sesión y confianza en proxies (aprobada el 2026-09-10)
+
+- La excepción sensible se limita al pathname exacto `/api/auth/get-session` con método GET/HEAD; una query no cambia la clasificación. Otros métodos, subrutas y variantes no reciben la excepción. Se evalúa fuera del `skip` inyectable del limiter para conservarla también en pruebas.
+- Se agrega una instancia separada del límite general (300/min/IP) para autenticación. Se mantiene un único cupo sensible compartido de 10/15min/IP para las demás operaciones, incluidos login y OTP; no se afirma soporte nuevo para muchos usuarios en una misma IP.
+- `TRUST_PROXY` se recorta antes de interpretar. Ausente equivale a `1` numérico por compatibilidad; `0`/`false` equivalen a `false`; enteros seguros no negativos equivalen a saltos. Las listas separadas por comas admiten IP IPv4/IPv6, CIDR con prefijo numérico válido y alias `loopback`, `linklocal`, `uniquelocal`. Se rechazan listas vacías, alias desconocidos, `true`, prefijos /0 que confían en toda una familia, negativos y enteros fuera de rango seguro. Un error no incluye el valor recibido.
+- Desarrollo con acceso directo a Node: configurar `TRUST_PROXY=0`. Producción: confiar solo en el proxy real; un número de saltos requiere que todas las rutas de acceso tengan esa topología y que Node no sea accesible directamente.
+- No se modifica el bloqueo de Better Auth ni la configuración de las invitaciones. Los tests nuevos de auth/proxy no requieren PostgreSQL; las regresiones de integración usan una base aislada.
+
 1. **Almacenamiento de Rate Limiter:**
    - Para la versión actual (despliegue de nodo único), `express-rate-limit` utilizará el almacén en memoria (`MemoryStore`) por defecto.
    - El diseño del middleware encapsula el almacén de modo que si se escala a múltiples instancias en el futuro, baste configurar un `store` basado en Redis sin alterar los controladores ni las rutas.
