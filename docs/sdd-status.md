@@ -42,6 +42,8 @@
 
 ## Incremento activo
 
+- Corrección Spec 019/T08 completada el 2026-09-10: límites de sesión/autenticación y TRUST_PROXY (RF-170/RF-171). Pruebas focalizadas 12/12, API/integración 151/151, persistencia 72/72, cliente 258/258 y build correctos. Sin nuevas migraciones; entrega local en `fix/auth-rate-limit-proxy`, sin push. Ver evidencia T08 en su `validation.md`.
+
 - Fase 6 del Plan Maestro completada (Specs 019–024 cerradas según `source-map.md` y log de commits).
 - Spec 026 — Optimización de diseño: T01–T10 validadas; T11 pendiente (requiere navegador).
 - Spec 016 — Supervisión de votación por VEEDOR. La implementación y validación automatizada están completas; falta comprobación manual en los viewports operativos.

@@ -6,6 +6,16 @@
 - **Fuente:** `PLAN-maestro.md` §1.3 (B. Seguridad, C. Concurrencia), §3 (Backend), §4 (Fase 1); `docs/constitution.md` Principios 3, 5 y 6; Better Auth 1.6.27 (`verify-two-factor.mjs`).
 - **Relación:** Endurece la superficie expuesta y la resiliencia operativa sin alterar las reglas de votación, roles, fórmulas de resultados ni actas.
 
+## Corrección T08 aprobada — 2026-09-10
+
+Fuente: aprobación directa del responsable del proyecto del plan «Corrección 1: límites de autenticación y TRUST_PROXY». Esta precisión de Spec-019/RF-170 y RF-171 prevalece sobre la configuración inicial descrita abajo:
+
+- `GET` y `HEAD /api/auth/get-session` no consumen el contador sensible; las demás rutas conservan 10 solicitudes por IP cada 15 minutos.
+- Todas las solicitudes a `/api/auth/*`, incluidas las de sesión, tienen un contador general independiente de 300 solicitudes por minuto por IP. No comparte almacenamiento con invitaciones ni `/api/v1/*`.
+- Se preserva el contrato HTTP existente: 429, `{ code: "RATE_LIMIT_EXCEEDED", message }`, `Retry-After` y `RateLimit-*` (se corrige la mención histórica de `error` como clave).
+- `TRUST_PROXY` ausente conserva el número `1`; `false`/`0` desactivan la confianza; enteros no negativos se convierten a números. Se permiten IP, CIDR y alias de Express validados. Se rechazan vacío, negativos, entradas inválidas y `true` indiscriminado antes de iniciar HTTP.
+- No se alteran los umbrales sensibles, el bloqueo OTP de Better Auth, las reglas de dominio, dependencias ni migraciones. La protección por cuenta para redes compartidas queda fuera de T08.
+
 ## Objetivo
 
 Eliminar la superficie de ataque no protegida (fuerza bruta en login/OTP/invitaciones, payloads desmedidos, cabeceras inseguras), garantizar la resiliencia transaccional del backend ante deadlocks y timeouts de base de datos, brindar idempotencia a las operaciones críticas de carga de planillas evitando errores falsos de inmutabilidad, y extender la cadena de integridad criptográfica a todos los eventos de auditoría con verificación reproducible.

@@ -1,5 +1,6 @@
 import express from "express";
 import helmet from "helmet";
+import { readTrustProxy } from "./config/trust-proxy.js";
 import { createRequireSession } from "./auth/require-session.js";
 import { createMeRouter } from "./routes/me.routes.js";
 import { createEventsRouter } from "./routes/events.routes.js";
@@ -19,6 +20,8 @@ import { createMonitorRouter } from "./routes/monitor.routes.js";
 import { createPublicRouter } from "./routes/public.routes.js";
 import {
   createAuthRateLimiter,
+  createAuthGeneralRateLimiter,
+  isSessionRead,
   createInvitationRateLimiter,
   createGeneralApiRateLimiter,
 } from "./auth/rate-limiter.js";
@@ -30,12 +33,13 @@ export function createApp({
   sendInvitation,
   revokeSessions,
   authRateLimiter,
+  authGeneralRateLimiter,
   invitationRateLimiter,
   generalApiRateLimiter,
 } = {}) {
   const app = express();
 
-  app.set("trust proxy", process.env.TRUST_PROXY ?? 1);
+  app.set("trust proxy", readTrustProxy());
 
   app.use(
     helmet({
@@ -54,6 +58,7 @@ export function createApp({
   app.use(express.json({ limit: "100kb" }));
 
   const authLimiter = authRateLimiter || createAuthRateLimiter();
+  const authGeneralLimiter = authGeneralRateLimiter || createAuthGeneralRateLimiter();
   const invitationLimiter = invitationRateLimiter || createInvitationRateLimiter();
   const generalLimiter = generalApiRateLimiter || createGeneralApiRateLimiter();
 
@@ -62,7 +67,10 @@ export function createApp({
   });
 
   if (authHandler) {
-    app.all("/api/auth/*splat", authLimiter, authHandler);
+    app.all("/api/auth/*splat", authGeneralLimiter, (request, response, next) => {
+      if (isSessionRead(request)) return next();
+      return authLimiter(request, response, next);
+    }, authHandler);
   }
 
   app.use("/api/v1", generalLimiter);

@@ -1,5 +1,16 @@
 # Tareas — Spec 019
 
+## T08 — Corrección de límites de sesión y TRUST_PROXY (2026-09-10)
+
+**RF:** Spec-019/RF-170 y RF-171. Plan aprobado por el responsable del proyecto. Estado: implementada y validada el 2026-09-10; conserva el cierre histórico T01–T07. Evidencia: sección T08 de `validation.md`.
+
+- [x] Actualizar spec, clarificaciones y plan antes de implementar.
+- [x] Separar consultas GET/HEAD de sesión del cupo sensible y agregar límite general independiente de autenticación.
+- [x] Implementar y documentar lector validado de TRUST_PROXY sin dependencias nuevas.
+- [x] Verificar límites, métodos/rutas, cabeceras, separación por IP/capa y confianza en proxies sin PostgreSQL.
+- [x] Ejecutar suites API/BD y regresión OTP en base aislada, cliente/build y diff; registrar resultados reales.
+- [x] Preparar entrega con comandos Git y archivos exactos, excluyendo el cambio local de client/package-lock.json.
+
 ## T01 — Cabeceras de seguridad y límites de payload HTTP (RF-170)
 
 - [x] Instalar `helmet` en `api/package.json`.
