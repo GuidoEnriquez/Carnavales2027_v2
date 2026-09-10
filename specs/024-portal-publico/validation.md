@@ -61,3 +61,27 @@
 ## 3. Estado de Cierre
 
 La Spec 024 se encuentra completamente implementada, probada y validada conforme a las directivas de `AGENTS.md` y `PLAN-maestro.md`.
+
+---
+
+## Corrección Post-Commit — Canal Público Solo Materializaciones Reales
+
+**Fecha:** 2026-09-10
+**Tipo:** Corrección dentro de Spec 024 (mismo incremento que la corrección de Spec 022).
+**Alcance:** El canal SSE público `/api/v1/public/stream` ahora solo notifica `RESULTS_SNAPSHOT_UPDATED` con payload `{ eventId, version }`.
+
+### Problema detectado
+El canal público reenviaba **todos** los eventos del bus (`ballot_update`, `official_record_emitted`, `results_updated` indiscriminadamente). Ninguna de estas acciones llegaba a materializar el snapshot. Los clientes del canal público se actualizaban con eventos que no tenían relación con el contenido mostrado en el portal.
+
+### Solución implementada (T04)
+
+| Archivo | Cambio |
+|---|---|
+| `api/src/routes/public.routes.js` | Reemplaza reenvío directo de `event.type` por verificación contra `PUBLIC_NOTIFY_ACTIONS = new Set(["RESULTS_SNAPSHOT_UPDATED"])`. Payload cambia de `{ action: event.type, ...event.payload }` a `{ eventId, version }`. |
+
+### Evidencia de validación
+
+| Test | Archivo | Resultado |
+|---|---|---|
+| `public-results-api.test.js` (bloque SSE) | `api/src/tests/public-results-api.test.js` | 1/1 PASS — emite `RESULTS_SNAPSHOT_UPDATED` con `{eventId, version}` |
+| `PublicResultsPage.test.jsx` (simulación SSE) | `client/src/tests/PublicResultsPage.test.jsx` | 1/1 PASS — payload `{eventId, version}` activa refetch |

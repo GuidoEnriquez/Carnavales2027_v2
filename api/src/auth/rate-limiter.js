@@ -4,6 +4,16 @@ function shouldSkipRateLimit() {
   return process.env.NODE_ENV === "test" && process.env.ENABLE_RATE_LIMIT_TESTS !== "true";
 }
 
+export function isSessionRead(request) {
+  return (request.method === "GET" || request.method === "HEAD")
+    && request.path === "/api/auth/get-session";
+}
+
+export function createAuthGeneralRateLimiter(options = {}) {
+  // Each factory call creates its own MemoryStore; never share the API counter.
+  return createGeneralApiRateLimiter(options);
+}
+
 export function createAuthRateLimiter(options = {}) {
   return rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutos

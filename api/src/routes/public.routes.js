@@ -5,10 +5,12 @@ import { sendKnownError } from "./http-errors.js";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+// El canal público notifica únicamente materializaciones reales del snapshot
+// (Spec 024/RF-213): una notificación por versión, garantizada post-commit.
+// Las acciones de dominio (RESULTS_RELEASED, OFFICIAL_RECORD_EMITTED,
+// RESULTS_TIE_BREAKER_CEREMONIAL_DRAW) quedan para el canal interno de monitor.
 const PUBLIC_NOTIFY_ACTIONS = new Set([
-  "RESULTS_RELEASED",
-  "OFFICIAL_RECORD_EMITTED",
-  "RESULTS_TIE_BREAKER_CEREMONIAL_DRAW",
+  "RESULTS_SNAPSHOT_UPDATED",
 ]);
 
 export function createPublicRouter() {
@@ -107,7 +109,7 @@ export function createPublicRouter() {
       const action = event.type || event.action;
       if (PUBLIC_NOTIFY_ACTIONS.has(action)) {
         response.write(
-          `event: results_updated\ndata: ${JSON.stringify({ eventId: event.eventId, action })}\n\n`,
+          `event: results_updated\ndata: ${JSON.stringify({ eventId: event.eventId, version: event.version })}\n\n`,
         );
         if (typeof response.flush === "function") {
           response.flush();

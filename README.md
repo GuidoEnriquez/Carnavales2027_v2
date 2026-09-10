@@ -271,6 +271,16 @@ El bootstrap requiere `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_NAME` y `BOOTSTR
 
 El cliente no es servido por la API. En producción se necesita un reverse proxy o servidor same-origin que sirva el cliente y reenvíe `/api` a la API; el proxy de Vite es solo para desarrollo.
 
+### IP del cliente y límites de autenticación (Spec 019/T08)
+
+Para acceso local directo a Node, configurar `TRUST_PROXY=0` en `api/.env` (también se acepta `false`): la API ignora `X-Forwarded-For`. Con Vite como proxy, Node verá la IP del proxy local; esta configuración local no representa varios clientes reales.
+
+En producción, configurar únicamente los proxies confiables reales. Se aceptan IP/CIDR separados por comas y los alias de Express `loopback`, `linklocal`, `uniquelocal`. Un entero como `TRUST_PROXY=1` significa un salto confiable: usarlo solo cuando todas las rutas hacia Node pasan por exactamente esa infraestructura y el backend no tiene acceso público directo. El proxy debe sobrescribir las cabeceras reenviadas del cliente.
+
+Si la variable está ausente se conserva `1` numérico por compatibilidad. Vacíos, negativos, `true`, CIDR `/0`, valores inválidos y enteros fuera de rango seguro impiden iniciar la aplicación con `INVALID_TRUST_PROXY`, sin imprimir el valor configurado.
+
+`GET` y `HEAD /api/auth/get-session` no consumen el cupo sensible de 10 solicitudes por IP cada 15 minutos. Las demás rutas de autenticación, incluidos login y OTP, conservan ese cupo compartido. Todas las solicitudes `/api/auth/*` tienen además un límite independiente de 300/minuto/IP; invitaciones y `/api/v1/*` mantienen sus propios contadores. Una respuesta 429 conserva `code: RATE_LIMIT_EXCEEDED`, `Retry-After` y `RateLimit-*`. Muchos usuarios detrás de una misma IP siguen compartiendo los cupos: T08 no incorpora límites por cuenta.
+
 ## Validación
 
 Desde `api/`:

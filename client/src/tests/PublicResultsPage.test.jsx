@@ -248,10 +248,10 @@ describe("PublicResultsPage (Spec 024)", () => {
 
     const initialFetchCalls = fetchMock.mock.calls.length;
 
-    // Simular evento "results_updated" desde el backend
+    // Simular evento "results_updated" desde el backend (payload { eventId, version })
     MockEventSource.latestInstance.dispatch("results_updated", {
       eventId: "ev-1",
-      action: "RESULTS_RELEASED",
+      version: 2,
     });
 
     await waitFor(() => {

@@ -363,11 +363,13 @@ export async function closeVoting({ actorUserId, eventId, nightId }) {
       [nights[0].id, eventId],
     );
     if (pending.length > 0) {
+      // Alerta operativa: se difunde de inmediato (immediate) porque este cierre
+      // fallará con ROLLBACK; el sentido del evento es notificar el intento.
       emitMonitorEvent("CLOSE_ATTEMPT_INCOMPLETE", {
         eventId,
         nightId: nights[0].id,
         pendingCount: pending.length,
-      });
+      }, { immediate: true });
       const error = new Error("VOTING_CLOSE_INCOMPLETE_BALLOTS");
       error.pending = pending.map((item) => ({
         id: item.id,

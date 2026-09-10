@@ -1,4 +1,10 @@
 import { getPool } from "./pool.js";
+import {
+  createEventScope,
+  discardEventScope,
+  flushEventScope,
+  runInEventScope,
+} from "../modules/monitor/monitor-event-bus.js";
 
 const MAX_DEADLOCK_RETRIES = 2;
 
@@ -16,10 +22,14 @@ export async function withTransaction(operation, {
 
   while (true) {
     const client = await pool.connect();
+    const store = createEventScope();
     try {
       await client.query("BEGIN");
-      const result = await operation(client);
+      const result = await runInEventScope(store, () => operation(client));
       await client.query("COMMIT");
+      // Notificación post-commit: los clientes solo ven la operación ya
+      // durable y persistida (Spec 022/024 corrección).
+      flushEventScope(store);
       return result;
     } catch (error) {
       try {
@@ -27,6 +37,7 @@ export async function withTransaction(operation, {
       } catch {
         /* Preserve the original failure. */
       }
+      discardEventScope(store);
 
       if (error.code === "40P01" && attempt < maxRetries) {
         attempt++;
