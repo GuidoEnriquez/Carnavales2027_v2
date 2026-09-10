@@ -257,17 +257,19 @@ test("API portal público de resultados (Spec 024)", {
     const text1 = decoder.decode(chunk1);
     assert.ok(text1.includes("event: connected"));
 
-    // Emitir evento público
-    emitMonitorEvent("OFFICIAL_RECORD_EMITTED", {
+    // Emitir nueva materialización de snapshot (notificación pública; RF-213).
+    // El canal público reenvía únicamente RESULTS_SNAPSHOT_UPDATED con { eventId, version }.
+    emitMonitorEvent("RESULTS_SNAPSHOT_UPDATED", {
       eventId: data.event.id,
-      recordId: randomUUID(),
-      recordNumber: "ACTA-PR-001/2027",
+      version: 2,
+      snapshotHash: randomUUID(),
     });
 
     const { value: chunk2 } = await reader.read();
     const text2 = decoder.decode(chunk2);
     assert.ok(text2.includes("event: results_updated"));
     assert.ok(text2.includes(data.event.id));
+    assert.ok(text2.includes('"version":2'));
 
     controller.abort();
   });

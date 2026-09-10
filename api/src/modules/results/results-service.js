@@ -1,7 +1,13 @@
 import { auditEvent } from "../../audit/audit-service.js";
 import { getPool } from "../../db/pool.js";
 import { getTroupePenaltiesTotalsByEvent } from "../penalties/penalty-service.js";
-import { emitMonitorEvent } from "../monitor/monitor-event-bus.js";
+import {
+  createEventScope,
+  discardEventScope,
+  emitMonitorEvent,
+  flushEventScope,
+  runInEventScope,
+} from "../monitor/monitor-event-bus.js";
 
 function requireText(value, name) {
   if (typeof value !== "string" || value.trim().length === 0) {
@@ -20,16 +26,23 @@ function requireUuid(value, name) {
 
 export async function runTransaction(clientOrNull, operation) {
   if (clientOrNull) {
+    // Cliente inyectado: la transacción y su COMMIT/ROLLBACK pertenecen al
+    // llamador (runInEventScope ya reutiliza el scope externo, si existe).
     return operation(clientOrNull);
   }
   const client = await getPool().connect();
+  const store = createEventScope();
   try {
     await client.query("BEGIN");
-    const result = await operation(client);
+    const result = await runInEventScope(store, () => operation(client));
     await client.query("COMMIT");
+    // Notificación post-commit: los clientes SSE solo ven la operación ya
+    // durable (Spec 022/024 corrección).
+    flushEventScope(store);
     return result;
   } catch (error) {
     try { await client.query("ROLLBACK"); } catch { /* Preserve original failure. */ }
+    discardEventScope(store);
     throw error;
   } finally {
     client.release();

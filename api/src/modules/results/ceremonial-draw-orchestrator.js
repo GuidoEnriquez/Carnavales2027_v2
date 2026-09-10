@@ -19,6 +19,7 @@ import {
 } from "./ceremonial-draw-service.js";
 import { auditCeremonialDraw } from "../../audit/audit-service.js";
 import { randomUUID } from "node:crypto";
+import { emitMonitorEvent } from "../monitor/monitor-event-bus.js";
 import {
   fetchConsolidatedScores,
   fetchConsolidatedPenalties,
@@ -145,6 +146,13 @@ export async function executeCeremonialDraw({
       actorUserId,
       eventId,
       payload: auditPayload,
+    });
+
+    emitMonitorEvent("RESULTS_TIE_BREAKER_CEREMONIAL_DRAW", {
+      eventId,
+      winnerTroupeId: draw.winnerTroupeId,
+      method: draw.method,
+      auditEventId: inserted.id,
     });
 
     const { materializeResultsSnapshot } = await import("./snapshot-service.js");

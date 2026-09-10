@@ -50,3 +50,36 @@
 - Inmutabilidad estricta respetada: el stream es de solo lectura y solo transporta metadatos operativos agregados.
 - Secreto absoluto del voto (RF-190): comprobado tanto por sanitización automática como por pruebas de aserción negativa sobre el stream HTTP.
 - Resiliencia de red (RF-193): el fallback a polling asegura que la supervisión nunca quede ciega si el canal SSE es bloqueado por cortafuegos o proxies intermedios.
+
+---
+
+## Corrección Post-Commit — Garantía de Eventos Difundidos Solo Tras COMMIT
+
+**Fecha:** 2026-09-10
+**Tipo:** Corrección dentro de Spec 022 (precedente: fix T08 de Spec 019, 2026-09-10).
+**Alcance:** Eliminar posibilidad de que `RESULTS_RELEASED`, `OFFICIAL_RECORD_EMITTED` o `RESULTS_TIE_BREAKER_CEREMONIAL_DRAW` se difundieran antes del COMMIT efectivo de la transacción.
+
+### Problema detectado
+Los eventos de dominio (`ballot-service.js:411`, `scrutiny-record-service.js:276`) se emitían antes de la materialización del snapshot (`results-service.js:415-416`, `scrutiny-record-service.js:283`). Un ROLLBACK posterior habría provocado clientes y monitor mostrando datos que nunca persistieron.
+
+### Solución implementada (T01–T03)
+
+| Archivo | Cambio |
+|---|---|
+| `api/src/modules/monitor/monitor-event-bus.js` | Nuevo mecanismo de scope vía `AsyncLocalStorage`: `createEventScope`, `runInEventScope`, `flushEventScope`, `discardEventScope`. `emitMonitorEvent` acepta opción `{ immediate: true }` para alertas críticas. |
+| `api/src/db/transaction.js` | `withTransaction` integra `flushEventScope`/`discardEventScope` al COMMIT/ROLLBACK del bloque `client.query('COMMIT')`. |
+| `api/src/modules/results/results-service.js` | `runTransaction` integra `flushEventScope`/`discardEventScope` en path sin cliente inyectado. Con cliente inyectado reutiliza el scope vía `runInEventScope`. |
+| `api/src/modules/results/ceremonial-draw-orchestrator.js` | Emite `RESULTS_TIE_BREAKER_CEREMONIAL_DRAW` vía `runInEventScope` (diferido, no con `immediate`). |
+| `api/src/modules/ballots/ballot-service.js` | `CLOSE_ATTEMPT_INCOMPLETE` usa `immediate: true` (alerta válida incluso en ROLLBACK). |
+
+### Evidencia de validación
+
+| Test | Archivo | Resultado |
+|---|---|---|
+| `monitor-event-bus.test.js` (8 tests) | `api/src/tests/monitor-event-bus.test.js` | 8/8 PASS — unitario, sin BD |
+| `sse-post-commit.test.js` (3 tests) | `api/src/tests/sse-post-commit.test.js` | 3/3 PASS — integración BD |
+| `public-results-api.test.js` (1 test) | `api/src/tests/public-results-api.test.js` | 1/1 PASS — SSE público vía DB |
+| `PublicResultsPage.test.jsx` (5 tests) | `client/src/tests/PublicResultsPage.test.jsx` | 5/5 PASS — payload `{eventId, version}` |
+
+**Suite completa API:** pendiente ejecución completa (tests de BD requieren `TEST_DATABASE_URL` en `.env`).
+**Suite completa Cliente:** pendiente ejecución completa.
