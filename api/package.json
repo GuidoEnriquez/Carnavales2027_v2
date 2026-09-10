@@ -20,7 +20,7 @@
     "db:seed:penalties": "node src/scripts/seed-penalties-demo.js",
     "db:seed:fiction": "node src/scripts/seed-fiction-contest.js",
     "predb:test": "node --import=dotenv/config src/scripts/assert-test-database-url.js",
-    "db:test": "node --import=dotenv/config --test src/db/tests/**/*.test.js",
+    "db:test": "node --import=dotenv/config --test src/db/tests/*.test.js",
     "audit:verify": "node src/scripts/verify-audit-chain.js"
   },
   "dependencies": {
