@@ -43,6 +43,15 @@ jobs:
         working-directory: api
         run: npm ci
 
+      - name: Run Better Auth Migrations
+        working-directory: api
+        env:
+          DATABASE_URL: postgres://postgres:password@localhost:5432/carnavales2027_test
+          BETTER_AUTH_SECRET: ci-secret-value-that-is-at-least-32-characters-long!
+          BETTER_AUTH_URL: http://localhost:3000
+          FRONTEND_URL: http://localhost:5173
+        run: npm run auth:migrate
+
       - name: Run Database Migrations
         working-directory: api
         env:
