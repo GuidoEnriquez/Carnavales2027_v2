@@ -2,6 +2,14 @@
 
 ## Arquitectura y Módulos
 
+### Corrección T08 — Plan aprobado 2026-09-10
+
+1. Crear `api/src/config/trust-proxy.js` con `readTrustProxy(environment = process.env)`, validación mediante `node:net` y retorno `false`, número o lista de redes/alias. Integrarlo en `createApp` antes de montar middleware. Esta lectura reemplaza el passthrough histórico de `TRUST_PROXY`.
+2. En `rate-limiter.js`, incorporar clasificación exacta de lecturas de sesión y un factory para el contador general de autenticación, con instancia/MemoryStore independientes.
+3. En `app.js`, montar límite general de autenticación antes del sensible, omitiendo únicamente este último en lecturas GET/HEAD de sesión. Conservar inyección de limiters para las pruebas.
+4. Agregar pruebas HTTP con handler simulado para cupos, métodos/rutas, separación por IP y entre capas. Probar el parser y resolución de IP con cabeceras reenviadas. Preservar tests existentes de integración.
+5. Documentar configuración en `.env.example` y README. Ejecutar pruebas focalizadas, suites API/BD y OTP en base aislada, tests/build cliente y revisión de diff. Registrar evidencias reales en T08; sin dependencias ni migraciones nuevas.
+
 ### 1. Cabeceras y middleware HTTP (`api/src/app.js`)
 - Incorporar `helmet` con:
   - `crossOriginResourcePolicy: { policy: "cross-origin" }` (para permitir consumo por el cliente de Vite o Caddy).
