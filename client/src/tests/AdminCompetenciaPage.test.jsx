@@ -68,10 +68,10 @@ describe("AdminCompetenciaPage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Rubros" }));
     fireEvent.click(await screen.findByRole("button", { name: "Expandir Coreografia" }));
-    expect(screen.getByText("Interpretacion")).toBeInTheDocument();
-    expect(screen.getByText("Precision")).toBeInTheDocument();
+    expect(screen.getAllByText("Interpretacion").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText("Precision").length).toBeGreaterThanOrEqual(2);
 
-    fireEvent.click(screen.getByRole("button", { name: "Matriz de planillas" }));
+    fireEvent.click(screen.getByRole("button", { name: "Planillas de evaluación" }));
     const rubricButton = await screen.findByRole("button", { name: "Coreografia" });
     fireEvent.click(rubricButton);
     expect(screen.getByText("Precision")).toBeInTheDocument();
@@ -146,12 +146,53 @@ describe("AdminCompetenciaPage", () => {
   });
 
   it.each([
-    ["Comparsas", "Agregar comparsa", null, "/api/v1/events/event-1/troupes"],
-    ["Comparsas", "Guardar", "Editar comparsa Estrella", "/api/v1/troupes/troupe-1"],
-    ["Tipos de participacion", "Agregar tipo", null, "/api/v1/events/event-1/categories"],
-    ["Tipos de participacion", "Guardar", "Editar tipo Comparsa", "/api/v1/categories/category-1"],
-    ["Especialidades", "Agregar especialidad", null, "/api/v1/events/event-1/specialties"],
-    ["Especialidades", "Guardar", "Editar especialidad Danza", "/api/v1/specialties/specialty-1"],
+    ["Tipos de participacion", "+ Nuevo tipo", "Editar tipo Comparsa", "Agregar tipo", "/api/v1/events/event-1/categories", "/api/v1/categories/category-1", "category"],
+    ["Especialidades", "+ Nueva especialidad", "Editar especialidad Danza", "Agregar especialidad", "/api/v1/events/event-1/specialties", "/api/v1/specialties/specialty-1", "specialty"],
+  ])("%s usa drawer con Orden de visualización y guarda crear/editar", async (section, createLabel, editLabel, submitLabel, createPath, editPath, prefix) => {
+    const write = vi.fn().mockImplementation(async (path, options) => ({ id: `${prefix}-9`, ...JSON.parse(options.body) }));
+    mockCompetitionData({ write });
+    render(<AdminCompetenciaPage event={{ id: "event-1", status: "CONFIGURING" }} />);
+    fireEvent.click(screen.getByRole("button", { name: section }));
+    await screen.findByRole("table");
+
+    fireEvent.click(screen.getByRole("button", { name: createLabel }));
+    const createForm = screen.getByRole("button", { name: submitLabel }).closest("form");
+    const createFields = within(createForm);
+    expect(createFields.getByLabelText("Orden de visualización")).toHaveValue(2);
+    fireEvent.change(createFields.getByLabelText("Nombre"), { target: { value: "Nuevo" } });
+    fireEvent.submit(createForm);
+    await waitFor(() => expect(write).toHaveBeenCalledWith(
+      createPath,
+      { method: "POST", body: JSON.stringify({ name: "Nuevo", displayOrder: 2 }) },
+    ));
+    expect(await screen.findByText("Guardado.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: editLabel }));
+    const editForm = screen.getByRole("button", { name: "Guardar" }).closest("form");
+    const editFields = within(editForm);
+    expect(editFields.getByLabelText("Orden de visualización")).toBeInTheDocument();
+    fireEvent.change(editFields.getByLabelText("Nombre"), { target: { value: "Editado" } });
+    fireEvent.click(editFields.getByLabelText("Activa"));
+    fireEvent.submit(editForm);
+    await waitFor(() => expect(write).toHaveBeenCalledWith(
+      editPath,
+      expect.objectContaining({ method: "PATCH" }),
+    ));
+  });
+
+  it("muestra mensaje humano ante nombre u orden duplicado", async () => {
+    const write = vi.fn().mockRejectedValue({ code: "RESOURCE_CONFLICT" });
+    mockCompetitionData({ write });
+    render(<AdminCompetenciaPage event={{ id: "event-1", status: "CONFIGURING" }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Tipos de participacion" }));
+    await screen.findByRole("table");
+    fireEvent.click(screen.getByRole("button", { name: "+ Nuevo tipo" }));
+    const form = screen.getByRole("button", { name: "Agregar tipo" }).closest("form");
+    fireEvent.change(within(form).getByLabelText("Nombre"), { target: { value: "Duplicado" } });
+    fireEvent.submit(form);
+    expect(await screen.findByText("Ese nombre u orden ya está en uso.")).toBeInTheDocument();
+  });
+  it.each([
     ["Rubros", "Crear rubro", null, "/api/v1/events/event-1/rubrics"],
     ["Rubros", "Guardar rubro", "Expandir Coreografia", "/api/v1/rubrics/rubric-1"],
     ["Rubros", "Agregar item a Coreografia", "Expandir Coreografia", "/api/v1/rubrics/rubric-1/items"],
@@ -346,5 +387,188 @@ describe("AdminCompetenciaPage", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Expandir Coreografia" }));
     expect(screen.queryByRole("button", { name: /Subir|Bajar/ })).not.toBeInTheDocument();
     expect(apiRequest.mock.calls.every(([, options]) => !options?.method)).toBe(true);
+  });
+
+  describe("Spec 017 T09a/T09b: ficha de comparsa y orden de pasada", () => {
+    const troupes = [
+      { id: "troupe-1", name: "Estrella", categoryId: "category-1", categoryName: "Comparsa", brandColor: "#3B82F6", active: true },
+      { id: "troupe-2", name: "Apagada", categoryId: "category-1", categoryName: "Comparsa", brandColor: null, active: false },
+    ];
+    const scheduleRows = [
+      { id: "s-1", nightId: "night-1", troupeId: "troupe-1", troupeName: "Estrella", troupeBrandColor: "#3B82F6", presentationOrder: 1, status: "SCHEDULED" },
+      { id: "s-2", nightId: "night-1", troupeId: "troupe-2", troupeName: "Apagada", troupeBrandColor: null, presentationOrder: 2, status: "SCHEDULED" },
+    ];
+    function mockTroupes({ write = vi.fn(), schedule = scheduleRows } = {}) {
+      apiRequest.mockImplementation(async (path, options) => {
+        if (options?.method) return write(path, options);
+        if (path === "/api/v1/events/event-1/nights") return [{ id: "night-1", name: "Noche 1", displayOrder: 1, kind: "COMPETITION" }];
+        if (path.startsWith("/api/v1/events/event-1/schedule")) return schedule.map((row) => ({ ...row }));
+        if (path.endsWith("/troupes")) return troupes.map((t) => ({ ...t }));
+        if (path.endsWith("/categories")) return [{ id: "category-1", name: "Comparsa", code: "COMPARSA", displayOrder: 1, active: true }];
+        if (path.endsWith("/specialties")) return [{ id: "specialty-1", name: "Danza", code: "DANZA", displayOrder: 1, active: true }];
+        if (path.endsWith("/rubrics")) return [rubric];
+        if (path.endsWith("/orphaned-criteria")) return [];
+        throw new Error(`Solicitud inesperada: ${path}`);
+      });
+    }
+    async function openTroupesTab() {
+      render(<AdminCompetenciaPage event={{ id: "event-1", name: "Carnaval", status: "CONFIGURING" }} />);
+      fireEvent.click(screen.getByRole("button", { name: "Comparsas" }));
+      await screen.findByText("Estrella");
+    }
+
+    it("crea comparsa con color y muestra preview Vista jurado", async () => {
+      const write = vi.fn().mockResolvedValue({ id: "troupe-3", name: "Nueva", categoryId: "category-1", categoryName: "Comparsa", brandColor: "#22C55E", active: true });
+      mockTroupes({ write });
+      await openTroupesTab();
+      fireEvent.click(screen.getByRole("button", { name: "+ Nueva comparsa" }));
+      const form = screen.getByRole("button", { name: "Agregar comparsa" }).closest("form");
+      const fields = within(form);
+      fireEvent.change(fields.getByLabelText("Nombre"), { target: { value: "Nueva" } });
+      fireEvent.change(fields.getByLabelText("Tipo de participación"), { target: { value: "category-1" } });
+      fireEvent.change(fields.getByLabelText("Color (opcional)"), { target: { value: "#22C55E" } });
+      fireEvent.submit(form);
+      await screen.findByText("Guardado.");
+      expect(write).toHaveBeenCalledExactlyOnceWith("/api/v1/events/event-1/troupes", {
+        method: "POST",
+        body: JSON.stringify({ name: "Nueva", categoryId: "category-1", brandColor: "#22C55E" }),
+      });
+      expect(await screen.findByText("Vista jurado: Nueva (#22C55E)")).toBeInTheDocument();
+    });
+
+    it("rechaza color invalido en cliente sin llamar a la API", async () => {
+      const write = vi.fn();
+      mockTroupes({ write });
+      await openTroupesTab();
+      fireEvent.click(screen.getByRole("button", { name: "+ Nueva comparsa" }));
+      const form = screen.getByRole("button", { name: "Agregar comparsa" }).closest("form");
+      fireEvent.change(within(form).getByLabelText("Nombre"), { target: { value: "Mala" } });
+      fireEvent.change(within(form).getByLabelText("Tipo de participación"), { target: { value: "category-1" } });
+      fireEvent.change(within(form).getByLabelText("Color (opcional)"), { target: { value: "azul" } });
+      fireEvent.submit(form);
+      expect(await screen.findByRole("alert")).toHaveTextContent(/formato #RRGGBB/);
+      expect(write).not.toHaveBeenCalled();
+      expect(within(form).getByLabelText("Nombre")).toHaveValue("Mala");
+    });
+
+    it("edita comparsa en drawer, bloquea doble envío y reintenta tras fallo", async () => {
+      let rejectWrite;
+      const write = vi.fn()
+        .mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectWrite = reject; }))
+        .mockImplementationOnce(async (path, options) => ({ id: "troupe-1", ...JSON.parse(options.body) }));
+      mockTroupes({ write });
+      await openTroupesTab();
+      fireEvent.click(screen.getByRole("button", { name: "Editar comparsa Estrella" }));
+      const button = screen.getByRole("button", { name: "Guardar comparsa" });
+      const form = button.closest("form");
+      const fields = within(form);
+      fireEvent.change(fields.getByLabelText("Nombre"), { target: { value: "Estrella Editada" } });
+      act(() => { fireEvent.submit(form); fireEvent.submit(form); });
+      expect(write).toHaveBeenCalledTimes(1);
+      expect(write.mock.calls[0][0]).toBe("/api/v1/troupes/troupe-1");
+      expect(write.mock.calls[0][1].method).toBe("PATCH");
+      await act(async () => { rejectWrite(new Error("Fallo de red")); });
+      expect(await screen.findByText("No se pudo guardar.")).toBeInTheDocument();
+      expect(fields.getByLabelText("Nombre")).toHaveValue("Estrella Editada");
+      fireEvent.click(button);
+      await waitFor(() => expect(write).toHaveBeenCalledTimes(2));
+      expect(await screen.findByText("Guardado.")).toBeInTheDocument();
+    });
+
+    it("filtra por busqueda y estado sin ocultar datos", async () => {
+      mockTroupes();
+      await openTroupesTab();
+      const section = screen.getByRole("heading", { name: "Comparsas" }).closest("section");
+      const cards = () => within(section);
+      expect(screen.getByText("2 de 2 comparsas")).toBeInTheDocument();
+      fireEvent.change(screen.getByRole("searchbox", { name: "Buscar comparsa por nombre" }), { target: { value: "estre" } });
+      expect(cards().getByText("Estrella")).toBeInTheDocument();
+      expect(cards().queryByText("Apagada")).not.toBeInTheDocument();
+      expect(screen.getByText("1 de 2 comparsas")).toBeInTheDocument();
+      fireEvent.change(screen.getByRole("searchbox", { name: "Buscar comparsa por nombre" }), { target: { value: "" } });
+      fireEvent.change(screen.getByRole("combobox", { name: "Filtrar comparsas por estado" }), { target: { value: "inactive" } });
+      expect(cards().queryByText("Estrella")).not.toBeInTheDocument();
+      expect(cards().getByText("Apagada")).toBeInTheDocument();
+    });
+
+    it("muestra orden por jornada y reordena con vecino esperado", async () => {
+      const write = vi.fn().mockResolvedValue({ changes: [{ id: "s-1", presentationOrder: 2 }, { id: "s-2", presentationOrder: 1 }] });
+      mockTroupes({ write });
+      await openTroupesTab();
+      expect(await screen.findByText("Orden de pasada")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Subir Estrella en Noche 1" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Bajar Apagada en Noche 1" })).toBeDisabled();
+      fireEvent.click(screen.getByRole("button", { name: "Bajar Estrella en Noche 1" }));
+      expect(write).toHaveBeenCalledExactlyOnceWith("/api/v1/schedule/s-1/reorder", {
+        method: "POST",
+        body: JSON.stringify({ direction: "DOWN", neighborId: "s-2", expectedOrder: 1, expectedNeighborOrder: 2 }),
+      });
+      expect(await screen.findByText("Orden de pasada actualizado.")).toBeInTheDocument();
+    });
+
+    it("recarga la jornada ante conflicto sin repetir el intercambio", async () => {
+      const write = vi.fn().mockRejectedValueOnce({ code: "ORDER_CONFLICT" });
+      mockTroupes({ write });
+      await openTroupesTab();
+      await screen.findByText("Orden de pasada");
+      fireEvent.click(screen.getByRole("button", { name: "Bajar Estrella en Noche 1" }));
+      expect(await screen.findByText(/El orden cambio/)).toBeInTheDocument();
+      expect(write).toHaveBeenCalledTimes(1);
+      expect(apiRequest).toHaveBeenCalledWith("/api/v1/events/event-1/schedule?nightId=night-1");
+    });
+
+    it("oculta edicion y reorden de comparsas con evento OPEN", async () => {
+      mockTroupes();
+      render(<AdminCompetenciaPage event={{ id: "event-1", status: "OPEN" }} />);
+      fireEvent.click(screen.getByRole("button", { name: "Comparsas" }));
+      await screen.findByText("Estrella");
+      expect(screen.queryByRole("button", { name: /Editar comparsa|Nueva comparsa|Subir|Bajar/ })).not.toBeInTheDocument();
+      expect(apiRequest.mock.calls.every(([, options]) => !options?.method)).toBe(true);
+    });
+  });
+
+  describe("Spec 027/D: árbol de evaluación y planillas accionables", () => {
+    function mockRubrics({ rubrics: customRubrics } = {}) {
+      const rubrics = customRubrics ?? [rubric];
+      apiRequest.mockImplementation(async (path, options) => {
+        if (options?.method) throw new Error("Escritura inesperada");
+        if (path.endsWith("/troupes")) return [];
+        if (path.endsWith("/categories")) return [];
+        if (path.endsWith("/specialties")) {
+          return [{ id: "specialty-1", name: "Danza", code: "DANZA", displayOrder: 1, active: true }];
+        }
+        if (path.endsWith("/rubrics")) return rubrics.map((r) => ({ ...r }));
+        if (path.endsWith("/orphaned-criteria")) return [];
+        throw new Error(`Solicitud inesperada: ${path}`);
+      });
+    }
+
+    it("muestra el árbol Especialidad → Rubro → Ítem → Criterio y colapsa metadata futura", async () => {
+      mockRubrics();
+      render(<AdminCompetenciaPage event={{ id: "event-1", status: "CONFIGURING" }} />);
+      fireEvent.click(screen.getByRole("button", { name: "Rubros" }));
+      expect(await screen.findByText("Qué puntúa el jurado")).toBeInTheDocument();
+      const tree = screen.getByLabelText("Árbol de evaluación por especialidad");
+      expect(within(tree).getByText("Danza")).toBeInTheDocument();
+      expect(within(tree).getByText("Coreografia")).toBeInTheDocument();
+      expect(within(tree).getByText("Interpretacion")).toBeInTheDocument();
+      expect(within(tree).getByText("Precision")).toBeInTheDocument();
+      const advanced = screen.getAllByText("Opciones avanzadas (sin efecto operativo)");
+      expect(advanced.length).toBeGreaterThan(0);
+    });
+
+    it("la matriz advierte faltantes y Resolver lleva al rubro expandido", async () => {
+      mockRubrics({
+        rubrics: [
+          { ...rubric, id: "rubric-empty", name: "Vacio", items: [], criteria: [] },
+          rubric,
+        ],
+      });
+      render(<AdminCompetenciaPage event={{ id: "event-1", status: "CONFIGURING" }} />);
+      fireEvent.click(screen.getByRole("button", { name: "Planillas de evaluación" }));
+      expect(await screen.findByText(/todavía necesitan una asignación/)).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Resolver rubro Vacio" }));
+      expect(await screen.findByRole("button", { name: "Contraer Vacio" })).toBeInTheDocument();
+    });
   });
 });

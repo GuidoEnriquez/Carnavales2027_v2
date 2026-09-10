@@ -101,6 +101,13 @@ Separar la administracion general del evento de la configuracion competitiva y r
 - **RNF-33.** La interfaz DEBE funcionar con teclado y en 390x844, 768x1024 y 1440x900.
 - **RNF-34.** Toda escritura DEBE mantener auditoria sin exponer secretos ni relajar el filtro de campos sensibles.
 
+## Ampliacion T09a/T09b - Ficha de comparsa y orden de pasada (2026-09-10)
+
+- **RF-141b.** `brand_color` (columna 069, formato `^#[0-9A-Fa-f]{6}$`, nullable) DEBE exponerse en `POST/PATCH/GET` de troupes como `brandColor`; valor ausente o vacio conserva NULL; formato invalido se rechaza con 400 sin tocar auditoria de votos.
+- **RF-147b.** La seccion Comparsas DEBE ofrecer busqueda por nombre y filtros por tipo de participacion y estado (Todas/Activas/Inactivas), sin ocultar registros: filtrar solo afecta la vista.
+- **RF-148b.** La ficha DEBE ofrecer un preview de solo lectura "Vista jurado" (nombre + banda de color + tipo) que NO crea votos, planillas ni auditoria de votacion.
+- **RF-149b.** El orden de pasada (`night_troupe_schedule.presentation_order`, unico por jornada) DEBE poder consultarse por jornada desde Competencia y reordenarse con operaciones atomicas Subir/Bajar con control de concurrencia optimista (409 ante solicitud obsoleta); no abre votacion ni cambia readiness/apertura vigentes.
+
 ## Criterios de aceptacion
 
 1. No existe una tabla nueva de tipos de participacion; la UI usa el catalogo existente.

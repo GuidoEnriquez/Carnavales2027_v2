@@ -8,19 +8,16 @@ describe("EventCard (Spec 026/T07)", () => {
   it("muestra el nombre y el estado del evento", () => {
     const { unmount } = render(<EventCard event={event} onSelect={() => {}} />);
     expect(screen.getByText("Carnaval 2027")).toBeVisible();
-    expect(screen.getByText("Abierta")).toBeVisible();
+    expect(screen.getByText("Competencia abierta")).toBeVisible();
     unmount();
   });
 
-  it("notifica la selección con click y con teclado", () => {
+  it("notifica la selección con click y es un botón nativo", () => {
     const onSelect = vi.fn();
     render(<EventCard event={event} onSelect={onSelect} />);
     const card = screen.getByRole("button", { name: /Carnaval 2027/i });
+    expect(card.tagName).toBe("BUTTON");
     fireEvent.click(card);
     expect(onSelect).toHaveBeenCalledWith(event);
-    fireEvent.keyDown(card, { key: "Enter" });
-    expect(onSelect).toHaveBeenCalledTimes(2);
-    fireEvent.keyDown(card, { key: " " });
-    expect(onSelect).toHaveBeenCalledTimes(3);
   });
 });

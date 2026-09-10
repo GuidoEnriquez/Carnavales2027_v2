@@ -3,6 +3,7 @@ import { PageShell } from "../components/PageShell.jsx";
 import { apiRequest } from "../api/http.js";
 import { CeremonialDrawModal } from "../features/results/CeremonialDrawModal.jsx";
 import { useSession } from "../auth/session-context.jsx";
+import { useAdminEvent } from "../context/AdminEventContext.jsx";
 
 function nameFor(troupes, id) {
   return troupes.find((troupe) => troupe.id === id)?.name ?? id;
@@ -10,9 +11,10 @@ function nameFor(troupes, id) {
 
 export function AdminResultsPage() {
   const session = useSession();
+  const adminEvent = useAdminEvent();
   const canRelease = session?.roles?.some((role) => ["SCRUTINEER", "ESCRIBANO"].includes(role));
-  const [events, setEvents] = useState([]);
-  const [eventId, setEventId] = useState("");
+  const [localEvents, setLocalEvents] = useState([]);
+  const [localEventId, setLocalEventId] = useState("");
   const [troupes, setTroupes] = useState([]);
   const [result, setResult] = useState(null);
   const [tie, setTie] = useState(null);
@@ -24,23 +26,26 @@ export function AdminResultsPage() {
   const [refreshVersion, setRefreshVersion] = useState(0);
   const [releasing, setReleasing] = useState(false);
   const drawTriggerRef = useRef(null);
+  const events = adminEvent?.events ?? localEvents;
+  const eventId = adminEvent?.activeEventId ?? localEventId;
 
   useEffect(() => {
+    if (adminEvent) return undefined;
     let active = true;
     void apiRequest("/api/v1/results/events").then((items) => {
       if (!active) return;
-      setEvents(items);
-      setEventId(items[0]?.id ?? "");
+       setLocalEvents(items);
+       setLocalEventId(items[0]?.id ?? "");
     }).catch(() => {
       if (active) {
-        setEvents([]);
-        setEventId("");
+        setLocalEvents([]);
+        setLocalEventId("");
         setLoading(false);
         setMessage("No se pudieron cargar las competencias. Verificá que la API esté disponible y tu sesión siga activa.");
       }
     });
     return () => { active = false; };
-  }, []);
+  }, [adminEvent]);
 
   useEffect(() => {
     if (!eventId) return undefined;
@@ -113,7 +118,7 @@ export function AdminResultsPage() {
     () => (tie?.remainingTroupeIds ?? []).map((id) => ({ id, name: nameFor(troupes, id) })),
     [tie, troupes],
   );
-  const selectedEvent = events.find((event) => event.id === eventId);
+  const selectedEvent = adminEvent?.activeEvent ?? events.find((event) => event.id === eventId);
   const workflowSteps = [
     { label: "Revisar consolidación", state: result || releaseAvailable ? "done" : "current" },
     { label: "Liberar resultados", state: result ? "done" : releaseAvailable ? "current" : "locked" },
@@ -128,11 +133,11 @@ export function AdminResultsPage() {
           <p className="eyebrow">Escrutinio autorizado</p>
           <h1>Resultados</h1>
         </div>
-        <label>Competencia
-          <select value={eventId} onChange={(event) => setEventId(event.target.value)}>
-            {events.map((event) => <option key={event.id} value={event.id}>{event.name}</option>)}
-          </select>
-        </label>
+         {!adminEvent && <label>Competencia
+           <select value={eventId} onChange={(event) => setLocalEventId(event.target.value)}>
+             {events.map((event) => <option key={event.id} value={event.id}>{event.name}</option>)}
+           </select>
+         </label>}
       </header>
 
       <p className="feedback" role="status" aria-live="polite">{message}</p>

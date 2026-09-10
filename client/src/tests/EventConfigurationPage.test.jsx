@@ -25,6 +25,8 @@ describe("EventConfigurationPage", () => {
   it("deja la configuracion en solo lectura cuando el evento esta OPEN", () => {
     render(<EventConfigurationPage event={{ id: "event-1", status: "OPEN" }} />);
     expect(screen.getByLabelText("Nombre del evento")).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "+ Agregar jornada" })).not.toBeInTheDocument();
+    expect(screen.getByText(/ya no puede modificarse/)).toBeInTheDocument();
   });
 
   it("muestra el boton de Competencia", () => {
@@ -33,18 +35,49 @@ describe("EventConfigurationPage", () => {
     expect(screen.getByRole("button", { name: "Competencia" })).toBeInTheDocument();
   });
 
-  it("permite crear una jornada", async () => {
+  it("permite crear una jornada desde el drawer", async () => {
     apiRequest.mockResolvedValueOnce({ ready: false, missing: [], incompleteTroupes: [], incompleteRubrics: [], orphanedCriteria: [] });
     apiRequest.mockResolvedValueOnce({ id: "n1", name: "Noche 1", displayOrder: 1, kind: "COMPETITION", eventDate: null });
     apiRequest.mockResolvedValueOnce({ ready: false, missing: [], incompleteTroupes: [], incompleteRubrics: [], orphanedCriteria: [] });
     render(<EventConfigurationPage event={{ id: "event-1", status: "CONFIGURING" }} />);
 
+    fireEvent.click(screen.getByRole("button", { name: "+ Agregar jornada" }));
     fireEvent.change(screen.getByLabelText("Nombre de jornada"), { target: { value: "Noche 1" } });
     fireEvent.click(screen.getByRole("button", { name: "Agregar jornada" }));
 
     await waitFor(() => expect(apiRequest).toHaveBeenCalledWith(
       "/api/v1/events/event-1/nights",
       expect.objectContaining({ body: JSON.stringify({ name: "Noche 1", displayOrder: 1, kind: "COMPETITION", eventDate: null }) }),
+    ));
+  });
+
+  it("presenta el orden como Orden de visualización con max+1", async () => {
+    apiRequest.mockResolvedValue({ ready: false, missing: [], incompleteTroupes: [], incompleteRubrics: [], orphanedCriteria: [] });
+    render(<EventConfigurationPage
+      event={{ id: "event-1", status: "CONFIGURING" }}
+      nights={[{ id: "n1", name: "Noche 1", displayOrder: 1, kind: "COMPETITION", eventDate: null }]}
+    />);
+
+    expect(screen.getByRole("table")).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "#" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "+ Agregar jornada" }));
+    expect(screen.getByLabelText("Orden de visualización")).toHaveValue(2);
+  });
+
+  it("permite editar una jornada desde la tabla", async () => {
+    apiRequest.mockResolvedValue({ ready: false, missing: [], incompleteTroupes: [], incompleteRubrics: [], orphanedCriteria: [] });
+    render(<EventConfigurationPage
+      event={{ id: "event-1", status: "CONFIGURING" }}
+      nights={[{ id: "n1", name: "Noche 1", displayOrder: 1, kind: "COMPETITION", eventDate: null }]}
+    />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Editar jornada Noche 1" }));
+    fireEvent.change(screen.getByLabelText("Nombre de jornada"), { target: { value: "Noche 1 Editada" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar jornada" }));
+
+    await waitFor(() => expect(apiRequest).toHaveBeenCalledWith(
+      "/api/v1/nights/n1",
+      expect.objectContaining({ method: "PATCH" }),
     ));
   });
 

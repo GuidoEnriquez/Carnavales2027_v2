@@ -57,6 +57,7 @@ export function Dialog({
     <dialog
       ref={dialogRef}
       className={`app-dialog ${className}`.trim()}
+      aria-modal="true"
       onCancel={handleCancel}
       onClick={handleClick}
       aria-labelledby={title ? titleId : undefined}

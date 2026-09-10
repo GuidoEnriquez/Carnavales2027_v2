@@ -5,6 +5,7 @@
 - **Fase SDD:** Especificación aprobada para desarrollo (Fase 5 del Plan Maestro).
 - **Fuente:** `PLAN-maestro.md` §2.1, §2.4 y Fase 5; `PLAN-role-ux.md` Fases 1 a 6; Specs 016, 020, 021, 022.
 - **Relación:** Consolida la identidad visual carnavalera ("el carnaval es la marca, la planilla es el instrumento") mediante la capa de marca sobre el sistema de diseño tokenizado (Spec 020), organiza el hub inicial de navegación por rol (`HomePage.jsx`), estandariza la redirección unificada post-login para todos los roles auxiliares y dota a la página de escrutinio de condiciones legibles de liberación (RF-94a).
+- **Estado del working tree 2026-09-10:** `[NECESITA ACLARACIÓN]` La implementación actual elimina el hub `HomePage.jsx`/`#/home` y redirige ADMIN y roles auxiliares a estaciones operativas directas. Esta divergencia no cambia la regla aprobada en este documento hasta contar con una decisión de producto.
 
 ---
 

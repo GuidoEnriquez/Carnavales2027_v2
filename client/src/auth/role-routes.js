@@ -3,12 +3,12 @@
  */
 
 export const ROLE_DEFAULT_ROUTES = {
-  ADMIN: "#/admin/competencia",
+  ADMIN: "#/admin/home",
   JUDGE: "#/judge",
   VEEDOR: "#/veedor",
-  COMISARIO: "#/comisario/penalties",
-  SCRUTINEER: "#/scrutineer/results",
-  ESCRIBANO: "#/scrutineer/results",
+  COMISARIO: "#/admin/penalties",
+  SCRUTINEER: "#/admin/results",
+  ESCRIBANO: "#/admin/results",
 };
 
 /**

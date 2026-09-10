@@ -1,23 +1,23 @@
 import { StatusPill } from "./StatusPill.jsx";
 
-export function EventCard({ event, onSelect }) {
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      onSelect(event);
-    }
-  };
+const EVENT_STATUS_LABELS = {
+  CONFIGURING: "En configuración",
+  OPEN: "Competencia abierta",
+  CLOSED: "Evento cerrado",
+};
 
+export function EventCard({ event, onSelect, active = false }) {
   return (
-    <article
-      className="event-card"
-      role="button"
-      tabIndex={0}
+    <button
+      type="button"
+      className={`event-card${active ? " is-active" : ""}`}
       onClick={() => onSelect(event)}
-      onKeyDown={handleKeyDown}
+      aria-label={active ? `Evento activo: ${event.name}` : `Usar ${event.name}`}
+      aria-pressed={active}
     >
       <span className="event-card-name">{event.name}</span>
-      <StatusPill status={event.status} />
-    </article>
+      <StatusPill status={event.status} label={EVENT_STATUS_LABELS[event.status] ?? event.status} />
+      {active && <span className="event-card-active">Evento activo</span>}
+    </button>
   );
 }

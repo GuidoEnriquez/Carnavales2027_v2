@@ -12,7 +12,8 @@
 | T06 | En curso | T02-T05 |
 | T07 | Completada | T03 |
 | T08 | Completada (automatica) | T07 |
-| T09 | Pendiente | T08 |
+| T09 | En curso (desdoblada en T09a/T09b) | T08 |
+| T09a | Completada (automatica 2026-09-10) | T08 |
 | T10 | Bloqueada por aclaracion temporal | T07 |
 | T11 | Bloqueada por aclaracion de versiones | T02 |
 
@@ -81,6 +82,20 @@
 
 **RF:** RF-147, RF-148.
 **Alcance:** constructor progresivo, filtros, detalle de matriz y preview por especialidad sin efectos de votacion. Pruebas de aislamiento por especialidad y ausencia de escrituras.
+
+## T09a - Ficha de comparsa: color, filtros y preview (2026-09-10)
+
+**RF:** RF-141b, RF-147b, RF-148b; RNF-33, RNF-34.
+**Alcance:** exponer `brandColor` en API troupes (sin migracion), busqueda/filtros de vista, validacion inline por campo, preview "Vista jurado" sin escrituras. Reutiliza `SaveForm`, `StatusPill`, `WriteContext`.
+**Hecho cuando:** tests API de color + tests cliente de ficha/filtros/preview en verde; build ok; sin cambios en readiness/apertura/votos.
+**Estado:** Completada (automatica 2026-09-10). `brandColor` cableado en `category-service.js` (sin migracion, columna 069 vigente); UI con busqueda/filtros, validacion inline y preview "Vista jurado".
+
+## T09b - Orden de pasada por jornada (2026-09-10)
+
+**RF:** RF-149b; RNF-33, RNF-34.
+**Alcance:** lectura de schedule por jornada y reorder atomico Subir/Bajar con 409 obsoleto (contrato clon T08); UI por jornada oculta con OPEN. No crea/elimina asignaciones, no abre votacion, no toca Spec 025.
+**Hecho cuando:** tests DB/API de intercambio + concurrencia + autorizacion en verde; controles conectados solo tras validar BD/API; build ok.
+**Estado:** Completada (automatica 2026-09-10). Migracion 072 (`schedule_night_order_unique` DEFERRABLE), servicio `schedule-service.js`, rutas `GET /events/:eventId/schedule` y `POST /schedule/:scheduleId/reorder`, UI `TroupeScheduleSection`.
 
 ## T10 - Revision historica y jornadas
 

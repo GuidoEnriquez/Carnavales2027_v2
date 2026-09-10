@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { apiRequest } from "../api/http.js";
 import { RevokePenaltyModal } from "../features/penalties/RevokePenaltyModal.jsx";
 import { PageShell } from "../components/PageShell.jsx";
+import { PageHeader } from "../components/PageHeader.jsx";
+import { EventStatusBanner } from "../components/EventStatusBanner.jsx";
+import { useAdminEvent } from "../context/AdminEventContext.jsx";
 
 function getApiErrorMessage(error, defaultMsg = "Ocurrió un error inesperado.") {
   if (error?.code === "RESULTS_ALREADY_RELEASED") {
@@ -26,8 +29,9 @@ function getApiErrorMessage(error, defaultMsg = "Ocurrió un error inesperado.")
 }
 
 export function AdminPenaltiesPage() {
-  const [events, setEvents] = useState([]);
-  const [eventId, setEventId] = useState("");
+  const adminEvent = useAdminEvent();
+  const [localEvents, setLocalEvents] = useState([]);
+  const [localEventId, setLocalEventId] = useState("");
   const [nights, setNights] = useState([]);
   const [selectedNightId, setSelectedNightId] = useState("");
   const [troupes, setTroupes] = useState([]);
@@ -40,9 +44,12 @@ export function AdminPenaltiesPage() {
   const [message, setMessage] = useState("");
   const [revokingPenalty, setRevokingPenalty] = useState(null);
   const revokeTriggerRef = useRef(null);
+  const events = adminEvent?.events ?? localEvents;
+  const eventId = adminEvent?.activeEventId ?? localEventId;
 
   // Carga inicial de competencias
   useEffect(() => {
+    if (adminEvent) return undefined;
     let active = true;
     const fetchEvents = async () => {
       try {
@@ -59,13 +66,13 @@ export function AdminPenaltiesPage() {
           }
         }
         if (!active) return;
-        setEvents(items);
+         setLocalEvents(items);
         const defaultEvent = items.find((e) => e.name === "Competencia Oficial de Prueba - Goya 2027") ?? items.find((e) => e.name === "test_prueba") ?? items[0];
-        setEventId(defaultEvent?.id ?? "");
+         setLocalEventId(defaultEvent?.id ?? "");
       } catch (error) {
         if (!active) return;
-        setEvents([]);
-        setEventId("");
+        setLocalEvents([]);
+        setLocalEventId("");
         setLoading(false);
         if (error?.code === "RESULTS_ACCESS_DENIED" || error?.code === "PENALTIES_ACCESS_DENIED") {
           setMessage("No tenés permisos para acceder a las competencias.");
@@ -76,7 +83,7 @@ export function AdminPenaltiesPage() {
     };
     void fetchEvents();
     return () => { active = false; };
-  }, []);
+  }, [adminEvent]);
 
   // Carga de noches, comparsas y penalizaciones cuando cambia el evento seleccionado
   useEffect(() => {
@@ -210,30 +217,30 @@ export function AdminPenaltiesPage() {
     await refreshPenalties();
   };
 
-  const selectedEvent = events.find((e) => e.id === eventId);
+  const selectedEvent = adminEvent?.activeEvent ?? events.find((e) => e.id === eventId);
 
   return (
     <PageShell layer="instrument" className="admin-shell penalties-page">
-      <header className="event-header">
-        <div>
-          <p className="eyebrow">Comisariato</p>
-          <h1>Gestión de Penalizaciones</h1>
-        </div>
-        <label htmlFor="penalties-event-select">
-          Competencia
-          <select
-            id="penalties-event-select"
-            value={eventId}
-            onChange={(e) => setEventId(e.target.value)}
-          >
-            {events.map((event) => (
-              <option key={event.id} value={event.id}>
-                {event.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      </header>
+      <PageHeader
+        eyebrow="Comisariato"
+        title="Gestión de Penalizaciones"
+        status={selectedEvent?.status}
+         actions={!adminEvent ? <label htmlFor="penalties-event-select">
+              Competencia
+              <select
+                id="penalties-event-select"
+                value={eventId}
+                onChange={(e) => setLocalEventId(e.target.value)}
+              >
+                {events.map((event) => (
+                  <option key={event.id} value={event.id}>
+                    {event.name}
+                  </option>
+                ))}
+              </select>
+            </label> : null}
+      />
+      {selectedEvent && <EventStatusBanner status={selectedEvent.status} />}
 
       <p className="feedback" role="status" aria-live="polite">
         {message}

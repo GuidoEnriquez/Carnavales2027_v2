@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiRequest } from "../api/http.js";
+import { ConfirmDialog } from "../components/ConfirmDialog.jsx";
 
 const READINESS_LABELS = {
   COMPETITION_NIGHT: "No existe ninguna jornada de competencia configurada",
@@ -10,10 +11,12 @@ const READINESS_LABELS = {
   INCOMPLETE_RUBRICS: "Existen rubros sin items puntuables o con especialidades inactivas",
 };
 
-export function EventReadinessPanel({ event, locked, onOpened, refreshKey = 0 }) {
+export function EventReadinessPanel({ event, locked, onOpened, onGoToNights, refreshKey = 0 }) {
   const [readiness, setReadiness] = useState(null);
   const [message, setMessage] = useState("");
   const [opening, setOpening] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const openTriggerRef = useRef(null);
   const requestRevision = useRef(0);
 
   const load = useCallback(async ({ isCurrent = () => true } = {}) => {
@@ -36,8 +39,8 @@ export function EventReadinessPanel({ event, locked, onOpened, refreshKey = 0 })
   }, [load, refreshKey]);
 
   const open = async () => {
-    if (!window.confirm("Abrir el evento bloqueara toda su configuracion. Queres continuar?")) return;
     requestRevision.current += 1;
+    setConfirmOpen(false);
     setOpening(true);
     try {
       const openedEvent = await apiRequest(`/api/v1/events/${event.id}/open`, { method: "POST" });
@@ -72,19 +75,26 @@ export function EventReadinessPanel({ event, locked, onOpened, refreshKey = 0 })
             {(readiness.missing ?? []).map((code) => (
               <li key={code} className="readiness-fail">
                 <span className="readiness-icon">&#x2717;</span>
-                {READINESS_LABELS[code] ?? code}
+                {READINESS_LABELS[code] ?? code}{" "}
+                {code === "COMPETITION_NIGHT" && onGoToNights ? (
+                  <button type="button" className="secondary" onClick={onGoToNights}>Ir al problema</button>
+                ) : (
+                  <a href="#/admin/competencia">Ir al problema</a>
+                )}
               </li>
             ))}
             {(readiness.incompleteTroupes ?? []).map((troupe) => (
               <li key={troupe.id} className="readiness-fail">
                 <span className="readiness-icon">&#x2717;</span>
-                La comparsa &ldquo;{troupe.name}&rdquo; no tiene categoria activa
+                La comparsa &ldquo;{troupe.name}&rdquo; no tiene categoria activa{" "}
+                <a href="#/admin/competencia">Ir al problema</a>
               </li>
             ))}
             {(readiness.incompleteRubrics ?? []).map((rubric) => (
               <li key={rubric.id} className="readiness-fail">
                 <span className="readiness-icon">&#x2717;</span>
-                El rubro &ldquo;{rubric.name}&rdquo; no tiene items puntuables validos
+                El rubro &ldquo;{rubric.name}&rdquo; no tiene items puntuables validos{" "}
+                <a href="#/admin/competencia">Ir al problema</a>
               </li>
             ))}
             {readiness.ready && (
@@ -96,9 +106,20 @@ export function EventReadinessPanel({ event, locked, onOpened, refreshKey = 0 })
               </>
             )}
           </ul>
-          <button className="danger-action" disabled={locked || opening || !readiness.ready} onClick={open}>
+          <button ref={openTriggerRef} className="danger-action" disabled={locked || opening || !readiness.ready} onClick={() => setConfirmOpen(true)}>
             {opening ? "Abriendo..." : "Abrir evento"}
           </button>
+          <ConfirmDialog
+            isOpen={confirmOpen}
+            onClose={() => setConfirmOpen(false)}
+            onConfirm={() => void open()}
+            title="Abrir evento"
+            description="Abrir el evento bloqueará toda su configuración. ¿Querés continuar?"
+            confirmLabel="Abrir evento"
+            confirming={opening}
+            danger
+            focusReturnRef={openTriggerRef}
+          />
         </>
       )}
       <p role="status" aria-live="polite">{message}</p>

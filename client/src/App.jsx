@@ -6,6 +6,7 @@ import { RequireVotingObserverRole } from "./auth/RequireVotingObserverRole.jsx"
 import { useSession } from "./auth/session-context.jsx";
 import { AppNavigation } from "./components/AppNavigation.jsx";
 import { AdminEventsPage } from "./pages/AdminEventsPage.jsx";
+import { AdminHomePage } from "./pages/AdminHomePage.jsx";
 import { AdminCompetenciaPage } from "./pages/AdminCompetenciaPage.jsx";
 import { AdminJudgesPage } from "./pages/AdminJudgesPage.jsx";
 import { AdminAssignmentsPage } from "./pages/AdminAssignmentsPage.jsx";
@@ -16,7 +17,6 @@ import { OfficialRecordPage } from "./pages/OfficialRecordPage.jsx";
 import { AcceptedJudgeInvitationPage, AcceptJudgeInvitationPage } from "./pages/AcceptJudgeInvitationPage.jsx";
 import { AcceptRoleInvitationPage } from "./pages/AcceptRoleInvitationPage.jsx";
 import { AcceptOperationalInvitationPage } from "./pages/AcceptOperationalInvitationPage.jsx";
-import { HomePage } from "./pages/HomePage.jsx";
 import { JudgeHomePage } from "./pages/JudgeHomePage.jsx";
 import { JudgeBallotPage } from "./pages/JudgeBallotPage.jsx";
 import { JudgeAssignmentPage } from "./pages/JudgeAssignmentPage.jsx";
@@ -25,24 +25,43 @@ import { LoginPage } from "./pages/LoginPage.jsx";
 import { PublicResultsPage } from "./pages/PublicResultsPage.jsx";
 import { apiRequest } from "./api/http.js";
 import { EventCard } from "./components/EventCard.jsx";
+import { AdminEventProvider, useAdminEvent } from "./context/AdminEventContext.jsx";
 import { useEffect, useState } from "react";
 
 function ProtectedShell({ session, children }) {
-  return <><AppNavigation session={session} />{children}</>;
+  const shell = <><AppNavigation session={session} />{children}</>;
+  return session.roles?.includes("ADMIN") ? <AdminEventProvider>{shell}</AdminEventProvider> : shell;
 }
 
 function AdminCompetenciaPageWrapper() {
+  const adminEvent = useAdminEvent();
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (adminEvent) return undefined;
     apiRequest("/api/v1/events").then((evts) => {
       setEvents(evts);
       if (evts.length === 1) setSelectedEvent(evts[0]);
       setLoading(false);
     }).catch(() => setLoading(false));
-  }, []);
+  }, [adminEvent]);
+
+  if (adminEvent) {
+    if (adminEvent.loading) return <main className="container"><p>Cargando evento activo...</p></main>;
+    if (!adminEvent.activeEvent) return (
+      <main className="container">
+        <div className="card admin-empty-context">
+          <p className="eyebrow">Competencia</p>
+          <h1>Primero seleccioná un evento</h1>
+          <p>La configuración de competencia pertenece a un evento.</p>
+          <a className="button-link" href="#/admin/events">Seleccionar evento</a>
+        </div>
+      </main>
+    );
+    return <AdminCompetenciaPage event={adminEvent.activeEvent} onBack={() => { window.location.hash = "#/admin/events"; }} />;
+  }
 
   if (loading) return <main className="container"><p>Cargando eventos...</p></main>;
   if (!selectedEvent) return (
@@ -83,7 +102,6 @@ export default function App({ session: providedSession }) {
     route === "#/login" ||
     route === "" ||
     route.startsWith("#/invitations") ||
-    route === "#/home" ||
     route === "#/resultados";
   const currentLayer = isBrandRoute ? "brand" : "instrument";
 
@@ -108,6 +126,9 @@ export default function App({ session: providedSession }) {
     if (route === "#/login" || route === "") return <LoginPage />;
   if (route === "#/judge/assignment") {
     return <RoleArea session={session} role="JUDGE"><JudgeAssignmentPage session={session} /></RoleArea>;
+  }
+  if (route === "#/admin/home") {
+    return <RoleArea session={session} admin><AdminHomePage /></RoleArea>;
   }
   if (route === "#/admin/events") {
     return <RoleArea session={session} admin><AdminEventsPage /></RoleArea>;
@@ -154,12 +175,7 @@ export default function App({ session: providedSession }) {
   if (route === "#/judge/ballot") {
     return <RoleArea session={session} role="JUDGE"><JudgeBallotPage ballotId={new URLSearchParams(query).get("ballotId") ?? ""} troupeId={new URLSearchParams(query).get("troupeId") ?? ""} userId={session.user?.id ?? ""} /></RoleArea>;
   }
-    if (route === "#/home") {
-      if (session.status === "loading") return <p>Cargando sesión…</p>;
-      if (session.status !== "authenticated") return <LoginPage />;
-      return <ProtectedShell session={session}><HomePage session={session} /></ProtectedShell>;
-    }
-    return <main id="main-content" className="container"><div className="card"><h1>Página no encontrada</h1><a href="#/home">Volver al inicio</a></div></main>;
+    return <main id="main-content" className="container"><div className="card"><h1>Página no encontrada</h1><a href="#/login">Volver al inicio</a></div></main>;
   };
 
   return (

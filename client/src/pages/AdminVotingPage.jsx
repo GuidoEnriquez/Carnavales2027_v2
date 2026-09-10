@@ -1,44 +1,28 @@
 import { useEffect, useRef, useState } from "react";
 import { PageShell } from "../components/PageShell.jsx";
+import { Dialog } from "../components/Dialog.jsx";
+import { DialogFooter } from "../components/DialogFooter.jsx";
+import { StatusPill } from "../components/StatusPill.jsx";
+import { EventStatusBanner } from "../components/EventStatusBanner.jsx";
 import { apiRequest } from "../api/http.js";
+import { useAdminEvent } from "../context/AdminEventContext.jsx";
+
+const BALLOT_STATUS_LABELS = { SUBMITTED: "Confirmada", REOPENED: "Reabierta", OPEN: "En carga" };
 
 export function AdminVotingPage() {
-  const [events, setEvents] = useState([]);
+  const adminEvent = useAdminEvent();
+  const [localEvents, setLocalEvents] = useState([]);
   const [nights, setNights] = useState([]);
   const [ballots, setBallots] = useState([]);
   const [status, setStatus] = useState(null);
-  const [eventId, setEventId] = useState("");
+  const [localEventId, setLocalEventId] = useState("");
   const [nightId, setNightId] = useState("");
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
   const [pendingCloseDialog, setPendingCloseDialog] = useState(null);
-  const closeDialogRef = useRef(null);
   const closeButtonRef = useRef(null);
-
-  useEffect(() => {
-    const dialog = closeDialogRef.current;
-    if (!dialog) return;
-    if (pendingCloseDialog?.length > 0 && !dialog.open) {
-      dialog.showModal();
-      dialog.querySelector("[data-close-pending-dialog-close]")?.focus();
-    } else if (!pendingCloseDialog && dialog.open) {
-      dialog.close();
-    }
-  }, [pendingCloseDialog]);
-
-  const closePendingDialog = () => {
-    const dialog = closeDialogRef.current;
-    if (dialog?.open) dialog.close();
-    else {
-      setPendingCloseDialog(null);
-      closeButtonRef.current?.focus();
-    }
-  };
-
-  const handlePendingDialogClose = () => {
-    setPendingCloseDialog(null);
-    closeButtonRef.current?.focus();
-  };
+  const events = adminEvent?.events ?? localEvents;
+  const eventId = adminEvent?.activeEventId ?? localEventId;
 
   const refreshNight = async (selectedEventId = eventId, selectedNightId = nightId) => {
     if (!selectedEventId || !selectedNightId) return;
@@ -57,11 +41,12 @@ export function AdminVotingPage() {
   };
 
   useEffect(() => {
+    if (adminEvent) return undefined;
     void apiRequest("/api/v1/events").then((items) => {
-      setEvents(items);
-      if (items[0]) setEventId(items[0].id);
+      setLocalEvents(items);
+      if (items[0]) setLocalEventId(items[0].id);
     }).catch(() => setMessage("No se pudieron cargar los eventos."));
-  }, []);
+  }, [adminEvent]);
 
   useEffect(() => {
     if (!eventId) return;
@@ -105,14 +90,17 @@ export function AdminVotingPage() {
     }
   };
 
+  const selectedEvent = events.find((event) => event.id === eventId);
+
   return <PageShell layer="instrument" className="admin-shell voting-page">
     <header className="event-header">
       <div><p className="eyebrow">Mesa de control</p><h1>Votación por noche</h1></div>
       <div className="voting-pickers">
-        <label>Evento<select value={eventId} onChange={(event) => setEventId(event.target.value)}>{events.map((event) => <option key={event.id} value={event.id}>{event.name}</option>)}</select></label>
+        {!adminEvent && <label>Evento<select value={eventId} onChange={(event) => setLocalEventId(event.target.value)}>{events.map((event) => <option key={event.id} value={event.id}>{event.name}</option>)}</select></label>}
         <label>Noche<select value={nightId} onChange={(event) => setNightId(event.target.value)}>{nights.map((night) => <option key={night.id} value={night.id}>{night.name}</option>)}</select></label>
       </div>
     </header>
+    {selectedEvent && <EventStatusBanner status={selectedEvent.status} />}
     <p className="feedback" role="status" aria-live="polite">{message}</p>
     {nightId && <>
       <section className="voting-summary" aria-label="Estado de planillas">
@@ -223,20 +211,27 @@ export function AdminVotingPage() {
       <section className="assignment-grid" aria-label="Planillas de la noche">
         {ballots.length === 0 && <p className="empty-state">Todavía no hay planillas para esta noche.</p>}
         {ballots.map((ballot) => <article className="assignment-card" key={ballot.id}>
-          <div className="judge-card-heading"><div><p className="eyebrow">{ballot.specialtyName}</p><h2>{ballot.judgeName}</h2><p>{ballot.status === "SUBMITTED" ? "Confirmada" : ballot.status === "REOPENED" ? "Reabierta" : "En carga"}</p></div><span className="status-pill">{ballot.status}</span></div>
+          <div className="judge-card-heading"><div><p className="eyebrow">{ballot.specialtyName}</p><h2>{ballot.judgeName}</h2><p>{BALLOT_STATUS_LABELS[ballot.status] ?? ballot.status}</p></div><StatusPill status={ballot.status} label={BALLOT_STATUS_LABELS[ballot.status] ?? ballot.status} /></div>
         </article>)}
       </section>
     </>}
-    <dialog ref={closeDialogRef} className="pending-dialog" aria-modal="true" aria-labelledby="close-pending-dialog-title" aria-describedby="close-pending-dialog-description" onCancel={(event) => { event.preventDefault(); closePendingDialog(); }} onClose={handlePendingDialogClose}>
+    <Dialog
+      isOpen={pendingCloseDialog !== null && pendingCloseDialog?.length > 0}
+      onClose={() => setPendingCloseDialog(null)}
+      title="Faltan votos por resolver"
+      description="No se puede cerrar la votación hasta que los jurados resuelvan estos ítems."
+      focusReturnRef={closeButtonRef}
+      className="pending-dialog"
+    >
       {pendingCloseDialog && <div className="pending-dialog-content">
         <p className="eyebrow">Cierre bloqueado</p>
-        <h2 id="close-pending-dialog-title">Faltan votos por resolver</h2>
-        <p id="close-pending-dialog-description">No se puede cerrar la votación hasta que los jurados resuelvan estos ítems.</p>
         <ul className="pending-dialog-list" aria-label="Votos pendientes">
           {pendingCloseDialog.map((item) => <li key={item.id}><span>{item.judgeName} · {item.troupeName}</span><span>{item.rubricName}</span><strong>{item.itemName}</strong></li>)}
         </ul>
-        <div className="pending-dialog-actions"><button data-close-pending-dialog-close type="button" onClick={closePendingDialog}>Volver al control</button></div>
+        <DialogFooter>
+          <button type="button" onClick={() => setPendingCloseDialog(null)}>Volver al control</button>
+        </DialogFooter>
       </div>}
-    </dialog>
+    </Dialog>
   </PageShell>;
 }

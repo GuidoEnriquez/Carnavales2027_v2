@@ -9,6 +9,31 @@
   margin-inline: auto;
 }
 
+.global-event-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.global-event-picker span {
+  color: var(--text-secondary);
+}
+
+.global-event-picker select {
+  inline-size: min(13rem, 24vw);
+  min-block-size: 2.5rem;
+  border-color: var(--border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-input);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
 .event-header {
   display: flex;
   flex-wrap: wrap;
@@ -99,6 +124,62 @@
 .troupe-card-category {
   color: var(--text-muted);
   font-size: var(--text-sm);
+}
+
+/* Spec 017 T09a/T09b: ficha de comparsa y orden de pasada. */
+.troupe-swatch {
+  display: inline-block;
+  inline-size: 2rem;
+  block-size: 1.25rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.troupe-preview {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.troupe-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.75rem;
+  margin-block: 1rem;
+}
+
+.filter-count {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.help-text {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.field-error {
+  color: var(--danger-text);
+  font-weight: 600;
+}
+
+.schedule-list {
+  display: grid;
+  gap: 0.5rem;
+  margin-block-start: 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.schedule-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  padding: 0.75rem 1rem;
 }
 
 .inline-form {
@@ -498,12 +579,16 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
+  inline-size: 100%;
   padding: var(--space-4);
   border: 1px solid var(--border-default);
   border-inline-start: 4px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   background: var(--surface-card);
   box-shadow: var(--shadow-sm);
+  color: var(--text-primary);
+  font: inherit;
+  text-align: start;
   cursor: pointer;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
@@ -608,6 +693,1038 @@
 
   .pending-dialog-actions,
   .pending-dialog-actions button {
+    inline-size: 100%;
+  }
+}
+
+/* Spec 027/A1 — Fundaciones admin (aditivo, sin rewrite) */
+.admin-page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-block-end: 1.25rem;
+  border-block-end: 4px solid var(--accent-primary);
+  padding-block: 0.75rem 1.25rem;
+}
+
+.admin-page-header h1 {
+  margin: 0;
+  font-size: clamp(2rem, 6vw, 4.5rem);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+}
+
+.admin-page-status {
+  margin-block: 0.5rem 0;
+}
+
+.event-status-banner {
+  border: 1px solid var(--line-color);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  margin-block: 0 1rem;
+  font-weight: 700;
+}
+
+.event-status-banner-open {
+  border-color: rgba(59, 130, 246, 0.4);
+  background: rgba(30, 58, 138, 0.25);
+  color: #bfdbfe;
+}
+
+.event-status-banner-closed {
+  border-color: var(--line-color);
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+}
+
+.entity-drawer {
+  max-inline-size: min(94vw, 34rem);
+  margin-inline-end: 0;
+}
+
+/* Spec 027/B — Panel admin (aditivo) */
+.config-progress {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.config-progress-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.config-progress-summary span {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.config-progress-summary strong {
+  font-size: 1.5rem;
+}
+
+.config-progress-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.config-progress-step {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  border-block-start: 3px solid var(--line-color);
+  padding-block-start: 0.6rem;
+}
+
+.config-progress-step.is-done {
+  border-color: var(--success);
+}
+
+.config-progress-step.is-current {
+  border-color: var(--primary-color);
+}
+
+.config-progress-bullet {
+  font-weight: 800;
+}
+
+.config-progress-step.is-done .config-progress-bullet {
+  color: var(--success);
+}
+
+.config-progress-detail {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.admin-next-step {
+  margin-block: 1rem 0;
+}
+
+/* Spec 027/B+G0 — Dashboard admin (aditivo) */
+.admin-dashboard {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.admin-dashboard-main {
+  display: grid;
+  gap: 1.25rem;
+  min-inline-size: 0;
+}
+
+.admin-dashboard-main .config-section,
+.admin-dashboard-side .config-section {
+  margin-block: 0;
+}
+
+.admin-next-step-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-block-start: 1rem;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  padding: 1rem 1.25rem;
+}
+
+.admin-next-step-card > div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.admin-next-step-card strong {
+  font-size: 1.15rem;
+}
+
+.admin-next-step-card span:last-child {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.admin-dashboard-side {
+  display: grid;
+  gap: 1.25rem;
+  align-content: start;
+}
+
+.admin-stats {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-stat-link {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.admin-quick-links {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.admin-quick-links .button-link {
+  justify-content: space-between;
+}
+
+.admin-problem-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+@media (min-width: 64rem) {
+  .admin-dashboard {
+    grid-template-columns: minmax(0, 1fr) minmax(16rem, 20rem);
+    align-items: start;
+  }
+}
+
+/* Spec 027/B+G — Panel admin: layout dashboard, resumen y accesos directos */
+.admin-dashboard {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.admin-dashboard-main,
+.admin-dashboard-side {
+  display: grid;
+  gap: var(--space-5);
+  align-content: start;
+}
+
+.admin-next-step-card {
+  display: grid;
+  gap: var(--space-4);
+  margin-block-start: var(--space-5);
+  border: 1px solid var(--line-color);
+  border-inline-start: 5px solid var(--accent-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  background: var(--surface-raised);
+}
+
+.admin-next-step-card > div {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.admin-next-step-card strong {
+  font-size: var(--text-xl);
+}
+
+.admin-next-step-card span:last-child {
+  color: var(--text-muted);
+}
+
+.admin-next-step-card.is-complete {
+  border-inline-start-color: var(--success);
+}
+
+.admin-problem-list .readiness-fail {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.admin-problem-text {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-stats .overview-stat {
+  position: relative;
+  gap: var(--space-2);
+}
+
+.admin-stat-link {
+  justify-self: start;
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.admin-quick-links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.admin-quick-links .button-link {
+  justify-content: center;
+  min-block-size: var(--touch-target-min);
+  padding: var(--space-2) var(--space-3);
+}
+
+@media (min-width: 64rem) {
+  .admin-dashboard {
+    grid-template-columns: minmax(0, 1fr) 22rem;
+    align-items: start;
+  }
+}
+
+@media (min-width: 40rem) and (max-width: 63.99rem) {
+  .admin-quick-links {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 36rem) {
+  .admin-problem-list .readiness-fail {
+    grid-template-columns: auto 1fr;
+  }
+
+  .admin-problem-list .readiness-fail a {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .admin-quick-links .button-link {
+    inline-size: 100%;
+  }
+}
+
+/* Spec 027 — Refinamiento UX/UI del Admin Home */
+.admin-home-shell {
+  max-inline-size: 1280px;
+}
+
+.admin-home-shell .admin-page-header {
+  align-items: center;
+  gap: var(--space-4);
+  margin-block-end: var(--space-4);
+  border-block-end-width: 1px;
+  padding-block: var(--space-2) var(--space-4);
+}
+
+.admin-home-shell .admin-page-header h1 {
+  font-size: clamp(1.85rem, 4vw, 2.85rem);
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.admin-home-shell .admin-page-status {
+  display: inline-flex;
+  margin-block-start: var(--space-2);
+}
+
+.admin-home-shell .event-picker {
+  gap: var(--space-1);
+}
+
+.admin-home-shell .event-status-banner {
+  margin-block-end: var(--space-4);
+  padding-block: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.admin-home-shell .section-heading {
+  margin-block-end: var(--space-3);
+}
+
+.admin-home-shell .section-heading h2 {
+  font-size: var(--text-xl);
+  letter-spacing: -0.02em;
+}
+
+.admin-home-shell .section-heading p {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}
+
+.admin-home-shell .config-section {
+  padding: var(--space-4);
+}
+
+.admin-home-shell .config-progress {
+  gap: var(--space-3);
+}
+
+.admin-home-shell .config-progress-summary {
+  align-items: end;
+}
+
+.admin-home-shell .config-progress-summary > div {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.admin-home-shell .config-progress-summary span {
+  color: var(--text-secondary);
+}
+
+.admin-home-shell .config-progress-summary > div > strong {
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.admin-home-shell .config-progress-summary > strong {
+  color: var(--accent-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+}
+
+.admin-home-shell .config-progress-steps {
+  gap: 0;
+  border-block-start: 1px solid var(--border-subtle);
+}
+
+.admin-home-shell .config-progress-step {
+  min-block-size: var(--touch-target-min);
+  border-block-start: 0;
+  border-block-end: 1px solid var(--border-subtle);
+  padding: 0;
+}
+
+.admin-home-shell .config-progress-link {
+  display: grid;
+  grid-template-columns: 1.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  inline-size: 100%;
+  min-block-size: var(--touch-target-min);
+  padding: var(--space-2) 0;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.admin-home-shell a.config-progress-link:hover {
+  color: var(--text-primary);
+  background: var(--surface-hover-subtle);
+}
+
+.admin-home-shell .config-progress-link:focus-visible {
+  z-index: 1;
+  outline: 0;
+  box-shadow: var(--focus-ring);
+}
+
+.admin-home-shell .config-progress-bullet {
+  display: grid;
+  place-items: center;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  border-radius: var(--radius-full);
+  color: var(--text-muted);
+  background: var(--surface-raised);
+  font-family: var(--font-mono);
+  font-weight: 800;
+}
+
+.admin-home-shell .config-progress-step.is-done .config-progress-bullet {
+  color: var(--success-text);
+  background: var(--success-bg);
+}
+
+.admin-home-shell .config-progress-step.is-current .config-progress-bullet {
+  color: var(--accent-text);
+  background: var(--accent-subtle);
+}
+
+.admin-home-shell .config-progress-step.is-attention .config-progress-bullet {
+  color: var(--warning-text);
+  background: var(--warning-bg);
+}
+
+.admin-home-shell .config-progress-copy {
+  display: grid;
+  min-inline-size: 0;
+  gap: var(--space-1);
+}
+
+.admin-home-shell .config-progress-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.admin-home-shell .config-progress-title strong {
+  font-size: var(--text-base);
+}
+
+.admin-home-shell .config-progress-state {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.admin-home-shell .is-done .config-progress-state { color: var(--success-text); }
+.admin-home-shell .is-current .config-progress-state { color: var(--accent-text); }
+.admin-home-shell .is-attention .config-progress-state { color: var(--warning-text); }
+
+.admin-home-shell .config-progress-detail {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.admin-home-shell .config-progress-chevron {
+  color: var(--text-muted);
+  font-size: var(--text-xl);
+  line-height: 1;
+}
+
+.admin-home-shell .admin-next-step-card {
+  gap: var(--space-4);
+  margin-block-start: var(--space-4);
+  padding: var(--space-4);
+}
+
+.admin-home-shell .admin-next-step-card strong {
+  font-size: var(--text-lg);
+}
+
+.admin-home-shell .admin-next-step-card span:last-child {
+  max-inline-size: 58ch;
+  line-height: var(--leading-normal);
+}
+
+.admin-home-shell .admin-next-step-card .button-link {
+  min-block-size: var(--touch-target-min);
+  white-space: nowrap;
+}
+
+.admin-home-shell .admin-stats {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.admin-home-shell .admin-stats .overview-stat {
+  min-block-size: 7rem;
+  padding: var(--space-3);
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.admin-home-shell .admin-stats .overview-stat:hover {
+  border-color: var(--accent-primary);
+  background: var(--surface-hover-subtle);
+}
+
+.admin-home-shell .admin-stats .overview-stat:focus-visible {
+  outline: 0;
+  box-shadow: var(--focus-ring);
+}
+
+.admin-home-shell .overview-number {
+  font-size: var(--text-2xl);
+}
+
+.admin-home-shell .admin-stat-link {
+  color: var(--accent-text);
+  font-size: var(--text-xs);
+}
+
+.admin-home-shell .admin-problem-list {
+  gap: var(--space-2);
+  margin-block-end: 0;
+}
+
+.admin-home-shell .admin-problem-list .readiness-fail {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+.admin-home-shell .admin-problem-list .readiness-icon {
+  display: grid;
+  place-items: center;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  border-radius: var(--radius-full);
+  color: var(--warning-text);
+  background: var(--warning-bg);
+  font-family: var(--font-mono);
+  font-weight: 900;
+}
+
+.admin-home-shell .admin-problem-copy {
+  display: grid;
+  gap: var(--space-1);
+  min-inline-size: 0;
+}
+
+.admin-home-shell .admin-problem-copy strong {
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
+.admin-home-shell .admin-problem-copy span {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+}
+
+.admin-home-shell .admin-problem-list .readiness-fail a {
+  grid-column: 2;
+  justify-self: start;
+  min-block-size: var(--touch-target-min);
+  padding-block: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.admin-home-shell .admin-quick-links {
+  gap: var(--space-2);
+}
+
+.admin-home-shell .admin-quick-links .button-link {
+  justify-content: flex-start;
+  min-block-size: var(--touch-target-min);
+  padding-inline: var(--space-3);
+  font-size: var(--text-sm);
+  text-align: start;
+}
+
+@media (min-width: 64rem) {
+  .admin-home-shell .admin-dashboard {
+    grid-template-columns: minmax(0, 1fr) minmax(20rem, 25rem);
+    gap: var(--space-4);
+  }
+
+  .admin-home-shell .admin-dashboard-main,
+  .admin-home-shell .admin-dashboard-side {
+    gap: var(--space-4);
+  }
+}
+
+@media (min-width: 90rem) {
+  .admin-home-shell .admin-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 36rem) {
+  .admin-home-shell .admin-page-header {
+    align-items: stretch;
+    padding-block-end: var(--space-3);
+  }
+
+  .admin-home-shell .admin-page-header h1 {
+    font-size: var(--text-2xl);
+  }
+
+  .admin-home-shell .config-progress-title {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .admin-home-shell .admin-next-step-card .button-link,
+  .admin-home-shell .admin-problem-list .readiness-fail a {
+    inline-size: 100%;
+    justify-content: center;
+  }
+}
+
+/* Admin Events catalog refinement */
+.admin-events-page {
+  display: grid;
+  gap: var(--space-6);
+  max-inline-size: 1180px;
+}
+
+.admin-events-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-5);
+  border-block-end: 1px solid var(--border-subtle);
+  padding-block-end: var(--space-5);
+}
+
+.admin-events-header h1 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: clamp(var(--text-2xl), 4vw, var(--text-4xl));
+  letter-spacing: -0.045em;
+}
+
+.admin-events-header p:last-child {
+  margin: var(--space-2) 0 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.admin-events-header > button,
+.admin-events-empty > button {
+  min-block-size: var(--touch-target-min);
+  white-space: nowrap;
+}
+
+.event-catalog-section {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.event-catalog-section > .section-heading {
+  flex-direction: row;
+  align-items: end;
+  justify-content: space-between;
+  margin-block-end: 0;
+}
+
+.event-catalog-section > .section-heading > span {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.event-catalog-card {
+  display: grid;
+  gap: var(--space-4);
+  border: 1px solid var(--border-default);
+  border-inline-start: 4px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
+}
+
+.event-catalog-card.is-active {
+  border-color: rgba(37, 99, 235, 0.55);
+  border-inline-start-color: var(--accent-primary);
+  background: linear-gradient(135deg, var(--surface-card), rgba(37, 99, 235, 0.1));
+  box-shadow: var(--shadow-md);
+}
+
+.event-catalog-card-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.event-catalog-card-heading h3 {
+  margin: 0 0 var(--space-2);
+  color: var(--text-primary);
+  font-size: var(--text-xl);
+  letter-spacing: -0.02em;
+}
+
+.event-active-label {
+  color: var(--success-text);
+  font-size: var(--text-sm);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.event-summary-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+  border-block: 1px solid var(--border-subtle);
+  padding-block: var(--space-3);
+}
+
+.event-summary-stats span {
+  display: grid;
+  gap: var(--space-1);
+  min-inline-size: 0;
+}
+
+.event-summary-stats strong {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--text-xl);
+  line-height: 1;
+}
+
+.event-summary-stats small {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.event-next-step {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.event-next-step strong {
+  color: var(--accent-text);
+}
+
+.event-catalog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.event-catalog-actions > button,
+.event-catalog-actions > .button-link {
+  min-block-size: var(--touch-target-min);
+}
+
+.event-catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.event-catalog-grid .event-catalog-card {
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.event-catalog-grid .event-catalog-card-heading h3 {
+  font-size: var(--text-lg);
+}
+
+.event-catalog-grid .event-summary-stats {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.event-catalog-grid .event-summary-stats strong {
+  font-size: var(--text-lg);
+}
+
+.admin-events-empty {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-6);
+}
+
+.admin-events-empty h2,
+.admin-events-empty h3,
+.admin-events-empty p {
+  margin: 0;
+}
+
+.admin-events-empty p {
+  color: var(--text-muted);
+}
+
+.admin-events-empty > button {
+  justify-self: start;
+  margin-block-start: var(--space-2);
+}
+
+.admin-events-page > .user-admin {
+  display: grid;
+  gap: var(--space-3);
+  margin-block-start: var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  background: rgba(17, 24, 39, 0.58);
+  box-shadow: none;
+}
+
+.user-admin-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.user-admin-heading h2 {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-lg);
+}
+
+.user-admin-heading > span {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.admin-events-page > .user-admin > p {
+  max-inline-size: 70ch;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+@media (max-width: 44rem) {
+  .admin-events-header,
+  .event-catalog-section > .section-heading,
+  .event-catalog-card-heading,
+  .user-admin-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-events-header > button,
+  .event-catalog-actions > button,
+  .event-catalog-actions > .button-link,
+  .admin-events-empty > button {
+    inline-size: 100%;
+    justify-content: center;
+  }
+
+  .event-catalog-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 30rem) {
+  .admin-events-page {
+    gap: var(--space-5);
+  }
+
+  .event-catalog-card {
+    padding: var(--space-4);
+  }
+
+  .event-summary-stats,
+  .event-catalog-grid .event-summary-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: var(--space-3);
+  }
+}
+
+/* Spec 027/C — Tablas de registros (aditivo) */
+.table-wrapper {
+  overflow-x: auto;
+  margin-block-start: 1rem;
+}
+
+.data-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.data-table th,
+.data-table td {
+  text-align: start;
+  padding: 0.65rem 0.75rem;
+  border-block-end: 1px solid var(--border-subtle);
+}
+
+.data-table thead th {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.data-table tbody tr:hover {
+  background: var(--surface-hover-subtle);
+}
+
+.troupe-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.troupe-cell > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+/* Spec 027/D — Árbol de evaluación y opciones avanzadas (aditivo) */
+.rubric-tree {
+  display: grid;
+  gap: 1rem;
+  margin-block: 1rem;
+}
+
+.rubric-tree-specialty {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  padding: 1rem;
+}
+
+.rubric-tree-specialty > h4 {
+  margin: 0 0 0.5rem;
+}
+
+.rubric-tree-empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.rubric-tree-rubrics,
+.rubric-tree-items,
+.rubric-tree-criteria {
+  margin: 0;
+  padding-inline-start: 1.25rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.rubric-tree-criteria {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.advanced-options {
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.85rem;
+}
+
+.advanced-options > summary {
+  cursor: pointer;
+  font-weight: 700;
+  min-block-size: var(--touch-target-min);
+}
+
+/* Spec 027/E — Board de asignaciones (aditivo) */
+.night-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block: 1rem;
+}
+
+.assignment-slot-list {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.assignment-slot {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  padding: 1rem;
+}
+
+.actions-menu {
+  margin-block-start: 0.75rem;
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+}
+
+.actions-menu-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+@media (max-width: 36rem) {
+  .admin-page-header,
+  .admin-page-header .event-actions,
+  .admin-page-header .event-actions button {
     inline-size: 100%;
   }
 }

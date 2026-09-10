@@ -5,12 +5,13 @@ import { useSession } from "../auth/session-context.jsx";
 
 export function goToRoleHome(session) {
   if (session.status !== "authenticated") return false;
-  if (session.roles?.length === 1 && session.roles[0] === "ADMIN") window.location.hash = "#/admin/events";
-  else if (session.roles?.length === 1 && session.roles[0] === "JUDGE") window.location.hash = "#/judge";
-  else if (session.roles?.length === 1 && session.roles[0] === "COMISARIO") window.location.hash = "#/admin/penalties";
-  else if (session.roles?.length === 1 && ["SCRUTINEER", "ESCRIBANO"].includes(session.roles[0])) window.location.hash = "#/admin/results";
-  else if (session.roles?.length === 1 && session.roles[0] === "VEEDOR") window.location.hash = "#/veedor";
-  else window.location.hash = "#/home";
+  const roles = session.roles ?? [];
+  if (roles.includes("ADMIN")) window.location.hash = "#/admin/home";
+  else if (roles.includes("JUDGE")) window.location.hash = "#/judge";
+  else if (roles.includes("COMISARIO")) window.location.hash = "#/admin/penalties";
+  else if (roles.some((r) => ["SCRUTINEER", "ESCRIBANO"].includes(r))) window.location.hash = "#/admin/results";
+  else if (roles.includes("VEEDOR")) window.location.hash = "#/veedor";
+  else window.location.hash = "#/login";
   return true;
 }
 

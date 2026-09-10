@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { apiRequest } from "../api/http.js";
 import { AppNavigation } from "../components/AppNavigation.jsx";
+import { AdminEventProvider } from "../context/AdminEventContext.jsx";
 
 vi.mock("../api/http.js", () => ({ apiRequest: vi.fn() }));
 
@@ -42,7 +43,7 @@ describe("AppNavigation", () => {
     window.location.hash = "#/admin/judges";
     render(<AppNavigation session={{ user: { name: "Admin" }, roles: ["ADMIN"] }} />);
     openMenu();
-    expect(screen.getByText("Administracion")).toBeInTheDocument();
+    expect(screen.getByText("Configuración")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Personas" })).toHaveAttribute("href", "#/admin/judges");
     expect(screen.getByRole("link", { name: "Personas" })).toHaveAttribute("aria-current", "page");
     expect(screen.queryByRole("link", { name: "Accesos" })).not.toBeInTheDocument();
@@ -52,7 +53,7 @@ describe("AppNavigation", () => {
     window.location.hash = "#/admin/penalties";
     render(<AppNavigation session={{ user: { name: "Comisario" }, roles: ["COMISARIO"] }} />);
     openMenu();
-    expect(screen.getByText("Comisariato")).toBeInTheDocument();
+    expect(screen.getByText("En vivo")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Penalizaciones" })).toHaveAttribute("href", "#/admin/penalties");
     expect(screen.getByRole("link", { name: "Penalizaciones" })).toHaveAttribute("aria-current", "page");
     expect(screen.queryByRole("link", { name: "Evento" })).not.toBeInTheDocument();
@@ -62,8 +63,8 @@ describe("AppNavigation", () => {
     window.location.hash = "#/veedor";
     render(<AppNavigation session={{ user: { name: "Veedor" }, roles: ["VEEDOR"] }} />);
     openMenu();
-    expect(screen.getByRole("link", { name: "Supervision" })).toHaveAttribute("href", "#/veedor");
-    expect(screen.getByRole("link", { name: "Supervision" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Supervisión" })).toHaveAttribute("href", "#/veedor");
+    expect(screen.getByRole("link", { name: "Supervisión" })).toHaveAttribute("aria-current", "page");
   });
 
   it("abre y cierra el drawer lateral con el boton hamburguesa", () => {
@@ -100,7 +101,8 @@ describe("AppNavigation", () => {
 
   it("mantiene brand y acciones de sesion visibles en el header con el drawer cerrado", () => {
     render(<AppNavigation session={{ user: { name: "Admin" }, roles: ["ADMIN"] }} />);
-    expect(screen.getByRole("link", { name: "Carnavales 2027" })).toHaveAttribute("href", "#/home");
+    const brand = screen.getByRole("link", { name: "Carnavales 2027" });
+    expect(brand).toHaveAttribute("href", "#");
     expect(screen.getByText("Admin")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Salir" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Abrir menu de navegacion" })).toBeInTheDocument();
@@ -116,7 +118,7 @@ describe("AppNavigation", () => {
     expect(drawer).toHaveClass("is-open");
     expect(drawer).toHaveAttribute("aria-hidden", "false");
     expect(screen.getByRole("link", { name: "Personas" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByText("Administracion")).toBeInTheDocument();
+    expect(screen.getByText("Configuración")).toBeInTheDocument();
   });
 
   it("en movil el menu exige abrir la hamburguesa", () => {
@@ -124,5 +126,22 @@ describe("AppNavigation", () => {
     render(<AppNavigation session={{ user: { name: "Admin" }, roles: ["ADMIN"] }} />);
     expect(screen.getByRole("button", { name: "Abrir menu de navegacion" })).toBeInTheDocument();
     expect(document.querySelector("#app-drawer")).not.toHaveClass("is-open");
+  });
+
+  it("muestra el selector global del evento para ADMIN", async () => {
+    apiRequest.mockResolvedValueOnce([
+      { id: "e1", name: "Carnaval 2027", status: "CONFIGURING" },
+      { id: "e2", name: "Prueba 2027", status: "OPEN" },
+    ]);
+    render(
+      <AdminEventProvider>
+        <AppNavigation session={{ user: { name: "Admin" }, roles: ["ADMIN"] }} />
+      </AdminEventProvider>,
+    );
+
+    const selector = await screen.findByRole("combobox", { name: "Evento activo" });
+    expect(selector).toHaveValue("e1");
+    fireEvent.change(selector, { target: { value: "e2" } });
+    expect(selector).toHaveValue("e2");
   });
 });

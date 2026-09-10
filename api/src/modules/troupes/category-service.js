@@ -17,6 +17,17 @@ function optionalBoolean(value, name) {
   return value;
 }
 
+const BRAND_COLOR_PATTERN = /^#[0-9A-Fa-f]{6}$/;
+
+function optionalBrandColor(value) {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "string") throw new TypeError("brandColor debe ser texto #RRGGBB o nulo.");
+  const trimmed = value.trim();
+  if (trimmed === "") return null;
+  if (!BRAND_COLOR_PATTERN.test(trimmed)) throw new TypeError("brandColor debe tener formato #RRGGBB.");
+  return trimmed;
+}
+
 export async function createCategory({ client = getPool(), eventId, name, code, displayOrder }) {
   await requireConfiguringEvent({ client, eventId });
   const { rows } = await client.query(
@@ -61,12 +72,12 @@ export async function updateCategory({ client = getPool(), categoryId, name, cod
   return rows[0];
 }
 
-export async function createTroupe({ client = getPool(), eventId, categoryId, name }) {
+export async function createTroupe({ client = getPool(), eventId, categoryId, name, brandColor = undefined }) {
   await requireConfiguringEvent({ client, eventId });
   const { rows } = await client.query(
-    `INSERT INTO event_troupe (event_id, category_id, name) VALUES ($1, $2, $3)
-     RETURNING id, event_id AS "eventId", category_id AS "categoryId", name, active`,
-    [text(eventId, "eventId"), text(categoryId, "categoryId"), text(name, "name")],
+    `INSERT INTO event_troupe (event_id, category_id, name, brand_color) VALUES ($1, $2, $3, $4)
+     RETURNING id, event_id AS "eventId", category_id AS "categoryId", name, active, brand_color AS "brandColor"`,
+    [text(eventId, "eventId"), text(categoryId, "categoryId"), text(name, "name"), optionalBrandColor(brandColor)],
   );
   return rows[0];
 }
@@ -75,6 +86,7 @@ export async function listTroupes({ client = getPool(), eventId }) {
   await requireEventExists({ client, eventId });
   const { rows } = await client.query(
     `SELECT t.id, t.event_id AS "eventId", t.category_id AS "categoryId", t.name, t.active,
+            t.brand_color AS "brandColor",
             c.name AS "categoryName", c.code AS "categoryCode", c.active AS "categoryActive"
        FROM event_troupe t
        JOIN event_category c ON c.id = t.category_id
@@ -85,20 +97,23 @@ export async function listTroupes({ client = getPool(), eventId }) {
   return rows;
 }
 
-export async function updateTroupe({ client = getPool(), troupeId, categoryId, name, active }) {
+export async function updateTroupe({ client = getPool(), troupeId, categoryId, name, active, brandColor = undefined }) {
   const { rows } = await client.query(
     `UPDATE event_troupe
         SET category_id = COALESCE($2, category_id),
             name = COALESCE($3, name),
             active = COALESCE($4, active),
+            brand_color = CASE WHEN $6 = TRUE THEN brand_color ELSE $5 END,
             updated_at = CURRENT_TIMESTAMP
       WHERE id = $1
-      RETURNING id, event_id AS "eventId", category_id AS "categoryId", name, active`,
+      RETURNING id, event_id AS "eventId", category_id AS "categoryId", name, active, brand_color AS "brandColor"`,
     [
       text(troupeId, "troupeId"),
       categoryId === undefined ? null : text(categoryId, "categoryId"),
       name === undefined ? null : text(name, "name"),
       optionalBoolean(active, "active"),
+      brandColor === undefined ? null : optionalBrandColor(brandColor),
+      brandColor === undefined,
     ],
   );
   if (!rows[0]) throw new Error("TROUPE_NOT_FOUND");

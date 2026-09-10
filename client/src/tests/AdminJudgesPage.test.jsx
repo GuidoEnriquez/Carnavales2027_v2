@@ -89,7 +89,6 @@ describe("AdminJudgesPage", () => {
   });
 
   it("suspende con confirmación y refresca el estado", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     let judgeRequests = 0;
     apiRequest.mockImplementation((path, options) => {
       if (path === "/api/v1/operational-profiles") return Promise.resolve([]);
@@ -102,7 +101,28 @@ describe("AdminJudgesPage", () => {
     });
     render(<AdminJudgesPage />);
     fireEvent.click(await screen.findByRole("button", { name: "Suspender a Jurado Registrado" }));
+    expect(await screen.findByText(/cerrar todas sus sesiones/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Suspender" }));
     await waitFor(() => expect(apiRequest).toHaveBeenCalledWith("/api/v1/judges/j1/suspend", { method: "POST" }));
     expect(await screen.findByText("Suspendido")).toBeInTheDocument();
+  });
+
+  it("filtra el padrón por búsqueda y estado", async () => {
+    apiRequest.mockImplementation((path) => {
+      if (path === "/api/v1/judges") return Promise.resolve([registered]);
+      if (path === "/api/v1/operational-profiles") return Promise.resolve([]);
+      return Promise.resolve({});
+    });
+    render(<AdminJudgesPage />);
+    await screen.findByText("Jurado Registrado");
+    fireEvent.change(screen.getByRole("searchbox", { name: "Buscar persona por nombre, correo o DNI" }), { target: { value: "nadie" } });
+    expect(screen.queryByText("Jurado Registrado")).not.toBeInTheDocument();
+    expect(screen.getByText("Sin jurados para los filtros actuales.")).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("searchbox", { name: "Buscar persona por nombre, correo o DNI" }), { target: { value: "" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "Filtrar personas por estado" }), { target: { value: "SUSPENDED" } });
+    expect(screen.queryByText("Jurado Registrado")).not.toBeInTheDocument();
+    expect(screen.getByText("Sin jurados para los filtros actuales.")).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("combobox", { name: "Filtrar personas por estado" }), { target: { value: "REGISTERED" } });
+    expect(screen.getByText("Jurado Registrado")).toBeInTheDocument();
   });
 });

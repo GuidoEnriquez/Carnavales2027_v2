@@ -17,9 +17,9 @@ describe("LoginPage - goToRoleHome (Spec 023)", () => {
     expect(redirected).toBe(false);
   });
 
-  it("redirige a #/admin/events a usuario con rol único ADMIN", () => {
+  it("redirige a #/admin/home a usuario con rol único ADMIN", () => {
     goToRoleHome({ status: "authenticated", roles: ["ADMIN"] });
-    expect(window.location.hash).toBe("#/admin/events");
+    expect(window.location.hash).toBe("#/admin/home");
   });
 
   it("redirige a #/judge a usuario con rol único JUDGE", () => {
@@ -47,13 +47,13 @@ describe("LoginPage - goToRoleHome (Spec 023)", () => {
     expect(window.location.hash).toBe("#/veedor");
   });
 
-  it("redirige a #/home a usuario con múltiples roles operativos", () => {
+  it("redirige a #/admin/home a usuario con múltiples roles incluyendo ADMIN", () => {
     goToRoleHome({ status: "authenticated", roles: ["ADMIN", "VEEDOR"] });
-    expect(window.location.hash).toBe("#/home");
+    expect(window.location.hash).toBe("#/admin/home");
   });
 
-  it("redirige a #/home a usuario autenticado sin roles específicos", () => {
+  it("redirige a #/login a usuario autenticado sin roles específicos", () => {
     goToRoleHome({ status: "authenticated", roles: [] });
-    expect(window.location.hash).toBe("#/home");
+    expect(window.location.hash).toBe("#/login");
   });
 });

@@ -2,6 +2,11 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { PageShell } from "../components/PageShell.jsx";
 import { apiRequest } from "../api/http.js";
 import { StatusPill } from "../components/StatusPill.jsx";
+import { EntityDrawer } from "../components/EntityDrawer.jsx";
+import { DialogFooter } from "../components/DialogFooter.jsx";
+import { TroupeForm } from "../features/TroupeForm.jsx";
+import { CatalogForm } from "../features/CatalogForm.jsx";
+import { RubricTree } from "../features/RubricTree.jsx";
 
 const WriteContext = createContext(null);
 
@@ -27,6 +32,7 @@ function SaveForm({ onSubmit, resetOnSuccess = false, ...props }) {
 export function AdminCompetenciaPage({ event, onBack }) {
   const [subPage, setSubPage] = useState("overview");
   const [pending, setPending] = useState(false);
+  const [focusRubricId, setFocusRubricId] = useState(null);
   const writing = useRef(false);
 
   const links = [
@@ -35,7 +41,7 @@ export function AdminCompetenciaPage({ event, onBack }) {
     { key: "categories", label: "Tipos de participacion" },
     { key: "specialties", label: "Especialidades" },
     { key: "rubrics", label: "Rubros" },
-    { key: "matrix", label: "Matriz de planillas" },
+    { key: "matrix", label: "Planillas de evaluación" },
   ];
 
   return (
@@ -63,12 +69,12 @@ export function AdminCompetenciaPage({ event, onBack }) {
               </button>
             ))}
           </nav>
-          {subPage === "overview" && <CompetenciaOverview event={event} />}
-          {subPage === "troupes" && <AdminTroupesSection event={event} />}
-          {subPage === "categories" && <AdminCategoriesSection event={event} />}
-          {subPage === "specialties" && <AdminSpecialtiesSection event={event} />}
-          {subPage === "rubrics" && <AdminRubricsSection event={event} />}
-          {subPage === "matrix" && <MatrizPlanillasSection event={event} />}
+          {subPage === "overview" && <CompetenciaOverview key={event.id} event={event} />}
+          {subPage === "troupes" && <><AdminTroupesSection key={`troupes-${event.id}`} event={event} /><TroupeScheduleSection key={`schedule-${event.id}`} event={event} /></>}
+          {subPage === "categories" && <AdminCategoriesSection key={`categories-${event.id}`} event={event} />}
+          {subPage === "specialties" && <AdminSpecialtiesSection key={`specialties-${event.id}`} event={event} />}
+          {subPage === "rubrics" && <AdminRubricsSection key={`rubrics-${event.id}`} event={event} focusRubricId={focusRubricId} />}
+          {subPage === "matrix" && <MatrizPlanillasSection key={`matrix-${event.id}`} event={event} onResolveRubric={(rubricId) => { setFocusRubricId(rubricId); setSubPage("rubrics"); }} />}
         </fieldset>
       </PageShell>
     </WriteContext.Provider>
@@ -142,7 +148,7 @@ function CompetenciaOverview({ event }) {
         </article>
         {data.orphaned.length > 0 && (
           <article className="overview-alert">
-            <strong>{data.orphaned.length} criterio(s) pendiente(s) de reasignacion</strong>
+            <strong>{data.orphaned.length} criterio(s) pendiente(s) de asignar</strong>
             <p>Cada criterio debe vincularse a un item puntuable antes de publicar la configuracion.</p>
             {data.orphaned.map((criterion) => {
               const items = (data.rubrics.find((rubric) => rubric.id === criterion.rubricId)?.items ?? [])
@@ -170,8 +176,14 @@ function CompetenciaOverview({ event }) {
 function AdminTroupesSection({ event }) {
   const [troupes, setTroupes] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [editing, setEditing] = useState(null);
+  const [drawerMode, setDrawerMode] = useState(null);
+  const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const drawerTriggerRef = useRef(null);
+  const { writing, setPending } = useContext(WriteContext);
 
   useEffect(() => {
     apiRequest(`/api/v1/events/${event.id}/troupes`).then(setTroupes).catch(() => {});
@@ -189,57 +201,223 @@ function AdminTroupesSection({ event }) {
         return prev.map((t) => t.id === saved.id ? { ...t, ...saved } : t);
       });
       setMessage("Guardado.");
-      setEditing(null);
+      setDrawerMode(null);
       return true;
     } catch (e) {
-      setMessage(e.code === "CATEGORY_INACTIVE" ? "La categoria seleccionada esta inactiva." : "No se pudo guardar.");
+      if (e.code === "CATEGORY_INACTIVE") setMessage("La categoria seleccionada esta inactiva.");
+      else if (e.code === "VALIDATION_ERROR") setMessage("Revisa los campos: el nombre y el tipo son obligatorios y el color debe tener formato #RRGGBB.");
+      else if (e.code === "EVENT_LOCKED") setMessage("El evento ya no permite modificar su configuracion.");
+      else setMessage("No se pudo guardar.");
+      return false;
     }
   };
+
+  const submitTroupe = async (body) => {
+    if (writing.current) return;
+    writing.current = true;
+    setPending(true);
+    setSaving(true);
+    try {
+      if (drawerMode?.mode === "edit") {
+        await save(`/api/v1/troupes/${drawerMode.troupeId}`, body, "PATCH");
+      } else {
+        await save(`/api/v1/events/${event.id}/troupes`, body);
+      }
+    } finally {
+      writing.current = false;
+      setPending(false);
+      setSaving(false);
+    }
+  };
+
+  const filtered = troupes.filter((troupe) => {
+    if (statusFilter === "active" && troupe.active === false) return false;
+    if (statusFilter === "inactive" && troupe.active !== false) return false;
+    if (categoryFilter !== "all" && troupe.categoryId !== categoryFilter) return false;
+    const query = search.trim().toLowerCase();
+    if (query && !(troupe.name ?? "").toLowerCase().includes(query)) return false;
+    return true;
+  });
+
+  const editingTroupe = drawerMode?.mode === "edit" ? troupes.find((t) => t.id === drawerMode.troupeId) : null;
 
   return (
     <section className="config-section">
       <div className="section-heading">
         <h2>Comparsas</h2>
-        <p>Participaciones y tipo de participacion vigente.</p>
+        <p>Participaciones y tipo de participacion vigente. El color se muestra como banda en la planilla del jurado.</p>
       </div>
       <p className="feedback" role="status">{message}</p>
-      {!locked && (
-        <SaveForm resetOnSuccess className="inline-form" onSubmit={(e) => { const fd = new FormData(e.currentTarget); return save(`/api/v1/events/${event.id}/troupes`, { name: fd.get("name"), categoryId: fd.get("categoryId") }); }}>
-          <label>Nombre<input name="name" required /></label>
-          <label>Tipo de participacion<select name="categoryId" required><option value="">Seleccionar</option>{activeCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
-          <button type="submit">Agregar comparsa</button>
-        </SaveForm>
-      )}
-      <div className="records-grid">
-        {troupes.map((troupe) => (
-          <article className="record" key={troupe.id}>
-            {editing === troupe.id ? (
-              <SaveForm onSubmit={(e) => { const fd = new FormData(e.currentTarget); return save(`/api/v1/troupes/${troupe.id}`, { name: fd.get("name"), categoryId: fd.get("categoryId"), active: fd.get("active") === "on" }, "PATCH"); }}>
-                <label>Nombre<input name="name" defaultValue={troupe.name} required /></label>
-                <label>Tipo<select name="categoryId" defaultValue={troupe.categoryId} required>{activeCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
-                <label className="check"><input name="active" type="checkbox" defaultChecked={troupe.active} /> Activa</label>
-                <button type="submit">Guardar</button>
-                <button type="button" className="secondary" onClick={() => setEditing(null)}>Cancelar</button>
-              </SaveForm>
-            ) : (
-              <div className="troupe-card-content">
-                <strong className="troupe-card-name">{troupe.name}</strong>
-                <span className="troupe-card-category">{troupe.categoryName ?? "Sin tipo"}</span>
-                <StatusPill status={troupe.active ? "ACTIVE" : "SUSPENDED"} label={troupe.active ? "Activa" : "Inactiva"} />
-                {!locked && <button className="secondary" type="button" aria-label={`Editar comparsa ${troupe.name}`} onClick={() => setEditing(troupe.id)}>Editar</button>}
-              </div>
-            )}
-          </article>
-        ))}
+      {!locked && <button type="button" onClick={(event) => { drawerTriggerRef.current = event.currentTarget; setDrawerMode({ mode: "create" }); }}>+ Nueva comparsa</button>}
+      <div className="troupe-filters">
+        <label>Buscar<input type="search" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Buscar comparsa por nombre" placeholder="Buscar por nombre" /></label>
+        <label>Tipo<select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} aria-label="Filtrar comparsas por tipo">
+          <option value="all">Todos los tipos</option>
+          {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select></label>
+        <label>Estado<select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Filtrar comparsas por estado">
+          <option value="all">Todas</option>
+          <option value="active">Activas</option>
+          <option value="inactive">Inactivas</option>
+        </select></label>
+        <span className="filter-count" role="status">{filtered.length} de {troupes.length} comparsas</span>
       </div>
+      {filtered.length === 0 ? (
+        <p className="empty-state">Sin comparsas para los filtros actuales.</p>
+      ) : (
+        <div className="table-wrapper">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th scope="col">Comparsa</th>
+                <th scope="col">Tipo</th>
+                <th scope="col">Estado</th>
+                {!locked && <th scope="col">Acción</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((troupe) => (
+                <tr key={troupe.id}>
+                  <td>
+                    <span className="troupe-cell">
+                      {troupe.brandColor && <span className="troupe-swatch" role="img" aria-label={`Color ${troupe.brandColor}`} style={{ backgroundColor: troupe.brandColor }} />}
+                      <span>
+                        <strong>{troupe.name}</strong>
+                        <span className="troupe-preview" aria-label={`Vista jurado de ${troupe.name}`}>Vista jurado: {troupe.name}{troupe.brandColor ? ` (${troupe.brandColor})` : " (sin color)"}</span>
+                      </span>
+                    </span>
+                  </td>
+                  <td>{troupe.categoryName ?? "Sin tipo"}</td>
+                  <td><StatusPill status={troupe.active ? "ACTIVE" : "SUSPENDED"} label={troupe.active ? "Activa" : "Inactiva"} /></td>
+                  {!locked && (
+                    <td>
+                      <button className="secondary" type="button" aria-label={`Editar comparsa ${troupe.name}`} onClick={(event) => { drawerTriggerRef.current = event.currentTarget; setDrawerMode({ mode: "edit", troupeId: troupe.id }); }}>
+                        Editar
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <EntityDrawer
+        isOpen={drawerMode !== null && !locked}
+        onClose={() => setDrawerMode(null)}
+        title={drawerMode?.mode === "edit" ? `Editar comparsa${editingTroupe ? ` — ${editingTroupe.name}` : ""}` : "Nueva comparsa"}
+        description={drawerMode?.mode === "edit" ? "Modificá los datos de la comparsa." : "Completá los datos de la comparsa."}
+        focusReturnRef={drawerTriggerRef}
+      >
+        <TroupeForm
+          key={drawerMode?.mode === "edit" ? `edit-${drawerMode.troupeId}` : "create"}
+          initialValue={editingTroupe ?? {}}
+          categories={activeCategories}
+          submitting={saving}
+          submitLabel={drawerMode?.mode === "edit" ? "Guardar comparsa" : "Agregar comparsa"}
+          showActive={drawerMode?.mode === "edit"}
+          onSubmit={submitTroupe}
+        />
+        <DialogFooter>
+          <button type="button" className="secondary" onClick={() => setDrawerMode(null)}>Cancelar</button>
+        </DialogFooter>
+      </EntityDrawer>
+    </section>
+  );
+}
+
+function TroupeScheduleSection({ event }) {
+  const [nights, setNights] = useState([]);
+  const [schedule, setSchedule] = useState([]);
+  const [nightId, setNightId] = useState("");
+  const [message, setMessage] = useState("");
+  const { writing, setPending } = useContext(WriteContext);
+  const locked = event.status === "OPEN";
+
+  useEffect(() => {
+    apiRequest(`/api/v1/events/${event.id}/nights`).then((loaded) => {
+      setNights(loaded ?? []);
+      setNightId((loaded ?? [])[0]?.id ?? "");
+    }).catch(() => {});
+  }, [event.id]);
+
+  useEffect(() => {
+    if (!nightId) { setSchedule([]); return; }
+    apiRequest(`/api/v1/events/${event.id}/schedule?nightId=${nightId}`)
+      .then(setSchedule)
+      .catch(() => setMessage("No se pudo cargar el orden de pasada."));
+  }, [event.id, nightId]);
+
+  const ordered = [...schedule].sort((a, b) => a.presentationOrder - b.presentationOrder);
+  const nightName = nights.find((n) => n.id === nightId)?.name ?? "";
+
+  const reorder = async (current, neighbor, direction) => {
+    if (writing.current || locked || !neighbor) return;
+    writing.current = true;
+    setPending(true);
+    try {
+      const { changes } = await apiRequest(`/api/v1/schedule/${current.id}/reorder`, {
+        method: "POST",
+        body: JSON.stringify({ direction, neighborId: neighbor.id, expectedOrder: current.presentationOrder, expectedNeighborOrder: neighbor.presentationOrder }),
+      });
+      setSchedule((previous) => previous.map((entry) => ({ ...entry, ...changes.find((change) => change.id === entry.id) })));
+      setMessage("Orden de pasada actualizado.");
+    } catch (error) {
+      if (["ORDER_CONFLICT", "ORDER_BOUNDARY"].includes(error.code)) {
+        try {
+          const fresh = await apiRequest(`/api/v1/events/${event.id}/schedule?nightId=${nightId}`);
+          setSchedule(fresh);
+          setMessage("El orden cambio. Recargamos la jornada; revisa antes de reintentar.");
+        } catch {
+          setMessage("No se pudo actualizar el orden. Recarga antes de reintentar.");
+        }
+      } else {
+        setMessage(error.code === "EVENT_LOCKED" ? "El evento ya no permite modificar su configuracion." : "No se pudo cambiar el orden. Verifica la configuracion antes de reintentar.");
+      }
+    } finally {
+      writing.current = false;
+      setPending(false);
+    }
+  };
+
+  return (
+    <section className="config-section" aria-label="Orden de pasada por jornada">
+      <div className="section-heading">
+        <h2>Orden de pasada</h2>
+        <p>Orden de presentacion por jornada. Solo lectura y reorden: no abre votacion ni crea planillas.</p>
+      </div>
+      <p className="feedback" role="status">{message}</p>
+      {nights.length === 0 && <p>Cargando jornadas...</p>}
+      {nights.length > 0 && (
+        <label>Jornada<select value={nightId} onChange={(e) => setNightId(e.target.value)} aria-label="Jornada para el orden de pasada">
+          {nights.map((night) => <option key={night.id} value={night.id}>{night.name}</option>)}
+        </select></label>
+      )}
+      <ol className="schedule-list">
+        {ordered.map((entry, index) => (
+          <li key={entry.id} className="schedule-row">
+            <span className="mono-text">{entry.presentationOrder}</span>
+            {entry.troupeBrandColor && <span className="troupe-swatch" role="img" aria-label={`Color ${entry.troupeBrandColor}`} style={{ backgroundColor: entry.troupeBrandColor }} />}
+            <strong>{entry.troupeName}</strong>
+            {!locked && <>
+              <button className="secondary" type="button" aria-label={`Subir ${entry.troupeName} en ${nightName}`} disabled={index === 0} onClick={() => reorder(entry, ordered[index - 1], "UP")}>Subir</button>
+              <button className="secondary" type="button" aria-label={`Bajar ${entry.troupeName} en ${nightName}`} disabled={index === ordered.length - 1} onClick={() => reorder(entry, ordered[index + 1], "DOWN")}>Bajar</button>
+            </>}
+          </li>
+        ))}
+      </ol>
+      {nightId && ordered.length === 0 && <p>Sin comparsas programadas en esta jornada.</p>}
     </section>
   );
 }
 
 function AdminCategoriesSection({ event }) {
   const [categories, setCategories] = useState([]);
-  const [editing, setEditing] = useState(null);
+  const [drawerMode, setDrawerMode] = useState(null);
+  const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const drawerTriggerRef = useRef(null);
+  const { writing, setPending } = useContext(WriteContext);
 
   useEffect(() => { apiRequest(`/api/v1/events/${event.id}/categories`).then(setCategories).catch(() => {}); }, [event.id]);
   const locked = event.status === "OPEN";
@@ -249,54 +427,107 @@ function AdminCategoriesSection({ event }) {
       const saved = await apiRequest(path, { method, body: JSON.stringify(body) });
       setCategories((prev) => method === "POST" ? [...prev, saved] : prev.map((category) => category.id === saved.id ? { ...category, ...saved } : category));
       setMessage("Guardado.");
-      setEditing(null);
+      setDrawerMode(null);
       return true;
     } catch (e) {
-      setMessage(e.code === "RESOURCE_CONFLICT" ? "El codigo ya esta en uso." : "No se pudo guardar.");
+      setMessage(e.code === "RESOURCE_CONFLICT" ? "Ese nombre u orden ya está en uso." : "No se pudo guardar.");
+      return false;
     }
   };
+
+  const submitCategory = async (body) => {
+    if (writing.current) return;
+    writing.current = true;
+    setPending(true);
+    setSaving(true);
+    try {
+      if (drawerMode?.mode === "edit") {
+        await save(`/api/v1/categories/${drawerMode.categoryId}`, body, "PATCH");
+      } else {
+        await save(`/api/v1/events/${event.id}/categories`, body);
+      }
+    } finally {
+      writing.current = false;
+      setPending(false);
+      setSaving(false);
+    }
+  };
+
+  const ordered = [...categories].sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+  const nextOrder = ordered.length === 0 ? 1 : Math.max(...ordered.map((c) => c.displayOrder ?? 0)) + 1;
+  const editingCategory = drawerMode?.mode === "edit" ? categories.find((c) => c.id === drawerMode.categoryId) : null;
 
   return (
     <section className="config-section">
       <div className="section-heading"><h2>Tipos de participacion</h2><p>Categorias de participacion configurables por evento.</p></div>
       <p className="feedback" role="status">{message}</p>
-      {!locked && (
-        <SaveForm resetOnSuccess className="inline-form" onSubmit={(e) => { const fd = new FormData(e.currentTarget); return save(`/api/v1/events/${event.id}/categories`, { name: fd.get("name"), displayOrder: Number(fd.get("displayOrder")) }); }}>
-          <label>Nombre<input name="name" required /></label>
-          <label>Orden<input name="displayOrder" type="number" min="1" defaultValue="1" required /></label>
-          <button type="submit">Agregar tipo</button>
-        </SaveForm>
+      {!locked && <button type="button" onClick={(event) => { drawerTriggerRef.current = event.currentTarget; setDrawerMode({ mode: "create" }); }}>+ Nuevo tipo</button>}
+      {ordered.length === 0 ? (
+        <p className="empty-state">Todavía no hay tipos de participación.</p>
+      ) : (
+        <div className="table-wrapper">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Tipo</th>
+                <th scope="col">Código</th>
+                <th scope="col">Estado</th>
+                {!locked && <th scope="col">Acción</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {ordered.map((category) => (
+                <tr key={category.id}>
+                  <td>{category.displayOrder}</td>
+                  <td><strong>{category.name}</strong></td>
+                  <td><span className="mono-text">{category.code}</span></td>
+                  <td><StatusPill status={category.active ? "ACTIVE" : "SUSPENDED"} label={category.active ? "Activa" : "Inactiva"} /></td>
+                  {!locked && (
+                    <td>
+                      <button className="secondary" type="button" aria-label={`Editar tipo ${category.name}`} onClick={(event) => { drawerTriggerRef.current = event.currentTarget; setDrawerMode({ mode: "edit", categoryId: category.id }); }}>
+                        Editar
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
-      <div className="records-grid">
-        {categories.map((category) => (
-          <article className="record" key={category.id}>
-            {editing === category.id ? (
-              <SaveForm onSubmit={(e) => { const fd = new FormData(e.currentTarget); return save(`/api/v1/categories/${category.id}`, { name: fd.get("name"), displayOrder: Number(fd.get("displayOrder")), active: fd.get("active") === "on" }, "PATCH"); }}>
-                <label>Nombre<input name="name" defaultValue={category.name} required /></label>
-                <label>Orden<input name="displayOrder" type="number" min="1" defaultValue={category.displayOrder} required /></label>
-                <label className="check"><input name="active" type="checkbox" defaultChecked={category.active} /> Activa</label>
-                <button type="submit">Guardar</button>
-                <button type="button" className="secondary" onClick={() => setEditing(null)}>Cancelar</button>
-              </SaveForm>
-            ) : (
-              <div>
-                <strong>{category.name}</strong>
-                <span className="mono-text">{category.code}</span>
-                <span className={category.active ? "status-active" : "status-inactive"}>{category.active ? "Activa" : "Inactiva"}</span>
-                {!locked && <button className="secondary" type="button" aria-label={`Editar tipo ${category.name}`} onClick={() => setEditing(category.id)}>Editar</button>}
-              </div>
-            )}
-          </article>
-        ))}
-      </div>
+      <EntityDrawer
+        isOpen={drawerMode !== null && !locked}
+        onClose={() => setDrawerMode(null)}
+        title={drawerMode?.mode === "edit" ? `Editar tipo${editingCategory ? ` — ${editingCategory.name}` : ""}` : "Nuevo tipo de participación"}
+        description={drawerMode?.mode === "edit" ? "Modificá los datos del tipo." : "Completá los datos del tipo."}
+        focusReturnRef={drawerTriggerRef}
+      >
+        <CatalogForm
+          key={drawerMode?.mode === "edit" ? `edit-${drawerMode.categoryId}` : "create"}
+          initialValue={editingCategory ?? {}}
+          defaultOrder={nextOrder}
+          submitting={saving}
+          submitLabel={drawerMode?.mode === "edit" ? "Guardar" : "Agregar tipo"}
+          showActive={drawerMode?.mode === "edit"}
+          idPrefix="category"
+          onSubmit={submitCategory}
+        />
+        <DialogFooter>
+          <button type="button" className="secondary" onClick={() => setDrawerMode(null)}>Cancelar</button>
+        </DialogFooter>
+      </EntityDrawer>
     </section>
   );
 }
 
 function AdminSpecialtiesSection({ event }) {
   const [specialties, setSpecialties] = useState([]);
-  const [editing, setEditing] = useState(null);
+  const [drawerMode, setDrawerMode] = useState(null);
+  const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const drawerTriggerRef = useRef(null);
+  const { writing, setPending } = useContext(WriteContext);
 
   useEffect(() => { apiRequest(`/api/v1/events/${event.id}/specialties`).then(setSpecialties).catch(() => {}); }, [event.id]);
   const locked = event.status === "OPEN";
@@ -306,51 +537,101 @@ function AdminSpecialtiesSection({ event }) {
       const saved = await apiRequest(path, { method, body: JSON.stringify(body) });
       setSpecialties((prev) => method === "POST" ? [...prev, saved] : prev.map((s) => s.id === saved.id ? { ...s, ...saved } : s));
       setMessage("Guardado.");
-      setEditing(null);
+      setDrawerMode(null);
       return true;
     } catch (e) {
-      setMessage(e.code === "RESOURCE_CONFLICT" ? "El codigo o el orden ya esta en uso." : "No se pudo guardar.");
+      setMessage(e.code === "RESOURCE_CONFLICT" ? "Ese nombre u orden ya está en uso." : "No se pudo guardar.");
+      return false;
     }
   };
+
+  const submitSpecialty = async (body) => {
+    if (writing.current) return;
+    writing.current = true;
+    setPending(true);
+    setSaving(true);
+    try {
+      if (drawerMode?.mode === "edit") {
+        await save(`/api/v1/specialties/${drawerMode.specialtyId}`, body, "PATCH");
+      } else {
+        await save(`/api/v1/events/${event.id}/specialties`, body);
+      }
+    } finally {
+      writing.current = false;
+      setPending(false);
+      setSaving(false);
+    }
+  };
+
+  const ordered = [...specialties].sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+  const nextOrder = ordered.length === 0 ? 1 : Math.max(...ordered.map((s) => s.displayOrder ?? 0)) + 1;
+  const editingSpecialty = drawerMode?.mode === "edit" ? specialties.find((s) => s.id === drawerMode.specialtyId) : null;
 
   return (
     <section className="config-section">
       <div className="section-heading"><h2>Especialidades</h2><p>Responsabilidades configurables de los jurados.</p></div>
       <p className="feedback" role="status">{message}</p>
-      {!locked && (
-        <SaveForm resetOnSuccess className="inline-form" onSubmit={(e) => { const fd = new FormData(e.currentTarget); return save(`/api/v1/events/${event.id}/specialties`, { name: fd.get("name"), displayOrder: Number(fd.get("displayOrder")) }); }}>
-          <label>Nombre<input name="name" required /></label>
-          <label>Orden<input name="displayOrder" type="number" min="1" defaultValue="1" required /></label>
-          <button type="submit">Agregar especialidad</button>
-        </SaveForm>
+      {!locked && <button type="button" onClick={(event) => { drawerTriggerRef.current = event.currentTarget; setDrawerMode({ mode: "create" }); }}>+ Nueva especialidad</button>}
+      {ordered.length === 0 ? (
+        <p className="empty-state">Todavía no hay especialidades.</p>
+      ) : (
+        <div className="table-wrapper">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Especialidad</th>
+                <th scope="col">Código</th>
+                <th scope="col">Estado</th>
+                {!locked && <th scope="col">Acción</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {ordered.map((spec) => (
+                <tr key={spec.id}>
+                  <td>{spec.displayOrder}</td>
+                  <td><strong>{spec.name}</strong></td>
+                  <td><span className="mono-text">{spec.code}</span></td>
+                  <td><StatusPill status={spec.active ? "ACTIVE" : "SUSPENDED"} label={spec.active ? "Activa" : "Inactiva"} /></td>
+                  {!locked && (
+                    <td>
+                      <button className="secondary" type="button" aria-label={`Editar especialidad ${spec.name}`} onClick={(event) => { drawerTriggerRef.current = event.currentTarget; setDrawerMode({ mode: "edit", specialtyId: spec.id }); }}>
+                        Editar
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
-      <div className="records-grid">
-        {specialties.map((spec) => (
-          <article className="record" key={spec.id}>
-            {editing === spec.id ? (
-              <SaveForm onSubmit={(e) => { const fd = new FormData(e.currentTarget); return save(`/api/v1/specialties/${spec.id}`, { name: fd.get("name"), displayOrder: Number(fd.get("displayOrder")), active: fd.get("active") === "on" }, "PATCH"); }}>
-                <label>Nombre<input name="name" defaultValue={spec.name} required /></label>
-                <label>Orden<input name="displayOrder" type="number" min="1" defaultValue={spec.displayOrder} required /></label>
-                <label className="check"><input name="active" type="checkbox" defaultChecked={spec.active} /> Activa</label>
-                <button type="submit">Guardar</button>
-                <button type="button" className="secondary" onClick={() => setEditing(null)}>Cancelar</button>
-              </SaveForm>
-            ) : (
-              <div>
-                <strong>{spec.name}</strong>
-                <span className="mono-text">{spec.code}</span>
-                <span className={spec.active ? "status-active" : "status-inactive"}>{spec.active ? "Activa" : "Inactiva"}</span>
-                {!locked && <button className="secondary" type="button" aria-label={`Editar especialidad ${spec.name}`} onClick={() => setEditing(spec.id)}>Editar</button>}
-              </div>
-            )}
-          </article>
-        ))}
-      </div>
+      <EntityDrawer
+        isOpen={drawerMode !== null && !locked}
+        onClose={() => setDrawerMode(null)}
+        title={drawerMode?.mode === "edit" ? `Editar especialidad${editingSpecialty ? ` — ${editingSpecialty.name}` : ""}` : "Nueva especialidad"}
+        description={drawerMode?.mode === "edit" ? "Modificá los datos de la especialidad." : "Completá los datos de la especialidad."}
+        focusReturnRef={drawerTriggerRef}
+      >
+        <CatalogForm
+          key={drawerMode?.mode === "edit" ? `edit-${drawerMode.specialtyId}` : "create"}
+          initialValue={editingSpecialty ?? {}}
+          defaultOrder={nextOrder}
+          submitting={saving}
+          submitLabel={drawerMode?.mode === "edit" ? "Guardar" : "Agregar especialidad"}
+          showActive={drawerMode?.mode === "edit"}
+          idPrefix="specialty"
+          onSubmit={submitSpecialty}
+        />
+        <DialogFooter>
+          <button type="button" className="secondary" onClick={() => setDrawerMode(null)}>Cancelar</button>
+        </DialogFooter>
+      </EntityDrawer>
     </section>
   );
 }
 
-function AdminRubricsSection({ event }) {
+function AdminRubricsSection({ event, focusRubricId = null }) {
   const [rubrics, setRubrics] = useState([]);
   const [specialties, setSpecialties] = useState([]);
   const [expanded, setExpanded] = useState(null);
@@ -363,6 +644,10 @@ function AdminRubricsSection({ event }) {
     apiRequest(`/api/v1/events/${event.id}/rubrics`).then(setRubrics).catch(() => {});
     apiRequest(`/api/v1/events/${event.id}/specialties`).then(setSpecialties).catch(() => {});
   }, [event.id]);
+
+  useEffect(() => {
+    if (focusRubricId) setExpanded(focusRubricId);
+  }, [focusRubricId]);
 
   const locked = event.status === "OPEN";
   const activeSpecialties = specialties.filter((s) => s.active !== false);
@@ -474,6 +759,9 @@ function AdminRubricsSection({ event }) {
       <div className="section-heading"><h2>Rubros y planillas</h2><p>Constructor jerarquico: rubro, items puntuables y criterios descriptivos.</p></div>
       <p className="feedback" role="status">{message}</p>
 
+      <h3>Qué puntúa el jurado</h3>
+      <RubricTree rubrics={rubrics} specialties={specialties} />
+
       <p id="resolution-metadata">El metodo de resolucion es metadata futura: no ejecuta formulas ni decisiones automaticas o de Comision Organizadora.</p>
       <p id="item-metadata">Obligatorio (required) y Permite No presentado (allowNotPresented) son metadata futura: todos los items generados deben resolverse y admiten No se presento (NOT_PRESENTED). Los pendientes bloquean confirmacion y cierre, sin importar estas opciones.</p>
       <p id="subject-type-help">El tipo de sujeto solo aplica al objetivo Nominacion; para Comparsa se guarda sin tipo de sujeto.</p>
@@ -482,10 +770,13 @@ function AdminRubricsSection({ event }) {
           <h3>Nuevo rubro</h3>
           <label>Nombre<input name="name" required /></label>
           <label>Objetivo evaluado<select name="evaluationTarget"><option value="TROUPE">Comparsa</option><option value="NOMINATION">Nominacion</option></select></label>
-          <label>Tipo de sujeto<select name="expectedSubjectType" aria-describedby="subject-type-help">{SUBJECT_TYPES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}</select></label>
           <label>Tipo de rubro<select name="rubricType">{RUBRIC_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</select></label>
-          <label>Metodo de resolucion<select name="resolutionMethod" aria-describedby="resolution-metadata">{RESOLUTION_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}</select></label>
           <label>Objetivo evaluado (texto)<input name="evaluationObjective" placeholder="Ej: Figura / participante" /></label>
+          <details className="advanced-options">
+            <summary>Opciones avanzadas (sin efecto operativo)</summary>
+            <label>Tipo de sujeto<select name="expectedSubjectType" aria-describedby="subject-type-help">{SUBJECT_TYPES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}</select></label>
+            <label>Metodo de resolucion<select name="resolutionMethod" aria-describedby="resolution-metadata">{RESOLUTION_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}</select></label>
+          </details>
           <button type="submit">Crear rubro</button>
         </SaveForm>
       )}
@@ -517,10 +808,13 @@ function AdminRubricsSection({ event }) {
                     <SaveForm className="rubric-edit-form" onSubmit={(e) => { const fd = new FormData(e.currentTarget); return saveRubric(`/api/v1/rubrics/${rubric.id}`, { name: fd.get("name"), evaluationTarget: fd.get("evaluationTarget"), expectedSubjectType: fd.get("evaluationTarget") === "NOMINATION" ? fd.get("expectedSubjectType") : null, rubricType: fd.get("rubricType"), resolutionMethod: fd.get("resolutionMethod"), evaluationObjective: fd.get("evaluationObjective") || null, active: fd.get("active") === "on" }, "PATCH"); }}>
                       <label>Nombre<input name="name" defaultValue={rubric.name} required /></label>
                       <label>Objetivo<select name="evaluationTarget" defaultValue={rubric.evaluationTarget}><option value="TROUPE">Comparsa</option><option value="NOMINATION">Nominacion</option></select></label>
-                      <label>Tipo de sujeto<select name="expectedSubjectType" defaultValue={rubric.expectedSubjectType ?? "PERSON"} aria-describedby="subject-type-help">{SUBJECT_TYPES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}</select></label>
                       <label>Tipo<select name="rubricType" defaultValue={rubric.rubricType}>{RUBRIC_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</select></label>
-                      <label>Resolucion<select name="resolutionMethod" defaultValue={rubric.resolutionMethod} aria-describedby="resolution-metadata">{RESOLUTION_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}</select></label>
                       <label>Objetivo (texto)<input name="evaluationObjective" defaultValue={rubric.evaluationObjective ?? ""} /></label>
+                      <details className="advanced-options">
+                        <summary>Opciones avanzadas (sin efecto operativo)</summary>
+                        <label>Tipo de sujeto<select name="expectedSubjectType" defaultValue={rubric.expectedSubjectType ?? "PERSON"} aria-describedby="subject-type-help">{SUBJECT_TYPES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}</select></label>
+                        <label>Resolucion<select name="resolutionMethod" defaultValue={rubric.resolutionMethod} aria-describedby="resolution-metadata">{RESOLUTION_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}</select></label>
+                      </details>
                       <label className="check"><input name="active" type="checkbox" defaultChecked={rubric.active} /> Activo</label>
                       <button type="submit">Guardar rubro</button>
                     </SaveForm>
@@ -534,8 +828,11 @@ function AdminRubricsSection({ event }) {
                           <label>Nombre<input name="name" defaultValue={item.name} required /></label>
                           <label>Especialidad<select name="specialtyId" defaultValue={item.specialtyId}>{activeSpecialties.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
                           <label>Orden<input name="displayOrder" type="number" min="1" defaultValue={item.displayOrder} required /></label>
-                          <label className="check"><input name="required" type="checkbox" defaultChecked={item.required} aria-describedby="item-metadata" /> Obligatorio</label>
-                          <label className="check"><input name="allowNotPresented" type="checkbox" defaultChecked={item.allowNotPresented} aria-describedby="item-metadata" /> Permite No presentado</label>
+                          <details className="advanced-options">
+                            <summary>Opciones avanzadas (sin efecto operativo)</summary>
+                            <label className="check"><input name="required" type="checkbox" defaultChecked={item.required} aria-describedby="item-metadata" /> Obligatorio</label>
+                            <label className="check"><input name="allowNotPresented" type="checkbox" defaultChecked={item.allowNotPresented} aria-describedby="item-metadata" /> Permite No presentado</label>
+                          </details>
                           <label className="check"><input name="active" type="checkbox" defaultChecked={item.active} /> Activo</label>
                           <button type="submit">Guardar item</button>
                           <button type="button" className="secondary" onClick={() => setEditingItem(null)}>Cancelar</button>
@@ -592,8 +889,11 @@ function AdminRubricsSection({ event }) {
                     <SaveForm resetOnSuccess className="inline-item-form" onSubmit={(e) => { const fd = new FormData(e.currentTarget); return saveItem(rubric.id, { name: fd.get("name"), specialtyId: fd.get("specialtyId"), required: fd.get("required") === "on", allowNotPresented: fd.get("allowNotPresented") === "on" }); }}>
                       <input name="name" aria-label={`Nuevo item puntuable para ${rubric.name}`} placeholder="Nuevo item puntuable" required />
                       <select name="specialtyId" aria-label={`Especialidad del nuevo item para ${rubric.name}`} required><option value="">Especialidad</option>{activeSpecialties.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
-                      <label className="check"><input name="required" type="checkbox" defaultChecked aria-describedby="item-metadata" /> Obligatorio</label>
-                      <label className="check"><input name="allowNotPresented" type="checkbox" defaultChecked aria-describedby="item-metadata" /> Permite No presentado</label>
+                      <details className="advanced-options">
+                        <summary>Opciones avanzadas (sin efecto operativo)</summary>
+                        <label className="check"><input name="required" type="checkbox" defaultChecked aria-describedby="item-metadata" /> Obligatorio</label>
+                        <label className="check"><input name="allowNotPresented" type="checkbox" defaultChecked aria-describedby="item-metadata" /> Permite No presentado</label>
+                      </details>
                       <button type="submit" aria-label={`Agregar item a ${rubric.name}`}>Agregar item</button>
                     </SaveForm>
                   )}
@@ -607,7 +907,7 @@ function AdminRubricsSection({ event }) {
   );
 }
 
-function MatrizPlanillasSection({ event }) {
+function MatrizPlanillasSection({ event, onResolveRubric }) {
   const [rubrics, setRubrics] = useState([]);
   const [specialties, setSpecialties] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -619,10 +919,36 @@ function MatrizPlanillasSection({ event }) {
 
   const activeSpecialties = specialties.filter((s) => s.active !== false);
   const activeRubrics = rubrics.filter((r) => r.active !== false);
+  const missingRubrics = activeRubrics.filter(
+    (r) => !(r.items ?? []).some((i) => i.active !== false),
+  );
+  const uncoveredSpecialties = activeSpecialties.filter(
+    (s) => !activeRubrics.some((r) => (r.items ?? []).some((i) => i.active !== false && i.specialtyId === s.id)),
+  );
 
   return (
     <section className="config-section">
-      <div className="section-heading"><h2>Matriz de planillas</h2><p>Rubros por especialidad. Se genera automaticamente desde la configuracion.</p></div>
+      <div className="section-heading"><h2>Planillas de evaluación</h2><p>Qué especialidad evalúa qué rubro. Se genera automaticamente desde la configuracion.</p></div>
+      {(missingRubrics.length > 0 || uncoveredSpecialties.length > 0) && (
+        <div className="overview-alert" role="alert">
+          <strong>⚠ {missingRubrics.length + uncoveredSpecialties.length} relación(es) todavía necesitan una asignación.</strong>
+          <ul>
+            {missingRubrics.map((r) => (
+              <li key={r.id}>
+                El rubro “{r.name}” no tiene ítems puntuables.{" "}
+                {onResolveRubric && (
+                  <button className="secondary" type="button" aria-label={`Resolver rubro ${r.name}`} onClick={() => onResolveRubric(r.id)}>
+                    Resolver
+                  </button>
+                )}
+              </li>
+            ))}
+            {uncoveredSpecialties.map((s) => (
+              <li key={s.id}>La especialidad “{s.name}” todavía no evalúa ningún rubro.</li>
+            ))}
+          </ul>
+        </div>
+      )}
       <div className="matrix-wrapper">
         <table className="matrix-table">
           <thead>

@@ -20,16 +20,20 @@ Implementado y validado:
 - **Spec 014:** gestión de penalizaciones (`troupe_penalty`): deducción reglamentaria en Mejor Comparsa con piso en cero, preservación de rubros artísticos (RF-118), panel accesible de Comisariato, revocación auditada y bloqueo tras liberación de resultados. Cerrada el 2026-09-03.
 - **Spec 015:** actas oficiales y certificación de escrutinio (`official_scrutiny_record`): sello criptográfico JCS/SHA-256 (RFC 8785), inmutabilidad estricta por triggers en BD, segregación estricta de funciones (ADMIN solo lectura; emisión exclusiva `SCRUTINEER`/`ESCRIBANO` con 2FA) y vista notarial imprimible (`@media print`). Cerrada el 2026-09-03.
 - **Perfiles Operativos:** alta unificada de roles auxiliares (VEEDOR, COMISARIO, SCRUTINEER, ESCRIBANO), invitación por consola/SMTP, aceptación solo password, ciclo de vida `INVITED→REGISTERED→SUSPENDED`. Migraciones 064-065. Implementado y validado (99 tests) el 2026-09-03.
+- **Spec 017:** configuración ampliada de competencia: metadata y criterios por ítem, integridad histórica, reordenamiento de ítems/criterios, color de comparsa y orden de pasada por jornada. T09a/T09b tienen evidencia automatizada; T04 y decisiones de apertura/versionado permanecen pendientes.
+- **Specs 019–024:** seguridad de plataforma, sistema de diseño, planilla v3, SSE, home por rol y portal público de resultados. Cerradas y validadas según sus `validation.md`.
+- **Divergencia Spec 023:** la validación histórica contempla `HomePage.jsx`/`#/home`, pero el estado actual del working tree usa aterrizajes directos por rol y `#/admin/home`; queda `[NECESITA ACLARACIÓN]` antes de considerarse una decisión de producto cerrada.
+- **Spec 027:** rediseño UX admin, dashboard, evento activo global, separación Eventos/Competencia y catálogo visual de eventos. G0–G4 validadas automáticamente; comprobación manual responsive/teclado/táctil pendiente.
 
-Todavía fuera de alcance: publicación externa de resultados (portal público) y conexión/sincronización Offline-First. Spec 005 conserva compatibilidad exploratoria para clientes antiguos, pero no es una capacidad operativa aceptada.
+Todavía fuera de alcance: conexión/sincronización Offline-First operativa. Spec 005 conserva compatibilidad exploratoria para clientes antiguos, pero no es una capacidad operativa aceptada.
 
 ## Incremento vigente
 
-Spec 016 — Supervisión de votación por VEEDOR está implementada y validada automáticamente. Permanece abierta únicamente la comprobación manual en 390×844, 768×1024 y 1440×900, con teclado y emulación táctil. La evidencia detallada se registra en `specs/016-supervision-veedor/validation.md`.
+Spec 027 — Rediseño UX del panel ADMIN está implementado y validado automáticamente. Permanece abierta la comprobación manual en 390×844, 768×1024 y 1440×900, con teclado y emulación táctil. También continúan pendientes Spec 026 T11 y la comprobación responsive de Spec 016. La evidencia detallada se registra en `docs/sdd-status.md` y `specs/027-admin-ux-redesign/validation.md`.
 
 ## Próxima puerta SDD
 
-Spec 004 mantiene activa la prevención de omisiones: cada ítem debe resolverse con 1 a 10 o `No se presentó` (0) antes de confirmar o cerrar una planilla; `PENDING` bloquea ambas operaciones. Por decisión de producto del 2026-09-01, el `5 por equidad` es nulo para planillas digitales: la plataforma impide la omisión humana que esa regla buscaba subsanar. No existe flujo, cálculo ni ajuste operativo asociado.
+La próxima puerta de validación es manual: responsive, teclado y táctil de las pantallas ADMIN. Las reglas operativas de Spec 004 siguen activas: cada ítem debe resolverse con 1 a 10 o `No se presentó` (0) antes de confirmar o cerrar una planilla; `PENDING` bloquea ambas operaciones. El `5 por equidad` es nulo para planillas digitales.
 
 Conexión y sincronización Offline-First son una funcionalidad futura. Existe código exploratorio de I4-A para una outbox idempotente, conflictos de revisión y PWA de recursos estáticos, pero no está aceptado para operación ni validado manualmente. Sus artefactos históricos están en [`specs/005-offline-first/`](specs/005-offline-first/); cualquier activación, modificación o retiro requiere un nuevo ciclo SDD. Ver [`docs/sdd-status.md`](docs/sdd-status.md).
 
@@ -46,7 +50,7 @@ La autorización real se verifica en la API: sesión, 2FA, rol y estado del perf
 
 ## Estructura de base de datos
 
-La persistencia usa PostgreSQL y está definida por las migraciones incrementales `001` a `065` en `api/src/db/migrations/`. Los estados se implementan con columnas `TEXT` y restricciones `CHECK`; no se usan tipos `ENUM` nativos. La tabla `"user"` pertenece a Better Auth y el modelo de dominio solo la referencia.
+La persistencia usa PostgreSQL y está definida por las migraciones incrementales hasta `072` en `api/src/db/migrations/`. Los estados se implementan con columnas `TEXT` y restricciones `CHECK`; no se usan tipos `ENUM` nativos. La tabla `"user"` pertenece a Better Auth y el modelo de dominio solo la referencia.
 
 ### Relaciones principales
 

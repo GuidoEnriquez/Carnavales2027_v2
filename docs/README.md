@@ -21,10 +21,13 @@
 - Spec 014 implementa gestión de penalizaciones (`troupe_penalty`), deducción en Mejor Comparsa y panel de Comisariato.
 - Spec 015 implementa actas oficiales de escrutinio (`official_scrutiny_record`), hash JCS/SHA-256 (RFC 8785) e impresión notarial (@media print).
 - Spec 016 implementa supervisión de votación por `VEEDOR` (validación automatizada completa; comprobación manual responsive pendiente).
-- Spec 017 configura la competencia (T01-T03 con evidencia; T04 en curso).
+- Spec 023 dejó validada la capa de marca y el hub por rol histórico; el working tree actual retiró `HomePage.jsx`/`#/home` y usa aterrizajes directos. Esta divergencia queda `[NECESITA ACLARACIÓN]`.
+- Spec 017 configura la competencia (T01-T03 con evidencia; T04 en curso; T09a/T09b automatizadas y validadas).
 - Specs 019 a 024 cierran las Fases 1 a 6 del Plan Maestro (seguridad, sistema de diseño, planilla v3, SSE, marca/home por rol, portal público).
 - Spec 025 (votación secuencial por orden de pasada) es propuesta pendiente de aprobación con contradicción spec-vs-validación por resolver.
 - El refactor de diseño del working tree quedó regularizado bajo Spec 026 (T01–T10 validadas; T11 pendiente por falta de navegador). Ver `sdd-status.md`.
+- Spec 027 implementa el rediseño UX admin, el evento activo global y la separación Eventos/Competencia; G0–G4 tienen validación automatizada y la comprobación manual responsive/teclado/táctil permanece pendiente.
+- Estado automatizado vigente: cliente 45 archivos / 282 tests, API 142 tests y build Vite exitoso con 83 módulos.
 
 ## Artefactos ejecutables
 

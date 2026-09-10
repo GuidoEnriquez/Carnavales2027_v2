@@ -6,6 +6,8 @@
 - **Alcance evaluado:** T01 a T05 de Spec 023 (Fase 5 del Plan Maestro).
 - **Resultado:** APROBADO al 100% sin regresiones.
 
+> **Divergencia posterior registrada 2026-09-10:** el working tree actual retira `HomePage.jsx` y `#/home`, y actualiza `goToRoleHome` para aterrizajes directos (ADMIN → `#/admin/home`; roles auxiliares → sus rutas operativas). La línea histórica de validación siguiente conserva la evidencia de la implementación aprobada original; la decisión de producto sobre su retiro queda `[NECESITA ACLARACIÓN]` en `clarifications.md`.
+
 ## Matriz de Cobertura de Requisitos
 
 | Requisito | Descripción | Estado | Evidencia |

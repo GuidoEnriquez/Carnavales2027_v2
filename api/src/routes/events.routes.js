@@ -13,6 +13,7 @@ import {
   updateTroupe,
 } from "../modules/troupes/category-service.js";
 import { createSpecialty, listSpecialties, updateSpecialty } from "../modules/specialties/specialty-service.js";
+import { listSchedule, reorderScheduleEntry } from "../modules/schedule/schedule-service.js";
 import {
   createCriterion,
   createItem,
@@ -76,6 +77,7 @@ export function createEventsRouter({ requireSession }) {
     "/specialties",
     "/evaluation-items",
     "/rubric-criteria",
+    "/schedule",
   ]) {
     router.use(prefix, ...admin);
   }
@@ -206,6 +208,27 @@ export function createEventsRouter({ requireSession }) {
   // ---- Orphaned Criteria ----
   router.get("/events/:eventId/orphaned-criteria", async (request, response, next) => {
     try { return response.json(await getOrphanedCriteria({ eventId: request.params.eventId })); } catch (error) { return next(error); }
+  });
+
+  // ---- Night schedule (presentation order, Spec 017 T09b) ----
+  router.get("/events/:eventId/schedule", async (request, response, next) => {
+    try {
+      const nightId = typeof request.query.nightId === "string" && request.query.nightId.length > 0
+        ? request.query.nightId
+        : null;
+      return response.json(await listSchedule({ eventId: request.params.eventId, nightId }));
+    } catch (error) { return next(error); }
+  });
+  router.post("/schedule/:scheduleId/reorder", async (request, response, next) => {
+    try {
+      const { direction, neighborId, expectedOrder, expectedNeighborOrder } = request.body ?? {};
+      response.json(await reorderScheduleEntry({
+        scheduleId: request.params.scheduleId, actorUserId: request.user.id,
+        direction, neighborId, expectedOrder, expectedNeighborOrder,
+      }));
+    } catch (error) {
+      if (!sendKnownError(response, error)) next(error);
+    }
   });
 
   return router;

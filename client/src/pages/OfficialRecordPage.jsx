@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { PageShell } from "../components/PageShell.jsx";
 import { apiRequest } from "../api/http.js";
 import { useSession } from "../auth/session-context.jsx";
+import { useAdminEvent } from "../context/AdminEventContext.jsx";
 
 export function OfficialRecordPage() {
   const session = useSession();
-  const [events, setEvents] = useState([]);
-  const [selectedEventId, setSelectedEventId] = useState(() => {
+  const adminEvent = useAdminEvent();
+  const [localEvents, setLocalEvents] = useState([]);
+  const [localSelectedEventId, setLocalSelectedEventId] = useState(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.hash.split("?")[1] || "");
       return params.get("eventId") || "";
@@ -18,19 +20,22 @@ export function OfficialRecordPage() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const events = adminEvent?.events ?? localEvents;
+  const selectedEventId = adminEvent?.activeEventId ?? localSelectedEventId;
 
   const canCertify = session?.roles?.some((r) => ["SCRUTINEER", "ESCRIBANO"].includes(r));
 
   // Cargar lista de eventos
   useEffect(() => {
+    if (adminEvent) return undefined;
     let current = true;
     apiRequest("/api/v1/results/events")
       .then((data) => {
         if (!current) return;
         const list = Array.isArray(data) ? data : data?.events || [];
-        setEvents(list);
+        setLocalEvents(list);
         if (list.length > 0) {
-          setSelectedEventId((prev) => prev || list[0].id);
+          setLocalSelectedEventId((prev) => prev || list[0].id);
         } else {
           setLoading(false);
         }
@@ -41,9 +46,9 @@ export function OfficialRecordPage() {
           .then((data) => {
             if (!current) return;
             const list = Array.isArray(data) ? data : [];
-            setEvents(list);
+            setLocalEvents(list);
             if (list.length > 0) {
-              setSelectedEventId((prev) => prev || list[0].id);
+              setLocalSelectedEventId((prev) => prev || list[0].id);
             } else {
               setLoading(false);
             }
@@ -53,7 +58,7 @@ export function OfficialRecordPage() {
           });
       });
     return () => { current = false; };
-  }, []);
+  }, [adminEvent]);
 
   // Cargar acta oficial del evento seleccionado
   useEffect(() => {
@@ -115,7 +120,7 @@ export function OfficialRecordPage() {
     window.print();
   };
 
-  const currentEvent = events.find((e) => e.id === selectedEventId);
+  const currentEvent = adminEvent?.activeEvent ?? events.find((e) => e.id === selectedEventId);
   const payload = recordData?.payload;
 
   return (
@@ -124,19 +129,19 @@ export function OfficialRecordPage() {
       <section className="record-controls-panel no-print" aria-label="Controles del acta">
         <div className="record-controls-header">
           <a className="secondary button-link" href="#/admin/results">← Volver a Escrutinio</a>
-          <div className="record-event-selector">
+            {!adminEvent && <div className="record-event-selector">
             <label htmlFor="record-event-select">Competencia:</label>
             <select
               id="record-event-select"
               value={selectedEventId}
-              onChange={(e) => setSelectedEventId(e.target.value)}
+              onChange={(e) => setLocalSelectedEventId(e.target.value)}
               disabled={loading || busy}
             >
-              {events.map((evt) => (
-                <option key={evt.id} value={evt.id}>{evt.name}</option>
-              ))}
-            </select>
-          </div>
+               {events.map((evt) => (
+                 <option key={evt.id} value={evt.id}>{evt.name}</option>
+               ))}
+             </select>
+              </div>}
           {recordData && (
             <button type="button" className="primary-action" onClick={handlePrint}>
               🖨️ Imprimir / Exportar PDF
@@ -167,8 +172,8 @@ export function OfficialRecordPage() {
               >
                 {busy ? "Certificando y sellando…" : "Certificar y emitir Acta Oficial"}
               </button>
-            </div>
-          ) : (
+             </div>
+           ) : (
             <div className="record-admin-notice">
               <p className="admin-release-notice">
                 🔒 Por normativa de segregación de funciones, la certificación y emisión del Acta Oficial corresponde exclusivamente a las autoridades de <strong>Escrutinio</strong> o <strong>Escribanía</strong>.

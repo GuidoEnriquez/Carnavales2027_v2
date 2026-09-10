@@ -1,6 +1,6 @@
 # Estado SDD — Carnavales2027_v2
 
-> Estado actualizado: 2026-09-08. Esta nota distingue implementación, validación automatizada y validación manual; las specs y validaciones son la evidencia detallada. Los cambios sin commitear del working tree se listan aparte como pendientes de spec y no cuentan como validación de ningún incremento.
+> Estado actualizado: 2026-09-10. Esta nota distingue implementación, validación automatizada y validación manual; las specs y validaciones son la evidencia detallada.
 
 ## Incrementos completados
 
@@ -32,18 +32,21 @@
 | Spec 024 | Portal Público de Resultados (Fase 6 del Plan Maestro): solo lectura post-liberación, snapshot inmutable `results_snapshot` (migración 070, triggers NO UPDATE/DELETE), materialización automática determinística JCS/SHA-256 en liberación/acta/sorteo, verificación de hash de acta oficial, endpoints públicos `/api/v1/public/events` y `/:eventId/results` con ETag/HTTP 304, canal SSE público en `/api/v1/public/stream` con fallback a polling (30s), secreto estricto de voto (RF-214) y vista `PublicResultsPage.jsx` bajo Capa de Marca. Validada automáticamente (141 API, 72 DB, 200 cliente, build limpio). | `specs/024-portal-publico/validation.md` |
 | Spec 025 | Votación secuencial por orden de pasada: bloqueo por `presentation_order`, guardia anti-URL directa, banner de continuidad, defensa backend `TROUPE_PRECEDENCE_REQUIRED` (409) y control de pista en vivo. **[NECESITA ACLARACIÓN]:** `spec.md` la declara "propuesta / pendiente de aprobación" mientras `tasks.md` marca las 4 fases `[x]` y `validation.md` la declara "100% Cerrada". Hasta resolver la contradicción, se registra como propuesta con evidencia no aprobada. | `specs/025-votacion-secuencial-pasadas/validation.md` |
 | Spec 026 | Optimización de diseño sin framework (deuda técnica): inventario, CSS muerto, fuente única `.ballot-status-*`, badges monitor/workflow a tokens, resultados/portal a tokens, `utilities.css`, `PageShell` + `DialogFooter` con adopción 100%, test `EventCard`, veredicto fundado de no-aplica para `useApiResource`. T01–T10 validadas (T11 pendiente: reconciliación de `judge.css` huérfana, requiere navegador). | `specs/026-optimizacion-diseno/validation.md` |
+| Spec 027 | Rediseño UX del Panel Administrador: fundaciones compartidas, dashboard, configuración, competencia, operación/cierre, evento activo global, separación Eventos/Competencia y catálogo visual de eventos. G0–G4 validadas automáticamente; comprobación manual responsive/teclado/táctil pendiente. | `specs/027-admin-ux-redesign/validation.md` |
 
-## Cambios en working tree pendientes de spec (2026-09-08, sin commitear)
+## Estado del working tree (2026-09-10)
 
 - Refactor de diseño previo a Spec 026 (tokens, hojas CSS, `App.jsx`, `AppNavigation.jsx`, `StatusPill.jsx`, páginas y tests): regularizado bajo Spec 026 T01–T10 salvo T11 pendiente (reconciliación de `judge.css`, no importada en producción).
 - Componente `client/src/components/EventCard.jsx` (untracked) adoptado con tests en Spec 026/T07.
 - Borrados staged: 8 planes históricos en `.hermes/plans/` (I1, I2-A/B, I3, cierre, offline-first, completitud) — fuera del alcance de Spec 026, requieren autorización aparte.
-- Estado verificado el 2026-09-08: suite cliente 41 archivos / 258 tests en verde, build Vite 71 módulos exitoso, `git diff --check` limpio, sin secretos en el diff.
+- Cambios de Spec 017 T09a/T09b, Spec 027 G0–G4 y ajustes concurrentes de cliente/API documentados en sus respectivas validaciones; no se consideran un incremento nuevo fuera de esas specs.
+- Estado verificado: suite cliente 45 archivos / 282 tests en verde, suite API 142 tests en verde, build Vite 83 módulos exitoso, `git diff --check` sin errores de whitespace y sin secretos detectados.
 
 ## Incremento activo
 
 - Fase 6 del Plan Maestro completada (Specs 019–024 cerradas según `source-map.md` y log de commits).
 - Spec 026 — Optimización de diseño: T01–T10 validadas; T11 pendiente (requiere navegador).
+- Spec 027 — Rediseño UX admin: G0–G4 validadas automáticamente; comprobación manual responsive, teclado y táctil pendiente.
 - Spec 016 — Supervisión de votación por VEEDOR. La implementación y validación automatizada están completas; falta comprobación manual en los viewports operativos.
 - Spec 017 — Configuración de competencia. T01-T03 con evidencia del alcance original; T04 en curso, con validación responsive y hallazgos pendientes.
 - Spec 025 — Propuesta pendiente de aprobación (ver contradicción arriba); no es incremento activo hasta su aprobación.
@@ -71,4 +74,4 @@ Toda spec que modifique una pantalla operativa debe declarar el criterio de uso 
 
 ## Verificación de referencia
 
-Al 2026-09-08, la evidencia automatizada del cliente sobre el working tree actual es 41 archivos / 258 tests en verde y build Vite exitoso (71 módulos). Las suites de API/BD no se re-ejecutaron en esta sesión; rigen las cifras registradas en cada `validation.md` de Spec (019–024). Spec 016 mantiene pendiente la comprobación manual responsive.
+Al 2026-09-10, la evidencia automatizada del estado actual es: cliente 45 archivos / 282 tests en verde, API 142 tests en verde y build Vite exitoso (83 módulos). `git diff --check` no detecta errores de whitespace. Permanecen pendientes las comprobaciones manuales responsive/teclado/táctil de las pantallas admin, además de Spec 026 T11 y Spec 016 responsive.

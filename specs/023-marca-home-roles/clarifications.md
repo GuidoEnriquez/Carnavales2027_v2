@@ -33,3 +33,9 @@ Si el sistema operativo del usuario tiene activada la reducción de movimiento:
 - Los halos de órbita decorativos (`.login-orbit`) no rotan ni se desplazan.
 - Las transiciones de apertura de modales y barras de progreso son instantáneas.
 - Ningún elemento gráfico realiza animaciones continuas.
+
+## 5. Divergencia del working tree sobre el hub por rol (2026-09-10)
+
+**[NECESITA ACLARACIÓN]** La implementación actual del working tree elimina `client/src/pages/HomePage.jsx` y la ruta `#/home`; ADMIN y los roles auxiliares aterrizan directamente en sus estaciones operativas (`#/admin/home`, `#/admin/penalties`, `#/admin/results`, etc.).
+
+Esto contradice el alcance histórico de RF-202/RF-203, que define `HomePage.jsx` como hub para múltiples roles y usuarios sin rol. Los cambios mantienen pruebas cliente y build verdes, pero no deben considerarse una modificación aprobada de Spec 023 hasta que producto confirme si el hub por rol se retira o se reemplaza por el panel ADMIN y rutas directas.

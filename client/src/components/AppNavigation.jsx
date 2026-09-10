@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { apiRequest } from "../api/http.js";
 import { clearUserOfflineData } from "../offline/ballot-store.js";
+import { useAdminEvent } from "../context/AdminEventContext.jsx";
 
 export function AppNavigation({ session }) {
+  const adminEvent = useAdminEvent();
   const [closing, setClosing] = useState(false);
   const [message, setMessage] = useState("");
   const [open, setOpen] = useState(false);
@@ -107,8 +109,23 @@ export function AppNavigation({ session }) {
         <span aria-hidden="true">{open ? "✕" : "☰"}</span>
       </button>
       )}
-      <a className="brand" href="#/home"><span>Carnavales</span> <strong>2027</strong></a>
+      <a className="brand" href="#" onClick={(e) => { e.preventDefault(); window.location.reload(); }}><span>Carnavales</span> <strong>2027</strong></a>
       <div className="session-actions">
+        {session.roles?.includes("ADMIN") && adminEvent && (
+          <label className="global-event-picker">
+            <span>Evento activo</span>
+            <select
+              aria-label="Evento activo"
+              value={adminEvent.activeEventId}
+              disabled={adminEvent.loading || adminEvent.events.length === 0}
+              onChange={(event) => adminEvent.setActiveEventId(event.target.value)}
+            >
+              {adminEvent.events.length === 0 ? <option value="">Sin eventos</option> : adminEvent.events.map((event) => (
+                <option key={event.id} value={event.id}>{event.name}</option>
+              ))}
+            </select>
+          </label>
+        )}
         <span>{session.user?.name}</span>
         <button className="secondary" type="button" disabled={closing} onClick={signOut}>Salir</button>
       </div>
@@ -141,19 +158,39 @@ export function AppNavigation({ session }) {
           <span aria-hidden="true">✕</span>
         </button>
       </div>
-        {session.roles?.includes("ADMIN") && <span className="nav-section-label">Administracion</span>}
-        {session.roles?.includes("COMISARIO") && !session.roles?.includes("ADMIN") && <span className="nav-section-label">Comisariato</span>}
-        {session.roles?.includes("ADMIN") && <a href="#/admin/events" aria-current={currentRoute === "#/admin/events" ? "page" : undefined}>Evento</a>}
-        {session.roles?.includes("ADMIN") && <a href="#/admin/competencia" aria-current={currentRoute === "#/admin/competencia" ? "page" : undefined}>Competencia</a>}
-        {session.roles?.includes("ADMIN") && <a href="#/admin/judges" aria-current={currentRoute === "#/admin/judges" ? "page" : undefined}>Personas</a>}
-        {session.roles?.includes("ADMIN") && <a href="#/admin/assignments" aria-current={currentRoute === "#/admin/assignments" ? "page" : undefined}>Asignaciones</a>}
-        {session.roles?.includes("ADMIN") && <a href="#/admin/voting" aria-current={currentRoute === "#/admin/voting" ? "page" : undefined}>Votacion</a>}
-        {["ADMIN", "COMISARIO"].some((role) => session.roles?.includes(role)) && <a href="#/admin/penalties" aria-current={currentRoute === "#/admin/penalties" ? "page" : undefined}>Penalizaciones</a>}
-        {["ADMIN", "SCRUTINEER", "ESCRIBANO"].some((role) => session.roles?.includes(role)) && <a href="#/admin/results" aria-current={currentRoute === "#/admin/results" ? "page" : undefined}>Escrutinio</a>}
-        {["ADMIN", "SCRUTINEER", "ESCRIBANO"].some((role) => session.roles?.includes(role)) && <a href="#/admin/record" aria-current={currentRoute === "#/admin/record" ? "page" : undefined}>Acta Oficial</a>}
+        {session.roles?.includes("ADMIN") && (
+          <>
+            <span className="nav-section-label">Operación</span>
+            <a href="#/admin/home" aria-current={currentRoute === "#/admin/home" ? "page" : undefined}>Panel</a>
+            <span className="nav-section-label">Configuración</span>
+            <a href="#/admin/events" aria-current={currentRoute === "#/admin/events" ? "page" : undefined}>Eventos</a>
+            <a href="#/admin/competencia" aria-current={currentRoute === "#/admin/competencia" ? "page" : undefined}>Competencia</a>
+            <a href="#/admin/judges" aria-current={currentRoute === "#/admin/judges" ? "page" : undefined}>Personas</a>
+            <a href="#/admin/assignments" aria-current={currentRoute === "#/admin/assignments" ? "page" : undefined}>Asignaciones</a>
+            <span className="nav-section-label">En vivo</span>
+            <a href="#/admin/voting" aria-current={currentRoute === "#/admin/voting" ? "page" : undefined}>Votación</a>
+            <a href="#/veedor" aria-current={currentRoute === "#/veedor" ? "page" : undefined}>Supervisión</a>
+            <a href="#/admin/penalties" aria-current={currentRoute === "#/admin/penalties" ? "page" : undefined}>Penalizaciones</a>
+            <span className="nav-section-label">Cierre</span>
+            <a href="#/admin/results" aria-current={currentRoute === "#/admin/results" ? "page" : undefined}>Escrutinio</a>
+            <a href="#/admin/record" aria-current={currentRoute === "#/admin/record" ? "page" : undefined}>Acta Oficial</a>
+            <a href="#/resultados" target="_blank" rel="noopener noreferrer" aria-current={currentRoute === "#/resultados" ? "page" : undefined}>Resultados</a>
+          </>
+        )}
+        {session.roles?.includes("COMISARIO") && !session.roles?.includes("ADMIN") && (
+          <>
+            <span className="nav-section-label">En vivo</span>
+            <a href="#/admin/penalties" aria-current={currentRoute === "#/admin/penalties" ? "page" : undefined}>Penalizaciones</a>
+          </>
+        )}
         {session.roles?.includes("JUDGE") && <a href="#/judge" aria-current={currentRoute === "#/judge" ? "page" : undefined}>Mi panel</a>}
-        {(session.roles?.includes("ADMIN") || session.roles?.includes("VEEDOR")) && <a href="#/veedor" aria-current={currentRoute === "#/veedor" ? "page" : undefined}>Supervision</a>}
-        <a href="#/resultados" aria-current={currentRoute === "#/resultados" ? "page" : undefined}>Resultados</a>
+        {(session.roles?.includes("ADMIN") || session.roles?.includes("VEEDOR")) && !session.roles?.includes("ADMIN") && (
+          <>
+            <span className="nav-section-label">En vivo</span>
+            <a href="#/veedor" aria-current={currentRoute === "#/veedor" ? "page" : undefined}>Supervisión</a>
+          </>
+        )}
+        {!session.roles?.includes("ADMIN") && <a href="#/resultados" target="_blank" rel="noopener noreferrer" aria-current={currentRoute === "#/resultados" ? "page" : undefined}>Resultados</a>}
     </nav>
     </>
   );

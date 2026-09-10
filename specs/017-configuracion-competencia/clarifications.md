@@ -44,3 +44,11 @@
 - Nueva migracion 067 conserva NULL historicos, pero rechaza altas nuevas y conversiones de asignado a NULL. No permite cambiar identidad/parentesco para fabricar huerfanos historicos.
 - Reordenamiento recibe direccion UP/DOWN, vecino esperado y orden esperado de ambos; se rechaza informacion obsoleta con 409. No aplica cambios ni auditoria en caso de conflicto.
 - T08 no cambia estados ni readiness de apertura; se conserva la guarda CONFIGURING actual.
+
+## T09a/T09b - Decisiones confirmadas (2026-09-10)
+
+- `brand_color` no requiere migracion nueva: la columna 069 ya existe y el CHECK `^#[0-9A-Fa-f]{6}$` sigue siendo la guarda de BD. La API valida el mismo formato y normaliza cadena vacia a NULL.
+- `brandColor` no activa el filtro de secretos de auditoria (`password|token|secret|otp|authorization|cookie`): se audita como campo funcional en `TROUPE_CREATED/UPDATED` con before/after.
+- El orden de pasada se edita solo sobre filas existentes de `night_troupe_schedule` (creadas por seeds/flujo de jornadas); T09b no crea ni elimina asignaciones a jornadas, solo intercambia `presentation_order` entre vecinos de la misma `night_id`.
+- T09b no toca Spec 025: es lectura + reorden administrativo bajo `CONFIGURING`; con evento `OPEN` los controles se ocultan igual que el resto de la configuracion.
+- Filtros/busqueda y preview son solo vista: no alteran Spec 004/007/010 ni generan planillas, votos o auditoria de votacion.
