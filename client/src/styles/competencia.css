@@ -328,3 +328,19 @@
   .matrix-table th,
   .matrix-table td { padding: 0.4rem 0.5rem; font-size: 0.8rem; }
 }
+
+/* Asistente de configuración (Spec 017 wizard): intro de paso y destino resaltado */
+.step-intro {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-inline-start: 4px solid var(--accent-primary);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+}
+.subrecord.is-target {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
