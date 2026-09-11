@@ -15,12 +15,12 @@
 - [x] Implementar barra de navegación inferior fija con avance "X / Y", `← Anterior`, `Siguiente →` y botón "Faltantes".
 - [x] Implementar diálogo modal accesible (`<Dialog>`) para "Faltantes" con salto directo al ítem pendiente.
 
-## T03 — Grilla 1–10 con confirmación in situ de doble tap (RF-185)
+## T03 — Grilla 1–10 con solo números y confirmación por modal (RF-185 → Spec 007 RF-77)
 
 - [x] Implementar grilla `radiogroup` accesible 2×5 con altura ≥ 56px por botón.
-- [x] Añadir palabra-ancla visible (≥ 0.85rem) en cada celda.
-- [x] Implementar estado `stagedScore` (primer toque preselecciona "N · Ancla ✓ Confirmar", segundo toque en el mismo lugar emite `saveScore`).
-- [x] Manejar atajos de teclado en desktop (1–9, 0 para 10, Enter para confirmar el stagedScore).
+- [x] Reemplazar doble tap in situ por modal de confirmación `<Dialog>` (Spec 007 RF-77) con "Confirmar"/"Cancelar".
+- [x] Manejar atajos de teclado en desktop (1–9, 0 para 10) que abren el modal de confirmación.
+- [x] (2026-09-11) Confirmar en modo tarjeta no regresa a la primera tarjeta; controles de votación centrados en la vista de lista.
 
 ## T04 — Segregación de "No se presentó" y persistencia granular por fila (RF-186, RF-187)
 

@@ -2,13 +2,9 @@
 
 ## Preguntas y Decisiones de Arquitectura
 
-### 1. ¿Por qué doble tap in situ en vez de una ventana de deshacer de 5 segundos con toast?
-**Decisión:**
-La ventana de deshacer de 5 segundos requeriría que el servidor permita modificar una puntuación durante esos 5 segundos, lo cual viola la Constitución actual y el contrato de inmutabilidad estricta por ítem de Spec 007 ("cada guardado es inmutable"). Cambiar las reglas de inmutabilidad del servidor requiere una definición reglamentaria formal sobre corrección de voto.
-El doble tap in situ:
-1. Resuelve al 100% el problema de mis-tap (un toque accidental no guarda, solo pre-selecciona; se requiere un segundo toque deliberado en el mismo lugar exacto).
-2. Elimina la molestia de abrir y cerrar un diálogo modal emergente para cada uno de los 10 dígitos.
-3. No requiere modificar el backend ni el contrato de inmutabilidad estricta de Spec 007.
+### 1. Confirmación de puntajes 1–10: modal (Spec 007 RF-77) — revisión 2026-09-11
+**Decisión original (2026-09-08):** se eligió doble tap in situ para evitar modales invasivos.
+**Revisión (2026-09-11):** la confirmación in situ quedó derogada. Spec 007 RF-77 exige un modal de confirmación al seleccionar un puntaje ordinario 1–10, y el doble tap la violaba. La planilla ahora abre un `<Dialog>` con el ítem y el puntaje seleccionado ("Usted está por votar X. ¿Desea confirmar?"), con botones Confirmar/Cancelar. Cancelar no guarda; confirmar emite la mutación inmutable. Se mantiene la inmutabilidad estricta por ítem de Spec 007 sin relajar el servidor.
 
 ### 2. ¿Cómo interactúa el parámetro `include=progress` con las consultas de `ballot`?
 **Decisión:**

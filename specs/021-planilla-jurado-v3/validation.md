@@ -13,7 +13,7 @@
 | RF-182 | Color de identidad por comparsa (`event_troupe.brand_color`) | APROBADO | `api/src/db/migrations/069_troupe_brand_color.sql`, `api/src/tests/judge-ballots-progress.test.js`, `client/src/tests/JudgeBallotPageV3.test.jsx` |
 | RF-183 | Endpoint de planillas con progreso (`include=progress`) sin llamadas N+1 | APROBADO | `api/src/modules/ballots/ballot-service.js`, `api/src/tests/judge-ballots-progress.test.js`, `client/src/tests/JudgeHomePage.test.jsx` |
 | RF-184 | Flujo móvil tarjeta a tarjeta y vista alternativa | APROBADO | `client/src/pages/JudgeBallotPage.jsx`, `client/src/tests/JudgeBallotPageV3.test.jsx` |
-| RF-185 | Grilla `radiogroup` accesible y confirmación in situ de doble tap | APROBADO | `client/src/pages/JudgeBallotPage.jsx`, `client/src/tests/JudgeBallotPageV3.test.jsx` |
+| RF-185 | Grilla 1–10 (solo números) y confirmación por modal (Spec 007 RF-77); doble tap derogado | APROBADO (rev. 2026-09-11) | `client/src/pages/JudgeBallotPage.jsx`, `client/src/tests/JudgeBallotPageV3.test.jsx` |
 | RF-186 | Región segregada y confirmación modal de "No se presentó" | APROBADO | `client/src/pages/JudgeBallotPage.jsx`, `client/src/tests/JudgeBallotPageV3.test.jsx` |
 | RF-187 | Estado de guardado granular por fila con reintento aislado | APROBADO | `client/src/pages/JudgeBallotPage.jsx`, `client/src/tests/JudgeBallotPageV3.test.jsx` |
 | RF-188 | Barra de navegación fija y acceso directo a faltantes | APROBADO | `client/src/pages/JudgeBallotPage.jsx`, `client/src/tests/JudgeBallotPageV3.test.jsx` |
@@ -102,3 +102,16 @@
   - Suite completa de cliente: 233/233 tests aprobados en 40 suites (6.10 s).
   - Build de producción: exitoso en 857ms (68 módulos transformados; CSS 96.54 kB, JS 372.15 kB).
   - `git diff --check`: 0 errores.
+
+## Validación T11 — Alineación con Spec 007 (modal) y pulido de planilla
+
+- **Fecha:** 2026-09-11
+- **Alcance:**
+  - RF-185: doble tap in situ derogado; la grilla 1–10 muestra solo números y abre modal de confirmación `<Dialog>` (Spec 007 RF-77).
+  - Palabra-ancla ("Muy malo", "Malo", …, "Excelente") eliminada de los botones y de la vista bloqueada.
+  - Bugfix: confirmar en modo tarjeta ya no regresa a la primera tarjeta de la comparsa.
+  - Vista de lista completa: controles de votación centrados (`.score-row` a una columna).
+- **Pruebas Automatizadas:**
+  - `JudgeBallotPage.test.jsx` + `JudgeBallotPageV3.test.jsx`: 14/14 tests aprobados (incluye test de regresión de permanencia de tarjeta).
+  - Build de producción: exitoso (83 módulos).
+  - `git diff --check`: limpio.

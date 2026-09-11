@@ -10,7 +10,7 @@
 
 ## Objetivo
 
-Eliminar la sobrecarga cognitiva en el momento de decisión del jurado en campo móvil (390×844), reduciendo las 11 opciones simultáneas a una sola decisión contextualizada por pantalla (flujo tarjeta a tarjeta), implementando confirmación in situ de doble tap para puntajes 1–10 (previniendo mis-taps sin modales invasivos), separando visualmente "No se presentó", gestionando guardado granular por fila con reintento sin bloquear la planilla, e incorporando color de comparsa como ayuda visual inmediata.
+Eliminar la sobrecarga cognitiva en el momento de decisión del jurado en campo móvil (390×844), reduciendo las 11 opciones simultáneas a una sola decisión contextualizada por pantalla (flujo tarjeta a tarjeta), implementando confirmación por modal para puntajes 1–10 (Spec 007 RF-77), separando visualmente "No se presentó", gestionando guardado granular por fila con reintento sin bloquear la planilla, e incorporando color de comparsa como ayuda visual inmediata.
 
 ---
 
@@ -22,8 +22,8 @@ Eliminar la sobrecarga cognitiva en el momento de decisión del jurado en campo 
    - Endpoint optimizado: soportar parámetro de consulta `GET /api/v1/judge/ballots?include=progress` para devolver conteos agregados de progreso (`totalScores`, `resolvedScores`) por planilla, eliminando el problema de consultas N+1 en `JudgeHomePage`.
 2. **Arquitectura visual e interacción táctil (Frontend):**
    - **Flujo móvil "tarjeta a tarjeta":** presentación enfocada en un único ítem puntuable a la vez, con cabecera fija mostrando Comparsa, Rubro e Ítem, y botón para alternar a la vista completa tradicional.
-   - **Grilla 1–10 como `radiogroup` real:** botones de 2×5 con altura ≥ 56px, palabra-ancla siempre visible y legible (≥ 0.85rem).
-   - **Confirmación in situ por doble tap:** al presionar un dígito 1–10, el botón cambia de estado a "N · Ancla ✓ Confirmar". Un segundo toque en el mismo lugar confirma y dispara la persistencia inmutable hacia el backend.
+   - **Grilla 1–10 con solo números:** botones de 2×5 con altura ≥ 56px, mostrando únicamente el número (sin palabra-ancla).
+   - **Confirmación por modal (Spec 007 RF-77):** al presionar un dígito 1–10 se abre un `<Dialog>` de confirmación con el ítem y el puntaje seleccionado; confirmar dispara la persistencia inmutable hacia el backend.
    - **Acción "No se presentó" separada:** región propia bajo la grilla, con advertencia explícita y confirmación modal dedicada (preserva Spec 004 y 007).
    - **Guardado granular por fila:** cada ítem maneja su ciclo de vida (`idle`, `saving`, `saved`, `error`). Si falla la red, solo ese ítem muestra estado de error y botón "Reintentar"; ningún otro ítem se congela.
    - **Barra inferior fija de navegación:** control fijo con progreso "X / Y", botones `← Anterior` y `Siguiente →`, y botón "Faltantes" que despliega un diálogo accesible con los ítems pendientes y salto directo.
@@ -47,8 +47,8 @@ Eliminar la sobrecarga cognitiva en el momento de decisión del jurado en campo 
   El endpoint `GET /api/v1/judge/ballots` DEBE admitir `include=progress`, retornando para cada planilla `totalScores` (número total de ítems puntuables) y `resolvedScores` (número de ítems en estado `SCORED` o `NOT_PRESENTED`). `JudgeHomePage` DEBE utilizar estos campos para renderizar el progreso real sin realizar peticiones individuales por planilla.
 - **RF-184 — Flujo móvil tarjeta a tarjeta y vista alternativa:**
   En pantallas móviles (ancho < 768px), la planilla DEBE presentar por defecto una vista de tarjeta enfocada en un único ítem de evaluación. La tarjeta DEBE mostrar en todo momento la comparsa actual, el rubro y el nombre del ítem. La interfaz DEBE permitir al jurado alternar entre el modo "Tarjeta enfocada" y el modo "Lista completa".
-- **RF-185 — Grilla `radiogroup` accesible y confirmación in situ de doble tap:**
-  La escala 1–10 DEBE implementarse como un `radiogroup` de 2×5 con controles táctiles de al menos 56px de alto. Cada opción DEBE contener el número y su palabra-ancla descriptiva visible. Al tocar un puntaje no confirmado, la opción seleccionada DEBE pasar al estado de pre-confirmación ("N · Ancla ✓ Confirmar"). Un segundo toque sobre el mismo botón DEBE confirmar la decisión y emitir la mutación inmutable al servidor. Un toque en otro dígito DEBE mover la selección al nuevo dígito sin confirmar.
+- **RF-185 — Grilla 1–10 y confirmación por modal (doble tap derogado; alineado con Spec 007 RF-77):**
+  La escala 1–10 DEBE implementarse como una grilla de 2×5 con controles táctiles de al menos 56px de alto, mostrando únicamente el número (sin palabra-ancla). Al tocar un puntaje, DEBE abrirse un modal de confirmación que indique el ítem y el puntaje seleccionado. Confirmar DEBE emitir la mutación inmutable al servidor; cancelar no guarda. (Nota 2026-09-11: la confirmación in situ de doble tap original quedó derogada por la confirmación modal exigida por Spec 007 RF-77.)
 - **RF-186 — Región segregada y advertencia para "No se presentó":**
   La acción `No se presentó` DEBE ubicarse en una sección visualmente diferenciada y separada de la grilla numérica, con fondo y borde de advertencia (`--warning-bg`, `--warning-border`). Su confirmación DEBE exigir la confirmación explícita en un modal `<Dialog>` accesible que informe que el puntaje computado será 0 (cero).
 - **RF-187 — Estado de persistencia granular por ítem:**
@@ -70,9 +70,9 @@ Eliminar la sobrecarga cognitiva en el momento de decisión del jurado en campo 
 1. Migración 069 aplicada sin errores y verificada en suite `migrate.test.js`.
 2. Endpoint `GET /api/v1/judge/ballots?include=progress` probado y libre de regresiones.
 3. El jurado puede navegar ítem por ítem en móvil (390×844) con comparsa, rubro e ítem siempre visibles.
-4. Tocar un puntaje 1–10 requiere un segundo toque en el mismo botón para confirmar in situ; el segundo toque guarda inmutablemente en el servidor.
+4. Tocar un puntaje 1–10 abre un modal de confirmación (Spec 007 RF-77); confirmar guarda inmutablemente en el servidor.
 5. "No se presentó" está segregado bajo la grilla y abre modal de confirmación antes de guardar.
 6. Un fallo de red en un ítem muestra "Reintentar" localizado sin bloquear los demás ítems ni congelar la pantalla.
 7. La barra inferior muestra progreso y el modal de faltantes permite saltar directamente al ítem pendiente.
-8. En desktop (1440×900), los números 1-0 y Enter seleccionan y confirman mediante teclado.
+8. En desktop (1440×900), los números 1-0 abren el modal de confirmación mediante teclado.
 9. 100% de tests unitarios y de integración de cliente y API aprobados.

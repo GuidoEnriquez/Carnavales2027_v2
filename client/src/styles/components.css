@@ -494,6 +494,25 @@
   margin-block-start: 2px;
 }
 
+/* Botón numérico solo-número (Spec 007 RF-77): sin etiqueta textual */
+.score-option-btn.score-num-only {
+  min-block-size: 56px;
+  min-inline-size: 56px;
+  flex-direction: row;
+  padding: var(--space-3) var(--space-2);
+}
+
+.score-option-btn.score-num-only .score-num {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.score-dialog-content .confirm-score-display {
+  font-size: var(--text-lg);
+  margin-block: var(--space-3);
+}
+
 .not-presented-section {
   margin-block-start: var(--space-4);
   padding: var(--space-4);

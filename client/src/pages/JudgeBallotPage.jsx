@@ -7,12 +7,6 @@ import { Button } from "../components/Button.jsx";
 import { ProgressBar } from "../components/ProgressBar.jsx";
 import { StatusPill } from "../components/StatusPill.jsx";
 
-const SCORE_ANCHOR = ["", "Muy malo", "Malo", "Regular", "Aceptable", "Correcto", "Muy correcto", "Bueno", "Muy bueno", "Excelente", "Excelente"];
-
-function scoreAnchor(value) {
-  return SCORE_ANCHOR[value] ?? "";
-}
-
 function groupScores(scores) {
   return scores.reduce((groups, score) => {
     const key = score.nightScheduleId;
@@ -64,7 +58,7 @@ export function JudgeBallotPage({ ballotId, troupeId: initialTroupeId }) {
     return "list";
   });
   const [activeItemIndex, setActiveItemIndex] = useState(0);
-  const [stagedScore, setStagedScore] = useState(null); // { scoreId, score, evaluationState }
+  const [scoreConfirm, setScoreConfirm] = useState(null); // { scoreId, score, troupeName, rubricName, itemName } — Spec 007 RF-77
   const [itemStatuses, setItemStatuses] = useState({}); // { [id]: { status: 'idle'|'saving'|'saved'|'error', errorMsg, lastAttempt } }
   const [notPresentedConfirm, setNotPresentedConfirm] = useState(null); // score item
   const [pendingDialogOpen, setPendingDialogOpen] = useState(false);
@@ -76,6 +70,7 @@ export function JudgeBallotPage({ ballotId, troupeId: initialTroupeId }) {
   const troupeRefs = useRef(new Map());
   const submitButtonRef = useRef(null);
   const mountedRef = useRef(true);
+  const lastTroupeRef = useRef(null);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -110,6 +105,10 @@ export function JudgeBallotPage({ ballotId, troupeId: initialTroupeId }) {
 
   useEffect(() => {
     if (!ballot || !selectedTroupeId) return;
+    // Solo reubicar el índice al CAMBIAR de comparsa, no en cada refresco del
+    // ballot tras confirmar un voto (evita volver a la primera tarjeta en modo card).
+    if (lastTroupeRef.current === selectedTroupeId) return;
+    lastTroupeRef.current = selectedTroupeId;
     const firstScoreIdx = ballot.scores.findIndex((s) => s.nightScheduleId === selectedTroupeId);
     if (firstScoreIdx !== -1) {
       setActiveItemIndex(firstScoreIdx);
@@ -192,16 +191,15 @@ export function JudgeBallotPage({ ballotId, troupeId: initialTroupeId }) {
     }
   };
 
-  const handleScoreClick = (scoreItem, value) => {
-    if (stagedScore?.scoreId === scoreItem.id && stagedScore?.score === value) {
-      // Second tap on the same number: confirm and save in situ
-      const toSave = stagedScore;
-      setStagedScore(null);
-      void saveDecision(toSave.scoreId, "SCORED", toSave.score);
-    } else {
-      // First tap or changed number: preselect (staged)
-      setStagedScore({ scoreId: scoreItem.id, score: value, evaluationState: "SCORED" });
-    }
+  const handleScoreClick = (scoreItem, value, troupeName, rubricName) => {
+    // Spec 007 RF-77: cada tap en 1-10 abre modal de confirmación, sin preselección in situ
+    setScoreConfirm({
+      scoreId: scoreItem.id,
+      score: value,
+      troupeName: troupeName ?? scoreItem.troupeName ?? "",
+      rubricName: rubricName ?? scoreItem.rubricName ?? "",
+      itemName: scoreItem.itemName ?? "",
+    });
   };
 
   const handleRetry = (scoreId) => {
@@ -244,13 +242,14 @@ export function JudgeBallotPage({ ballotId, troupeId: initialTroupeId }) {
     }
   };
 
-  // Keyboard navigation for desktop (RF-189)
+  // Keyboard navigation for desktop (RF-189): digits open Spec 007 modal, no staged state
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (
         e.target.tagName === "INPUT" ||
         e.target.tagName === "TEXTAREA" ||
         notPresentedConfirm ||
+        scoreConfirm ||
         pendingDialogOpen ||
         incompleteDialog ||
         submitConfirm ||
@@ -263,21 +262,26 @@ export function JudgeBallotPage({ ballotId, troupeId: initialTroupeId }) {
 
       if (e.key >= "1" && e.key <= "9") {
         const val = Number(e.key);
-        setStagedScore({ scoreId: activeScore.id, score: val, evaluationState: "SCORED" });
+        setScoreConfirm({
+          scoreId: activeScore.id,
+          score: val,
+          troupeName: activeScore.troupeName ?? "",
+          rubricName: activeScore.rubricName ?? "",
+          itemName: activeScore.itemName ?? "",
+        });
       } else if (e.key === "0") {
-        setStagedScore({ scoreId: activeScore.id, score: 10, evaluationState: "SCORED" });
-      } else if (e.key === "Enter") {
-        if (stagedScore && stagedScore.scoreId === activeScore.id) {
-          e.preventDefault();
-          const { scoreId, evaluationState, score } = stagedScore;
-          setStagedScore(null);
-          void saveDecision(scoreId, evaluationState, score);
-        }
+        setScoreConfirm({
+          scoreId: activeScore.id,
+          score: 10,
+          troupeName: activeScore.troupeName ?? "",
+          rubricName: activeScore.rubricName ?? "",
+          itemName: activeScore.itemName ?? "",
+        });
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [ballot, activeItemIndex, stagedScore, notPresentedConfirm, pendingDialogOpen, incompleteDialog, submitConfirm]);
+  }, [ballot, activeItemIndex, scoreConfirm, notPresentedConfirm, pendingDialogOpen, incompleteDialog, submitConfirm]);
 
   if (!ballotId) {
     return (
@@ -364,12 +368,12 @@ export function JudgeBallotPage({ ballotId, troupeId: initialTroupeId }) {
           </div>
           <div
             className={`locked-score ${scoreItem.evaluationState === "NOT_PRESENTED" ? "not-presented" : ""}`}
-            aria-label={`${troupeName}: ${scoreItem.itemName}, ${scoreItem.evaluationState === "NOT_PRESENTED" ? "No se presentó" : `puntuado ${scoreItem.score} ${scoreAnchor(scoreItem.score)}`}`}
+            aria-label={`${troupeName}: ${scoreItem.itemName}, ${scoreItem.evaluationState === "NOT_PRESENTED" ? "No se presentó" : `puntuado ${scoreItem.score}`}`}
           >
             <span aria-hidden="true">{scoreItem.evaluationState === "NOT_PRESENTED" ? "⊘" : "✓"}</span>
             <div>
               <strong>
-                {scoreItem.evaluationState === "NOT_PRESENTED" ? "No se presentó" : <>{scoreItem.score} · {scoreAnchor(scoreItem.score)}</>}
+                {scoreItem.evaluationState === "NOT_PRESENTED" ? "No se presentó" : scoreItem.score}
               </strong>
               <small>Decisión bloqueada</small>
             </div>
@@ -384,27 +388,20 @@ export function JudgeBallotPage({ ballotId, troupeId: initialTroupeId }) {
           <span className="score-copy-name">{scoreItem.itemName}</span>
         </div>
 
-        {/* 1-10 radiogroup grid with double-tap in situ */}
-        <div role="radiogroup" aria-label={`Puntuación para ${scoreItem.itemName}`} className="score-grid-v3">
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((val) => {
-            const isStaged = stagedScore?.scoreId === scoreItem.id && stagedScore?.score === val;
-            return (
-              <button
-                key={val}
-                type="button"
-                role="radio"
-                aria-checked={isStaged}
-                aria-label={isStaged ? "Confirmar" : `${val} ${scoreAnchor(val)}`}
-                disabled={readonly || scoreItem.status === "LOCKED" || isItemSaving}
-                className={`score-option-btn ${isStaged ? "is-staged" : ""}`}
-                onClick={() => handleScoreClick(scoreItem, val)}
-              >
-                <span className="score-num">{val}</span>
-                <span className="score-anchor-text">{scoreAnchor(val)}</span>
-                {isStaged && <span className="staged-confirm-badge">Confirmar</span>}
-              </button>
-            );
-          })}
+        {/* 1-10 grid: solo números, cada tap abre modal Spec 007 RF-77 */}
+        <div role="group" aria-label={`Puntuación para ${scoreItem.itemName}`} className="score-grid-v3">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((val) => (
+            <button
+              key={val}
+              type="button"
+              aria-label={`Votar ${val}`}
+              disabled={readonly || scoreItem.status === "LOCKED" || isItemSaving}
+              className="score-option-btn score-num-only"
+              onClick={() => handleScoreClick(scoreItem, val, troupeName, rubricName)}
+            >
+              <span className="score-num" aria-hidden="true">{val}</span>
+            </button>
+          ))}
         </div>
 
         {/* Segregated "No se presentó" */}
@@ -821,6 +818,39 @@ export function JudgeBallotPage({ ballotId, troupeId: initialTroupeId }) {
             Volver a la planilla
           </Button>
         </DialogFooter>
+      </Dialog>
+
+      {/* Score confirmation modal (Spec 007 RF-77) */}
+      <Dialog
+        isOpen={Boolean(scoreConfirm)}
+        onClose={() => setScoreConfirm(null)}
+        title="Confirmación de voto"
+        description="Una vez confirmada, esta decisión no podrá modificarse."
+      >
+        {scoreConfirm && (
+          <div className="score-dialog-content">
+            <p><strong>{scoreConfirm.troupeName}</strong></p>
+            <p>{scoreConfirm.rubricName} — {scoreConfirm.itemName}</p>
+            <p className="confirm-score-display">
+              Usted está por votar <strong>{scoreConfirm.score}</strong>. ¿Desea confirmar?
+            </p>
+            <DialogFooter>
+              <Button variant="secondary" onClick={() => setScoreConfirm(null)}>
+                Cancelar
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  const target = scoreConfirm;
+                  setScoreConfirm(null);
+                  void saveDecision(target.scoreId, "SCORED", target.score);
+                }}
+              >
+                Confirmar
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
       </Dialog>
 
       {/* Segregated "No se presentó" Modal (RF-186) */}

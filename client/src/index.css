@@ -748,11 +748,16 @@ button.button-link:disabled {
 .ballot-rubric { border-block-start-color: var(--border-subtle); }
 .ballot-rubric h3 { color: var(--text-primary); }
 .rubric-instruction { margin: 0; color: var(--text-muted); font-size: .9rem; }
-.score-row { grid-template-columns: 1fr minmax(0, 1fr); border-block-end-color: var(--border-subtle); padding-block: 1.1rem; }
+.score-row { grid-template-columns: minmax(0, 1fr); border-block-end-color: var(--border-subtle); padding-block: 1.1rem; }
 .score-copy > span { color: var(--text-primary); font-size: 1.05rem; font-weight: 760; }
 .score-row small { color: var(--text-muted); }
 .score-actions { display: grid; gap: 0.65rem; justify-content: stretch; }
 .score-actions > p { margin: 0; color: var(--text-muted); font-size: .82rem; font-weight: 700; }
+/* Lista completa centrada (Spec 021 v3): bloques de votación al centro del ítem */
+.score-row .score-actions { justify-items: center; }
+.score-row .score-actions .score-copy { text-align: center; align-items: center; }
+.score-row .score-grid-v3 { inline-size: 100%; max-inline-size: 32rem; margin-inline: auto; }
+.score-row .not-presented-section { inline-size: 100%; max-inline-size: 32rem; margin-inline: auto; text-align: center; }
 .score-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
 .score-grid button { min-inline-size: 0; min-block-size: 5rem; padding: .4rem; border: 1px solid var(--border-default); background: var(--surface-raised); color: var(--text-primary); box-shadow: none; font-size: clamp(1.7rem, 7vw, 2.25rem); }
 .score-grid button:hover:not(:disabled) { background: var(--accent-primary); color: var(--text-on-primary); }

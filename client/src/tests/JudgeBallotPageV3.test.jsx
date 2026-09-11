@@ -84,11 +84,49 @@ describe("JudgeBallotPage v3 (Spec 021)", () => {
     expect(screen.getByRole("region", { name: "Puntuaciones por comparsa" })).toBeInTheDocument();
   });
 
-  it("implementa doble tap in situ: 1er tap preselecciona, 2do tap en el mismo botón guarda inmutablemente (RF-185)", async () => {
+  it("no regresa a la primera tarjeta al confirmar un voto en modo tarjeta", async () => {
+    apiRequest.mockImplementation((path, options) => {
+      if (!options) return Promise.resolve(ballotV3);
+      if (path.endsWith("/scores/score-2")) {
+        return Promise.resolve({ id: "score-2", evaluationState: "SCORED", score: 7, status: "DRAFT", revision: 2 });
+      }
+      return Promise.resolve({});
+    });
+
+    render(<JudgeBallotPage ballotId="ballot-v3" troupeId="schedule-1" />);
+    await screen.findByRole("heading", { name: "Comparsa Verde", level: 2 });
+
+    // Cambiar a modo tarjeta única
+    fireEvent.click(screen.getByRole("button", { name: /Ver tarjeta única/ }));
+    await screen.findByRole("heading", { name: "Ritmo y Cadencia", level: 3 });
+
+    // Avanzar a la segunda tarjeta (Afinación)
+    fireEvent.click(screen.getByRole("button", { name: "Ítem siguiente" }));
+    expect(screen.getByRole("heading", { name: "Afinación", level: 3 })).toBeInTheDocument();
+
+    // Votar 7 y confirmar en el modal
+    fireEvent.click(screen.getByRole("button", { name: "Votar 7" }));
+    fireEvent.click(within(await screen.findByRole("dialog", { name: "Confirmación de voto" })).getByRole("button", { name: "Confirmar" }));
+
+    await waitFor(() => {
+      expect(apiRequest).toHaveBeenCalledWith(
+        "/api/v1/judge/ballots/ballot-v3/scores/score-2",
+        expect.objectContaining({ method: "PUT" }),
+      );
+    });
+
+    // La tarjeta de Afinación queda bloqueada y visible: si el bug regresara a la
+    // primera tarjeta, este texto nunca aparecería (Ritmo y Cadencia sigue PENDING).
+    await screen.findByText("Decisión bloqueada");
+    expect(screen.getByRole("heading", { name: "Afinación", level: 3 })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Ritmo y Cadencia", level: 3 })).not.toBeInTheDocument();
+  });
+
+  it("abre modal Spec 007 al tocar un número y confirma el voto (RF-77, solo números 1-10)", async () => {
     apiRequest.mockImplementation((path, options) => {
       if (!options) return Promise.resolve(ballotV3);
       if (path.endsWith("/scores/score-1")) {
-        return Promise.resolve({ id: "score-1", evaluationState: "SCORED", score: 9, status: "DRAFT", revision: 2 });
+        return Promise.resolve({ id: "score-1", evaluationState: "SCORED", score: 7, status: "DRAFT", revision: 2 });
       }
       return Promise.resolve({});
     });
@@ -97,29 +135,22 @@ describe("JudgeBallotPage v3 (Spec 021)", () => {
     await screen.findByRole("heading", { name: "Comparsa Verde", level: 2 });
 
     const scoreItem = screen.getByRole("group", { name: "Comparsa Verde: Ritmo y Cadencia" });
-    const btn9 = within(scoreItem).getByRole("radio", { name: /9 Excelente/ });
+    // Solo números visibles: sin etiquetas textuales
+    expect(within(scoreItem).queryByText("Bueno")).not.toBeInTheDocument();
+    expect(within(scoreItem).queryByText("Excelente")).not.toBeInTheDocument();
+    const btn7 = within(scoreItem).getByRole("button", { name: "Votar 7" });
 
-    // 1st tap: preselects 9 (staged) without calling save API
-    fireEvent.click(btn9);
-    expect(apiRequest).not.toHaveBeenCalledWith(
-      expect.stringContaining("/scores/score-1"),
-      expect.anything(),
-    );
-    expect(btn9).toHaveClass("is-staged");
-    expect(within(scoreItem).getByRole("radio", { name: "Confirmar" })).toBeInTheDocument();
-
-    // Tapping another number (e.g. 7) moves the staged selection without saving
-    const btn7 = within(scoreItem).getByRole("radio", { name: /7 Bueno/ });
+    // 1er tap: abre modal sin llamar a la API
     fireEvent.click(btn7);
     expect(apiRequest).not.toHaveBeenCalledWith(
       expect.stringContaining("/scores/score-1"),
       expect.anything(),
     );
-    expect(btn7).toHaveClass("is-staged");
-    expect(btn9).not.toHaveClass("is-staged");
+    const dialog = await screen.findByRole("dialog", { name: "Confirmación de voto" });
+    expect(within(dialog).getByText((_, el) => el?.textContent === "Usted está por votar 7. ¿Desea confirmar?")).toBeInTheDocument();
 
-    // 2nd tap on the staged button 7 confirms and triggers saveScore
-    fireEvent.click(within(scoreItem).getByRole("radio", { name: "Confirmar" }));
+    // Confirmar dentro del modal dispara el guardado
+    fireEvent.click(within(dialog).getByRole("button", { name: "Confirmar" }));
     await waitFor(() => {
       expect(apiRequest).toHaveBeenCalledWith(
         "/api/v1/judge/ballots/ballot-v3/scores/score-1",
@@ -187,19 +218,19 @@ describe("JudgeBallotPage v3 (Spec 021)", () => {
     const score1 = screen.getByRole("group", { name: "Comparsa Verde: Ritmo y Cadencia" });
     const score2 = screen.getByRole("group", { name: "Comparsa Verde: Afinación" });
 
-    // Click 8 on score-1, then click Confirmar -> fails with NETWORK_ERROR
-    fireEvent.click(within(score1).getByRole("radio", { name: /8 Muy bueno/ }));
-    fireEvent.click(within(score1).getByRole("radio", { name: "Confirmar" }));
+    // Click 8 on score-1, then Confirmar en el modal -> fails with NETWORK_ERROR
+    fireEvent.click(within(score1).getByRole("button", { name: "Votar 8" }));
+    fireEvent.click(within(await screen.findByRole("dialog", { name: "Confirmación de voto" })).getByRole("button", { name: "Confirmar" }));
 
     // score-1 shows error and Reintentar
     const retryBtn = await within(score1).findByRole("button", { name: "Reintentar" });
     expect(retryBtn).toBeInTheDocument();
 
     // Meanwhile, score-2 is NOT blocked: we can interact with score-2
-    const score2Btn = within(score2).getByRole("radio", { name: /10 Excelente/ });
+    const score2Btn = within(score2).getByRole("button", { name: "Votar 10" });
     expect(score2Btn).not.toBeDisabled();
     fireEvent.click(score2Btn);
-    fireEvent.click(within(score2).getByRole("radio", { name: "Confirmar" }));
+    fireEvent.click(within(await screen.findByRole("dialog", { name: "Confirmación de voto" })).getByRole("button", { name: "Confirmar" }));
 
     await waitFor(() => {
       expect(apiRequest).toHaveBeenCalledWith(
@@ -246,7 +277,7 @@ describe("JudgeBallotPage v3 (Spec 021)", () => {
     expect(within(bottomBar).getByText("Ítem 3 de 3")).toBeInTheDocument();
   });
 
-  it("soporta atajos de teclado numérico (1-0) y Enter para confirmar en desktop (RF-189)", async () => {
+  it("soporta atajos de teclado numérico (1-0) que abren el modal Spec 007 en desktop (RF-189)", async () => {
     apiRequest.mockImplementation((path, options) => {
       if (!options) return Promise.resolve(ballotV3);
       if (path.endsWith("/scores/score-1")) {
@@ -258,15 +289,14 @@ describe("JudgeBallotPage v3 (Spec 021)", () => {
     render(<JudgeBallotPage ballotId="ballot-v3" />);
     await screen.findByRole("heading", { name: "Comparsa Verde", level: 2 });
 
-    // Press '8' on keyboard
+    // Press '8' on keyboard -> abre modal
     fireEvent.keyDown(window, { key: "8" });
 
-    const score1 = screen.getByRole("group", { name: "Comparsa Verde: Ritmo y Cadencia" });
-    const btn8 = await within(score1).findByRole("radio", { name: "Confirmar" });
-    expect(btn8).toHaveClass("is-staged");
+    const dialog = await screen.findByRole("dialog", { name: "Confirmación de voto" });
+    expect(within(dialog).getByText((_, el) => el?.textContent === "Usted está por votar 8. ¿Desea confirmar?")).toBeInTheDocument();
 
-    // Press 'Enter' on keyboard
-    fireEvent.keyDown(window, { key: "Enter" });
+    // Confirmar en el modal guarda
+    fireEvent.click(within(dialog).getByRole("button", { name: "Confirmar" }));
 
     await waitFor(() => {
       expect(apiRequest).toHaveBeenCalledWith(
