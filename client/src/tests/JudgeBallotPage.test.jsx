@@ -43,6 +43,8 @@ describe("JudgeBallotPage", () => {
       expect.objectContaining({ method: "PUT" }),
     ));
 
+    // Modelo un-ítem-por-vez (Fase 1): avanzar a la tarjeta del segundo ítem
+    fireEvent.click(screen.getByRole("button", { name: "Ítem siguiente" }));
     const secondScore = screen.getByLabelText("Comparsa Dos: Presencia");
     fireEvent.click(within(secondScore).getByRole("button", { name: "Votar 8" }));
     fireEvent.click(within(await screen.findByRole("dialog", { name: "Confirmación de voto" })).getByRole("button", { name: "Confirmar" }));
@@ -148,6 +150,29 @@ describe("JudgeBallotPage", () => {
     expect(comparsaDosSidebar).toBeDisabled();
     expect(comparsaDosSidebar).toHaveAttribute("aria-disabled", "true");
 
+    // Modelo un-ítem-por-vez (Fase 1): la tarjeta bloqueada se ve al navegar al ítem
+    fireEvent.click(screen.getByRole("button", { name: "Ítem siguiente" }));
     expect(screen.getByText(/Se habilitará automáticamente al completar la comparsa anterior \(Comparsa Uno\)/i)).toBeInTheDocument();
+  });
+
+  it("en readonly muestra resumen sin grilla de voto ni navegación (Fase 3)", async () => {
+    const submitted = { ...ballot, status: "SUBMITTED" };
+    apiRequest.mockResolvedValue(submitted);
+    render(<JudgeBallotPage ballotId="ballot-1" />);
+
+    await screen.findByRole("heading", { name: "Comparsa Uno", level: 2 });
+    expect(screen.getByRole("region", { name: "Planilla confirmada" })).toBeInTheDocument();
+
+    // Resumen de lectura con los ítems y sus valores
+    const summary = screen.getByRole("region", { name: "Resumen de la planilla" });
+    expect(summary).toHaveTextContent("Comparsa Uno");
+    expect(summary).toHaveTextContent("Comparsa Dos");
+    expect(screen.getByText(/solo para consulta/)).toBeInTheDocument();
+
+    // Sin grilla 1–10 (ni siquiera deshabilitada) y sin navegación por ítems
+    expect(screen.queryByRole("button", { name: /Votar \d/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "No se presentó" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Navegación de planilla" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Faltantes/ })).not.toBeInTheDocument();
   });
 });

@@ -65,23 +65,25 @@ describe("JudgeBallotPage v3 (Spec 021)", () => {
     vi.clearAllMocks();
   });
 
-  it("permite alternar entre modo tarjeta y lista completa (RF-184)", async () => {
+  it("usa la tarjeta única como flujo principal sin alternar vistas (Fase 1)", async () => {
     apiRequest.mockResolvedValue(ballotV3);
     render(<JudgeBallotPage ballotId="ballot-v3" />);
 
     await screen.findByRole("heading", { name: "Comparsa Verde", level: 2 });
 
-    const toggleBtn = screen.getByRole("button", { name: /Ver tarjeta única|Ver lista completa/ });
-    expect(toggleBtn).toBeInTheDocument();
+    // Sin toggle de vistas: la tarjeta es el único flujo
+    expect(screen.queryByRole("button", { name: /Ver tarjeta única|Ver lista completa/ })).not.toBeInTheDocument();
 
-    // Toggle to card mode
-    fireEvent.click(toggleBtn);
+    // Tarjeta activa con salida, rubro e ítem
     expect(await screen.findByText(/Salida 1 · Música y Batería/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Ritmo y Cadencia", level: 3 })).toBeInTheDocument();
 
-    // Toggle back to list mode
-    fireEvent.click(screen.getByRole("button", { name: /Ver lista completa/ }));
-    expect(screen.getByRole("region", { name: "Puntuaciones por comparsa" })).toBeInTheDocument();
+    // La lista completa ya no es el flujo principal
+    expect(screen.queryByRole("region", { name: "Puntuaciones por comparsa" })).not.toBeInTheDocument();
+
+    // Navegación integrada con contador
+    expect(screen.getByRole("navigation", { name: "Navegación de planilla" })).toBeInTheDocument();
+    expect(screen.getByText("Ítem 1 de 3")).toBeInTheDocument();
   });
 
   it("no regresa a la primera tarjeta al confirmar un voto en modo tarjeta", async () => {
@@ -96,8 +98,7 @@ describe("JudgeBallotPage v3 (Spec 021)", () => {
     render(<JudgeBallotPage ballotId="ballot-v3" troupeId="schedule-1" />);
     await screen.findByRole("heading", { name: "Comparsa Verde", level: 2 });
 
-    // Cambiar a modo tarjeta única
-    fireEvent.click(screen.getByRole("button", { name: /Ver tarjeta única/ }));
+    // La tarjeta única es el flujo principal (Fase 1, sin toggle)
     await screen.findByRole("heading", { name: "Ritmo y Cadencia", level: 3 });
 
     // Avanzar a la segunda tarjeta (Afinación)
@@ -117,7 +118,7 @@ describe("JudgeBallotPage v3 (Spec 021)", () => {
 
     // La tarjeta de Afinación queda bloqueada y visible: si el bug regresara a la
     // primera tarjeta, este texto nunca aparecería (Ritmo y Cadencia sigue PENDING).
-    await screen.findByText("Decisión bloqueada");
+    await screen.findByText("Decisión registrada");
     expect(screen.getByRole("heading", { name: "Afinación", level: 3 })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Ritmo y Cadencia", level: 3 })).not.toBeInTheDocument();
   });
@@ -215,18 +216,19 @@ describe("JudgeBallotPage v3 (Spec 021)", () => {
     render(<JudgeBallotPage ballotId="ballot-v3" />);
     await screen.findByRole("heading", { name: "Comparsa Verde", level: 2 });
 
+    // La tarjeta muestra el primer ítem; el segundo se alcanza con Siguiente (Fase 1)
     const score1 = screen.getByRole("group", { name: "Comparsa Verde: Ritmo y Cadencia" });
-    const score2 = screen.getByRole("group", { name: "Comparsa Verde: Afinación" });
 
     // Click 8 on score-1, then Confirmar en el modal -> fails with NETWORK_ERROR
     fireEvent.click(within(score1).getByRole("button", { name: "Votar 8" }));
     fireEvent.click(within(await screen.findByRole("dialog", { name: "Confirmación de voto" })).getByRole("button", { name: "Confirmar" }));
 
     // score-1 shows error and Reintentar
-    const retryBtn = await within(score1).findByRole("button", { name: "Reintentar" });
-    expect(retryBtn).toBeInTheDocument();
+    expect(await within(score1).findByRole("button", { name: "Reintentar" })).toBeInTheDocument();
 
-    // Meanwhile, score-2 is NOT blocked: we can interact with score-2
+    // Meanwhile, score-2 is NOT blocked: avanzar a la tarjeta siguiente e interactuar
+    fireEvent.click(screen.getByRole("button", { name: "Ítem siguiente" }));
+    const score2 = screen.getByRole("group", { name: "Comparsa Verde: Afinación" });
     const score2Btn = within(score2).getByRole("button", { name: "Votar 10" });
     expect(score2Btn).not.toBeDisabled();
     fireEvent.click(score2Btn);
@@ -239,8 +241,10 @@ describe("JudgeBallotPage v3 (Spec 021)", () => {
       );
     });
 
-    // Now click Reintentar on score-1 -> succeeds
-    fireEvent.click(retryBtn);
+    // Volver a la tarjeta anterior: el reintento sigue aislado ahí y ahora tiene éxito
+    fireEvent.click(screen.getByRole("button", { name: "Ítem anterior" }));
+    const score1Back = screen.getByRole("group", { name: "Comparsa Verde: Ritmo y Cadencia" });
+    fireEvent.click(within(score1Back).getByRole("button", { name: "Reintentar" }));
     await waitFor(() => {
       expect(callCount).toBe(2);
     });
@@ -307,5 +311,43 @@ describe("JudgeBallotPage v3 (Spec 021)", () => {
         }),
       );
     });
+  });
+
+  it("marca la comparsa activa en la sidebar y el resumen (Fase 3)", async () => {
+    apiRequest.mockResolvedValue(ballotV3);
+    render(<JudgeBallotPage ballotId="ballot-v3" />);
+    await screen.findByRole("heading", { name: "Comparsa Verde", level: 2 });
+
+    const verdeBtn = screen.getByRole("button", { name: /Comparsa Verde/ });
+    expect(verdeBtn).toHaveAttribute("aria-current", "true");
+    expect(screen.getByRole("button", { name: /Comparsa Azul/ })).not.toHaveAttribute("aria-current");
+
+    const summary = screen.getByRole("region", { name: "Resumen de la comparsa" });
+    expect(summary).toHaveTextContent("0 / 2 completos");
+  });
+
+  it("navega al ítem desde el resumen lateral (Fase 3)", async () => {
+    apiRequest.mockResolvedValue(ballotV3);
+    render(<JudgeBallotPage ballotId="ballot-v3" />);
+    await screen.findByRole("heading", { name: "Comparsa Verde", level: 2 });
+
+    fireEvent.click(screen.getByRole("button", { name: "Ir al ítem Afinación" }));
+    expect(screen.getByRole("heading", { name: "Afinación", level: 3 })).toBeInTheDocument();
+    expect(screen.getByText("Ítem 2 de 3")).toBeInTheDocument();
+  });
+
+  it("muestra Lista para revisar con planilla completa y abre el cierre (Fase 3)", async () => {
+    const complete = {
+      ...ballotV3,
+      scores: ballotV3.scores.map((score) => ({ ...score, score: 7, evaluationState: "SCORED" })),
+    };
+    apiRequest.mockResolvedValue(complete);
+    render(<JudgeBallotPage ballotId="ballot-v3" />);
+    await screen.findByRole("heading", { name: "Comparsa Verde", level: 2 });
+
+    const banner = screen.getByRole("region", { name: "Lista para revisar" });
+    expect(banner).toHaveTextContent("3 de 3 puntuaciones completas");
+    fireEvent.click(within(banner).getByRole("button", { name: "Revisar planilla" }));
+    expect(await screen.findByRole("dialog", { name: "Cierre definitivo" })).toBeInTheDocument();
   });
 });

@@ -49,6 +49,10 @@ export function isTroupeLockedInSequence(troupeIndex, troupesList) {
   return false;
 }
 
+function ballotHref(troupe) {
+  return `#/judge/ballot?ballotId=${troupe.ballotId}&troupeId=${encodeURIComponent(troupe.troupeId)}`;
+}
+
 
 export function JudgeHomePage({ session }) {
   const profile = session?.judgeProfile;
@@ -119,6 +123,26 @@ export function JudgeHomePage({ session }) {
     return { label: "En progreso", icon: "●", className: "is-progress", statusKey: "ACTIVE" };
   };
 
+  // Partición puramente visual (TAREA 1): reutiliza getState + bloqueo
+  // secuencial existentes. No es regla de negocio nueva.
+  const entries = troupes.map((troupe, index) => {
+    const locked = isTroupeLockedInSequence(index, troupes);
+    return { troupe, index, locked, state: getState(troupe, locked) };
+  });
+  const isActionable = (entry) => !entry.locked && entry.troupe.status !== "SUBMITTED";
+  const actionable = entries.filter(isActionable);
+  const currentEntry = actionable.find((entry) => entry.troupe.resolved > 0)
+    ?? actionable[0]
+    ?? null;
+  const evaluatedEntries = entries.filter((entry) => entry.troupe.status === "SUBMITTED");
+  const upcomingEntries = entries.filter((entry) => entry.troupe.status !== "SUBMITTED" && entry !== currentEntry);
+  const hasLockedUpcoming = upcomingEntries.some((entry) => entry.locked);
+
+  const currentRemaining = currentEntry ? currentEntry.troupe.total - currentEntry.troupe.resolved : 0;
+  const currentCta = currentEntry && currentEntry.troupe.resolved === 0
+    ? "Comenzar evaluación →"
+    : "Continuar evaluación →";
+
   return (
     <PageShell layer="instrument" className="judge-home judge-operation-shell">
       <section className="judge-home-intro">
@@ -130,8 +154,8 @@ export function JudgeHomePage({ session }) {
         <ProgressBar
           value={resolved}
           max={total}
-          label="Progreso general"
-          sublabel={`Comparsas evaluadas ${closed} / ${troupes.length}`}
+          label="Progreso de la noche"
+          sublabel={`${closed} de ${troupes.length} comparsas confirmadas`}
         />
         {progress === 100 && troupes.length > 0 && (
           <div className="judge-completion-message">
@@ -150,69 +174,87 @@ export function JudgeHomePage({ session }) {
         {profile?.registrationStatus === "REGISTERED" && loading && <p role="status">Cargando tus planillas…</p>}
         {profile?.registrationStatus === "REGISTERED" && !loading && ballots.length === 0 && <div className="empty-state"><h2>Registro completo</h2><p>Todavía no tenés planillas habilitadas. Una asignación no abre votación por sí sola.</p></div>}
         {profile?.registrationStatus === "REGISTERED" && troupes.length > 0 && (
-          <section aria-label="Mis planillas">
-            <div className="judge-section-heading">
-              <div>
-                <p className="eyebrow">Tus comparsas</p>
-                <h2>Tu noche de votación</h2>
-              </div>
-              <span>{troupes.length} comparsas</span>
-            </div>
-            <div className="judge-ballot-grid">
-              {troupes.map((troupe, index) => {
-                const isLocked = isTroupeLockedInSequence(index, troupes);
-                const state = getState(troupe, isLocked);
-                return (
-                  <article
-                    className={`judge-ballot-card ${state.className}`}
-                    key={`${troupe.ballotId}-${troupe.troupeId}`}
-                  >
-                    {troupe.brandColor && (
-                      <div
-                        className="troupe-brand-stripe"
-                        style={{ backgroundColor: troupe.brandColor }}
-                        aria-hidden="true"
-                      />
-                    )}
-                    <div className="judge-ballot-card-header">
-                      <div>
-                        <p className="eyebrow">{troupe.nightName} · {troupe.specialtyName}</p>
-                        <h3>{troupe.troupeName}</h3>
+          <>
+            {currentEntry && (
+              <section aria-label="Comparsa actual" className="judge-now">
+                <p className="eyebrow">Ahora</p>
+                <article className="judge-now-card">
+                  <h2 className="sr-only">Comparsa actual</h2>
+                  {currentEntry.troupe.brandColor && (
+                    <div
+                      className="troupe-brand-stripe"
+                      style={{ backgroundColor: currentEntry.troupe.brandColor }}
+                      aria-hidden="true"
+                    />
+                  )}
+                  <div className="judge-now-header">
+                    <p className="eyebrow">{currentEntry.troupe.nightName} · {currentEntry.troupe.specialtyName}</p>
+                    <StatusPill status={currentEntry.state.statusKey} label={currentEntry.state.label} />
+                  </div>
+                  <h3>{currentEntry.troupe.troupeName}</h3>
+                  <ProgressBar
+                    value={currentEntry.troupe.resolved}
+                    max={currentEntry.troupe.total}
+                    sublabel={`${currentEntry.troupe.resolved} de ${currentEntry.troupe.total} ítems completados`}
+                  />
+                  {currentRemaining > 1 && <p className="judge-now-remaining">Faltan {currentRemaining} puntuaciones</p>}
+                  {currentRemaining === 1 && <p className="judge-now-remaining">Falta 1 puntuación</p>}
+                  {currentRemaining === 0 && <p className="judge-now-remaining">Todos los ítems puntuados. Revisá y confirmá la planilla.</p>}
+                  <a className="button-link judge-now-cta" href={ballotHref(currentEntry.troupe)}>
+                    {currentCta}
+                  </a>
+                </article>
+              </section>
+            )}
+            {(evaluatedEntries.length > 0 || upcomingEntries.length > 0) && (
+              <div className="judge-lists">
+            {evaluatedEntries.length > 0 && (
+              <section aria-label="Comparsas evaluadas" className="judge-evaluated">
+                <h2 className="judge-section-title">Evaluadas</h2>
+                <ul className="judge-list">
+                  {evaluatedEntries.map((entry) => (
+                    <li key={`${entry.troupe.ballotId}-${entry.troupe.troupeId}`} className="judge-list-row is-evaluated">
+                      <span className="judge-list-check" aria-hidden="true">✓</span>
+                      <div className="judge-list-main">
+                        <h3>{entry.troupe.troupeName}</h3>
+                        <p>Planilla confirmada</p>
                       </div>
-                      <StatusPill status={state.statusKey} label={state.label} />
-                    </div>
-                    {isLocked ? (
-                      <p className="judge-locked-copy is-waiting">
-                        <span aria-hidden="true">🔒</span> Se habilitará al completar la comparsa anterior
-                      </p>
-                    ) : troupe.status === "SUBMITTED" ? (
-                      <p className="judge-locked-copy"><span aria-hidden="true">🔒</span> Planilla confirmada</p>
-                    ) : (
-                      <p className="judge-item-count">{troupe.resolved}/{troupe.total} ítems completados</p>
-                    )}
-                    {isLocked ? (
-                      <button
-                        type="button"
-                        className="button-link is-disabled"
-                        disabled
-                        aria-disabled="true"
-                        title="Se habilitará al completar la comparsa anterior"
-                      >
-                        <span>🔒 En espera de pasada</span>
-                      </button>
-                    ) : (
-                      <a
-                        className="button-link"
-                        href={`#/judge/ballot?ballotId=${troupe.ballotId}&troupeId=${encodeURIComponent(troupe.troupeId)}`}
-                      >
-                        {troupe.status === "SUBMITTED" ? "Ver planilla" : troupe.resolved === 0 ? "Comenzar" : "Continuar"}
+                      <a className="button-link secondary judge-list-action" href={ballotHref(entry.troupe)}>
+                        Ver planilla →
                       </a>
-                    )}
-                  </article>
-                );
-              })}
-            </div>
-          </section>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+            {upcomingEntries.length > 0 && (
+              <section aria-label="Próximas comparsas" className="judge-upcoming">
+                <h2 className="judge-section-title">Próximas</h2>
+                {hasLockedUpcoming && (
+                  <p className="judge-note">Las siguientes comparsas se habilitan según el orden de pasada.</p>
+                )}
+                <ul className="judge-list">
+                  {upcomingEntries.map((entry) => (
+                    <li key={`${entry.troupe.ballotId}-${entry.troupe.troupeId}`} className={`judge-list-row${entry.locked ? " is-locked" : ""}`}>
+                      <span className="judge-list-order" aria-hidden="true">{entry.index + 1}</span>
+                      <div className="judge-list-main">
+                        <h3>{entry.troupe.troupeName}</h3>
+                        <p>{entry.troupe.specialtyName}</p>
+                      </div>
+                      <StatusPill status={entry.state.statusKey} label={entry.state.label} />
+                      {!entry.locked && (
+                        <a className="button-link secondary judge-list-action" href={ballotHref(entry.troupe)}>
+                          {entry.troupe.resolved === 0 ? "Comenzar evaluación →" : "Continuar evaluación →"}
+                        </a>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+              </div>
+            )}
+          </>
         )}
       </section>
     </PageShell>
