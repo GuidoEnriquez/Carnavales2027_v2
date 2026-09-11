@@ -31,9 +31,10 @@ function optionalBrandColor(value) {
 export async function createCategory({ client = getPool(), eventId, name, code, displayOrder }) {
   await requireConfiguringEvent({ client, eventId });
   const { rows } = await client.query(
-    `INSERT INTO event_category (event_id, name, code, display_order) VALUES ($1, $2, $3, $4)
+    `INSERT INTO event_category (event_id, name, code, display_order)
+     VALUES ($1, $2, $3, COALESCE($4, (SELECT COALESCE(MAX(display_order), 0) + 1 FROM event_category WHERE event_id = $1)))
      RETURNING id, event_id AS "eventId", name, code, display_order AS "displayOrder", active`,
-    [text(eventId, "eventId"), text(name, "name"), text(code, "code"), order(displayOrder)],
+    [text(eventId, "eventId"), text(name, "name"), text(code, "code"), displayOrder === undefined ? null : order(displayOrder)],
   );
   return rows[0];
 }

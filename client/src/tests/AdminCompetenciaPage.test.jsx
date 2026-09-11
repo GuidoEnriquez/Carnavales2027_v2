@@ -160,12 +160,13 @@ describe("AdminCompetenciaPage", () => {
     fireEvent.click(screen.getByRole("button", { name: createLabel }));
     const createForm = screen.getByRole("button", { name: submitLabel }).closest("form");
     const createFields = within(createForm);
-    expect(createFields.getByLabelText("Orden de visualización")).toHaveValue(2);
+    // Al crear, el orden lo asigna el servidor: el campo no se muestra.
+    expect(createFields.queryByLabelText("Orden de visualización")).toBeNull();
     fireEvent.change(createFields.getByLabelText("Nombre"), { target: { value: "Nuevo" } });
     fireEvent.submit(createForm);
     await waitFor(() => expect(write).toHaveBeenCalledWith(
       createPath,
-      { method: "POST", body: JSON.stringify({ name: "Nuevo", displayOrder: 2 }) },
+      { method: "POST", body: JSON.stringify({ name: "Nuevo" }) },
     ));
     expect(await screen.findByText("Guardado.")).toBeInTheDocument();
 

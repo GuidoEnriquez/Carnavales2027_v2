@@ -592,6 +592,7 @@ function AdminCategoriesSection({ event }) {
           key={drawerMode?.mode === "edit" ? `edit-${drawerMode.categoryId}` : "create"}
           initialValue={editingCategory ?? {}}
           defaultOrder={nextOrder}
+          showOrder={drawerMode?.mode === "edit"}
           submitting={saving}
           submitLabel={drawerMode?.mode === "edit" ? "Guardar" : "Agregar tipo"}
           showActive={drawerMode?.mode === "edit"}
@@ -702,6 +703,7 @@ function AdminSpecialtiesSection({ event }) {
           key={drawerMode?.mode === "edit" ? `edit-${drawerMode.specialtyId}` : "create"}
           initialValue={editingSpecialty ?? {}}
           defaultOrder={nextOrder}
+          showOrder={drawerMode?.mode === "edit"}
           submitting={saving}
           submitLabel={drawerMode?.mode === "edit" ? "Guardar" : "Agregar especialidad"}
           showActive={drawerMode?.mode === "edit"}

@@ -80,6 +80,14 @@ test("API ADMIN administra categorías y participaciones sin texto libre", { ski
     assert.equal(duplicate.status, 409);
     assert.equal((await duplicate.json()).code, "RESOURCE_CONFLICT");
 
+    const autoOrder = await fetch(`${baseUrl}/api/v1/events/${event.id}/categories`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ name: "Sin orden", code: "SIN_ORDEN" }),
+    });
+    assert.equal(autoOrder.status, 201);
+    assert.equal((await autoOrder.json()).displayOrder, 4);
+
     const missingEvent = await fetch(`${baseUrl}/api/v1/events/${randomUUID()}/categories`, { headers });
     assert.equal(missingEvent.status, 404);
     assert.deepEqual(await missingEvent.json(), { code: "EVENT_NOT_FOUND" });

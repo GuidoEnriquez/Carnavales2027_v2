@@ -742,7 +742,7 @@
 
 .entity-drawer {
   max-inline-size: min(94vw, 34rem);
-  margin-inline-end: 0;
+  margin-inline: auto;
 }
 
 /* Spec 027/B — Panel admin (aditivo) */
