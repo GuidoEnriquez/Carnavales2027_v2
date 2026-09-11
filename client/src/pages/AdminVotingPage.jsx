@@ -83,6 +83,7 @@ export function AdminVotingPage() {
       const messages = {
         EVENT_NOT_OPEN: "El evento debe estar abierto para habilitar la votación.",
         NIGHT_NOT_OPEN: "La noche no está disponible para votar.",
+        NIGHT_SCHEDULE_EMPTY: "Programá comparsas en la jornada antes de abrir la votación.",
       };
       setMessage(messages[error.code] ?? "No se pudo completar la operación.");
     } finally {

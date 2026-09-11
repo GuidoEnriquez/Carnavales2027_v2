@@ -139,13 +139,19 @@ export function sendKnownError(response, error) {
     "TROUPE_PRECEDENCE_REQUIRED",
     "EVENT_NOT_OPEN",
     "NIGHT_NOT_OPEN",
+    "NIGHT_SCHEDULE_EMPTY",
     "VOTING_COMPETITION_ONLY",
     "VOTING_WINDOW_CLOSED",
     "VOTING_WINDOW_NOT_OPEN",
     "SYNC_OPERATION_MISMATCH",
     "SYNC_BATCH_MIXED_RETRY",
   ].includes(error.message)) {
-    response.status(409).json({ code: error.message });
+    const messages = {
+      NIGHT_SCHEDULE_EMPTY: "La jornada no tiene comparsas programadas. Programá comparsas en la jornada antes de abrir la votación.",
+    };
+    const body = { code: error.message };
+    if (messages[error.message]) body.message = messages[error.message];
+    response.status(409).json(body);
     return true;
   }
   if (error.message === "INVITATION_INVALID") {
