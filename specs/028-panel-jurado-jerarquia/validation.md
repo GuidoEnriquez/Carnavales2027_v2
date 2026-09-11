@@ -7,4 +7,4 @@ Evidencia real (2026-09-11, commit `62aa52a`):
 - Suite cliente completa: 286 passed; 3 failed preexistentes de entorno local (`AdminEventContext` ×1, `AdminCompetenciaRoute` ×2 — `window.localStorage` undefined en jsdom con Node 26; verificados idénticos vía `git stash` sin los cambios; en CI Node 20 pasan en verde).
 - Build Vite: exitoso (~850ms). `git diff --check`: limpio.
 - Un test de tokens roto por la Fase 1 (colisión de regex con regla nueva) se dejó verde retirando la regla, sin tocar el test.
-- Revisión visual del producto: aprobada ("me gusto como quedo", 2026-09-11). Comprobación manual sistemática de viewports/teclado/táctil: pendiente del producto.
+- Revisión visual del producto: aprobada ("me gusto como quedo", 2026-09-11). Comprobación manual de viewports: aprobada por el producto (2026-09-11). Spec 028 cerrada.

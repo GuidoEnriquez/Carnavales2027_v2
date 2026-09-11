@@ -7,4 +7,4 @@
 - [x] FASE 3: rail desktop, resumen con salto, banner Lista para revisar, readonly como resumen, hint atajos.
 - [x] FIX: rail lateral único sticky (hijos estáticos, scroll interno, grid 2 col).
 - [x] Ratificación documental (esta spec) + entrada en `sdd-status.md`.
-- [ ] Comprobación manual responsive/teclado/táctil por el producto (pendiente, como en Specs 016/027).
+- [x] Comprobación manual responsive/teclado/táctil por el producto (aprobada, 2026-09-11).
