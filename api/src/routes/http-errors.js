@@ -84,6 +84,20 @@ export function sendKnownError(response, error) {
     response.status(409).json({ code: error.message });
     return true;
   }
+  if ([
+    "EVENT_HAS_BALLOTS",
+    "EVENT_HAS_ASSIGNMENTS",
+    "EVENT_HAS_QUOTAS",
+    "EVENT_HAS_PENALTIES",
+    "EVENT_HAS_SCRUTINY_RECORD",
+    "EVENT_HAS_RESULTS",
+  ].includes(error.message)) {
+    response.status(409).json({
+      code: error.message,
+      message: "Solo se pueden eliminar eventos sin votación ni historial operativo.",
+    });
+    return true;
+  }
   if (["INVALID_JUDGE_STATUS", "ACCOUNT_ALREADY_EXISTS"].includes(error.message)) {
     response.status(409).json({ code: error.message });
     return true;

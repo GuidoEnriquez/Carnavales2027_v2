@@ -97,6 +97,7 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
          || filename === "069_troupe_brand_color.sql"
          || filename === "070_results_snapshot.sql"
          || filename === "072_schedule_order_deferrable.sql"
+         || filename === "073_event_delete_policy.sql"
   )));
 
   const status = await getMigrationStatus();
@@ -454,6 +455,11 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
     {
       filename: "072_schedule_order_deferrable.sql",
       version: "072",
+      applied: true,
+    },
+    {
+      filename: "073_event_delete_policy.sql",
+      version: "073",
       applied: true,
     },
   ]);

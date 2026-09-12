@@ -3,7 +3,7 @@ import { auditEvent } from "../audit/audit-service.js";
 import { requireAdmin } from "../auth/require-admin.js";
 import { requireTwoFactor } from "../auth/two-factor.js";
 import { getPool } from "../db/pool.js";
-import { createEvent, createNight, getEvent, listEvents, listNights, updateEvent, updateNight } from "../modules/events/event-service.js";
+import { createEvent, createNight, deleteEvent, getEvent, listEvents, listNights, updateEvent, updateNight } from "../modules/events/event-service.js";
 import {
   createCategory,
   createTroupe,
@@ -115,6 +115,14 @@ export function createEventsRouter({ requireSession }) {
   });
   router.post("/events", createWriteHandler("EVENT_CREATED", "carnival_event", (client, request) => createEvent({ client, ...request.body })));
   router.patch("/events/:eventId", createWriteHandler("EVENT_UPDATED", "carnival_event", (client, request) => updateEvent({ client, eventId: request.params.eventId, ...request.body })));
+  router.delete("/events/:eventId", async (request, response, next) => {
+    try {
+      response.json(await deleteEvent({ eventId: request.params.eventId, actorUserId: request.user.id }));
+    } catch (error) {
+      if (error.message === "EVENT_NOT_FOUND") return response.status(404).json({ code: error.message });
+      if (!sendKnownError(response, error)) next(error);
+    }
+  });
   router.post("/events/:eventId/nights", createWriteHandler("NIGHT_CREATED", "night", (client, request) => createNight({ client, eventId: request.params.eventId, ...request.body })));
   router.patch("/nights/:nightId", createWriteHandler("NIGHT_UPDATED", "night", (client, request) => updateNight({ client, nightId: request.params.nightId, ...request.body })));
 
