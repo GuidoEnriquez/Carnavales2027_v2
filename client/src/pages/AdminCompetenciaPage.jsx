@@ -3,7 +3,9 @@ import { PageShell } from "../components/PageShell.jsx";
 import { apiRequest } from "../api/http.js";
 import { StatusPill } from "../components/StatusPill.jsx";
 import { EntityDrawer } from "../components/EntityDrawer.jsx";
+import { Dialog } from "../components/Dialog.jsx";
 import { DialogFooter } from "../components/DialogFooter.jsx";
+import { Button } from "../components/Button.jsx";
 import { ConfigurationProgress } from "../components/ConfigurationProgress.jsx";
 import { TroupeForm } from "../features/TroupeForm.jsx";
 import { CatalogForm } from "../features/CatalogForm.jsx";
@@ -414,7 +416,10 @@ function AdminTroupesSection({ event }) {
 function TroupeScheduleSection({ event }) {
   const [nights, setNights] = useState([]);
   const [schedule, setSchedule] = useState([]);
+  const [troupes, setTroupes] = useState([]);
   const [nightId, setNightId] = useState("");
+  const [troupeToAdd, setTroupeToAdd] = useState("");
+  const [quitTarget, setQuitTarget] = useState(null);
   const [message, setMessage] = useState("");
   const { writing, setPending } = useContext(WriteContext);
   const locked = event.status === "OPEN";
@@ -424,6 +429,7 @@ function TroupeScheduleSection({ event }) {
       setNights(loaded ?? []);
       setNightId((loaded ?? [])[0]?.id ?? "");
     }).catch(() => {});
+    apiRequest(`/api/v1/events/${event.id}/troupes`).then((loaded) => setTroupes(loaded ?? [])).catch(() => {});
   }, [event.id]);
 
   useEffect(() => {
@@ -435,6 +441,7 @@ function TroupeScheduleSection({ event }) {
 
   const ordered = [...schedule].sort((a, b) => a.presentationOrder - b.presentationOrder);
   const nightName = nights.find((n) => n.id === nightId)?.name ?? "";
+  const unprogrammed = troupes.filter((t) => t.active !== false && !schedule.some((s) => s.troupeId === t.id));
 
   const reorder = async (current, neighbor, direction) => {
     if (writing.current || locked || !neighbor) return;
@@ -469,7 +476,7 @@ function TroupeScheduleSection({ event }) {
     <section className="config-section" aria-label="Orden de pasada por jornada">
       <div className="section-heading">
         <h2>Orden de pasada</h2>
-        <p>Orden de presentacion por jornada. Acá solo reordenás comparsas ya asignadas a la jornada; si está vacía, la asignación se hace en Jornadas del evento. No abre votacion ni crea planillas.</p>
+        <p>Programá las comparsas en cada jornada y ordená la salida. Sin comparsas programadas, la votación abre planillas vacías. No abre votacion ni crea planillas.</p>
       </div>
       <p className="feedback" role="status">{message}</p>
       {nights.length === 0 && <p>Cargando jornadas...</p>}
@@ -477,6 +484,42 @@ function TroupeScheduleSection({ event }) {
         <label>Jornada<select value={nightId} onChange={(e) => setNightId(e.target.value)} aria-label="Jornada para el orden de pasada">
           {nights.map((night) => <option key={night.id} value={night.id}>{night.name}</option>)}
         </select></label>
+      )}
+      {!locked && nightId && unprogrammed.length > 0 && (
+        <form
+          className="inline-item-form"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (writing.current || !troupeToAdd) return;
+            writing.current = true;
+            setPending(true);
+            try {
+              const saved = await apiRequest(`/api/v1/events/${event.id}/schedule`, {
+                method: "POST",
+                body: JSON.stringify({ nightId, troupeId: troupeToAdd }),
+              });
+              const troupe = troupes.find((t) => t.id === troupeToAdd);
+              setSchedule((prev) => [...prev, { ...saved, troupeName: troupe?.name ?? "", troupeBrandColor: troupe?.brandColor ?? null }]);
+              setTroupeToAdd("");
+              setMessage("Comparsa programada en la jornada.");
+            } catch (error) {
+              setMessage(error.code === "SCHEDULE_CONFLICT"
+                ? "Esa comparsa ya está programada en la jornada."
+                : error.code === "EVENT_LOCKED"
+                  ? "El evento ya no permite modificar su configuracion."
+                  : "No se pudo programar la comparsa.");
+            } finally {
+              writing.current = false;
+              setPending(false);
+            }
+          }}
+        >
+          <select value={troupeToAdd} onChange={(e) => setTroupeToAdd(e.target.value)} aria-label="Comparsa para programar en la jornada" required>
+            <option value="">Comparsa para programar…</option>
+            {unprogrammed.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+          <button type="submit">Programar comparsa</button>
+        </form>
       )}
       <ol className="schedule-list">
         {ordered.map((entry, index) => (
@@ -487,11 +530,46 @@ function TroupeScheduleSection({ event }) {
             {!locked && <>
               <button className="secondary" type="button" aria-label={`Subir ${entry.troupeName} en ${nightName}`} disabled={index === 0} onClick={() => reorder(entry, ordered[index - 1], "UP")}>Subir</button>
               <button className="secondary" type="button" aria-label={`Bajar ${entry.troupeName} en ${nightName}`} disabled={index === ordered.length - 1} onClick={() => reorder(entry, ordered[index + 1], "DOWN")}>Bajar</button>
+              <button className="secondary" type="button" aria-label={`Quitar ${entry.troupeName} de ${nightName}`} onClick={() => setQuitTarget(entry)}>Quitar</button>
             </>}
           </li>
         ))}
       </ol>
-      {nightId && ordered.length === 0 && <p>Sin comparsas programadas en esta jornada.</p>}
+      {nightId && ordered.length === 0 && <p>Sin comparsas programadas en esta jornada. Programá al menos una para poder abrir la votación.</p>}
+      {quitTarget && (
+        <Dialog
+          isOpen={Boolean(quitTarget)}
+          onClose={() => setQuitTarget(null)}
+          title={`Quitar ${quitTarget.troupeName} de ${nightName}`}
+          description="La comparsa sale del orden de pasada pero no se elimina del evento."
+        >
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setQuitTarget(null)}>Cancelar</Button>
+            <Button
+              variant="danger"
+              onClick={async () => {
+                const target = quitTarget;
+                setQuitTarget(null);
+                if (writing.current) return;
+                writing.current = true;
+                setPending(true);
+                try {
+                  await apiRequest(`/api/v1/schedule/${target.id}`, { method: "DELETE" });
+                  setSchedule((prev) => prev.filter((s) => s.id !== target.id));
+                  setMessage("Comparsa quitada de la jornada.");
+                } catch {
+                  setMessage("No se pudo quitar la comparsa de la jornada.");
+                } finally {
+                  writing.current = false;
+                  setPending(false);
+                }
+              }}
+            >
+              Quitar de la jornada
+            </Button>
+          </DialogFooter>
+        </Dialog>
+      )}
     </section>
   );
 }

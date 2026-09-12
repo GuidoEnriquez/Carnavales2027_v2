@@ -418,7 +418,8 @@ describe("AdminCompetenciaPage", () => {
     async function openTroupesTab() {
       render(<AdminCompetenciaPage event={{ id: "event-1", name: "Carnaval", status: "CONFIGURING" }} />);
       fireEvent.click(screen.getByRole("button", { name: "1. Quiénes participan" }));
-      await screen.findByText("Estrella");
+      // Paso 1 asentado: tabla de tipos + tabla de comparsas (evita race con el schedule)
+      expect((await screen.findAllByRole("table"))).toHaveLength(2);
     }
 
     it("crea comparsa con color y muestra preview Vista jurado", async () => {
@@ -528,6 +529,33 @@ describe("AdminCompetenciaPage", () => {
       await screen.findByText("Estrella");
       expect(screen.queryByRole("button", { name: /Editar comparsa|Nueva comparsa|Subir|Bajar/ })).not.toBeInTheDocument();
       expect(apiRequest.mock.calls.every(([, options]) => !options?.method)).toBe(true);
+    });
+
+    it("programa y quita comparsas de la jornada", async () => {
+      const write = vi.fn().mockImplementation(async (path, options) => {
+        if (path.endsWith("/schedule") && options.method === "POST") {
+          return { id: "s-9", presentationOrder: 1, status: "SCHEDULED" };
+        }
+        if (path.endsWith("/schedule/s-9") && options.method === "DELETE") return { id: "s-9" };
+        throw new Error("Escritura inesperada");
+      });
+      mockTroupes({ write, schedule: [] });
+      render(<AdminCompetenciaPage event={{ id: "event-1", name: "Carnaval", status: "CONFIGURING" }} />);
+      expect(await screen.findByText(/Sin comparsas programadas/)).toBeInTheDocument();
+      fireEvent.change(
+        screen.getByRole("combobox", { name: "Comparsa para programar en la jornada" }),
+        { target: { value: "troupe-1" } },
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Programar comparsa" }));
+      expect(write).toHaveBeenCalledWith("/api/v1/events/event-1/schedule", {
+        method: "POST",
+        body: JSON.stringify({ nightId: "night-1", troupeId: "troupe-1" }),
+      });
+      expect(await screen.findByText("Comparsa programada en la jornada.")).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Quitar Estrella de Noche 1" }));
+      fireEvent.click(await screen.findByRole("button", { name: "Quitar de la jornada" }));
+      expect(write).toHaveBeenCalledWith("/api/v1/schedule/s-9", { method: "DELETE" });
+      expect(await screen.findByText("Comparsa quitada de la jornada.")).toBeInTheDocument();
     });
   });
 

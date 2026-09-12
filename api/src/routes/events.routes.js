@@ -13,7 +13,7 @@ import {
   updateTroupe,
 } from "../modules/troupes/category-service.js";
 import { createSpecialty, listSpecialties, updateSpecialty } from "../modules/specialties/specialty-service.js";
-import { listSchedule, reorderScheduleEntry } from "../modules/schedule/schedule-service.js";
+import { listSchedule, reorderScheduleEntry, addTroupeToSchedule, removeScheduleEntry } from "../modules/schedule/schedule-service.js";
 import {
   createCriterion,
   createItem,
@@ -227,6 +227,30 @@ export function createEventsRouter({ requireSession }) {
         direction, neighborId, expectedOrder, expectedNeighborOrder,
       }));
     } catch (error) {
+      if (!sendKnownError(response, error)) next(error);
+    }
+  });
+  router.post("/events/:eventId/schedule", async (request, response, next) => {
+    try {
+      const { nightId, troupeId } = request.body ?? {};
+      response.status(201).json(await addTroupeToSchedule({
+        eventId: request.params.eventId, nightId, troupeId, actorUserId: request.user.id,
+      }));
+    } catch (error) {
+      if (error.message === "SCHEDULE_CONFLICT") return response.status(409).json({ code: error.message });
+      if (error.message === "NIGHT_NOT_FOUND" || error.message === "TROUPE_NOT_FOUND") {
+        return response.status(404).json({ code: error.message });
+      }
+      if (!sendKnownError(response, error)) next(error);
+    }
+  });
+  router.delete("/schedule/:scheduleId", async (request, response, next) => {
+    try {
+      response.json(await removeScheduleEntry({ scheduleId: request.params.scheduleId, actorUserId: request.user.id }));
+    } catch (error) {
+      if (error.message === "NIGHT_TROUPE_SCHEDULE_NOT_FOUND") {
+        return response.status(404).json({ code: error.message });
+      }
       if (!sendKnownError(response, error)) next(error);
     }
   });
