@@ -6,7 +6,7 @@ import { EntityDrawer } from "../components/EntityDrawer.jsx";
 import { Dialog } from "../components/Dialog.jsx";
 import { DialogFooter } from "../components/DialogFooter.jsx";
 import { Button } from "../components/Button.jsx";
-import { ConfigurationProgress } from "../components/ConfigurationProgress.jsx";
+import { ProgressBar } from "../components/ProgressBar.jsx";
 import { TroupeForm } from "../features/TroupeForm.jsx";
 import { CatalogForm } from "../features/CatalogForm.jsx";
 import { RubricTree } from "../features/RubricTree.jsx";
@@ -33,7 +33,7 @@ function SaveForm({ onSubmit, resetOnSuccess = false, ...props }) {
 }
 
 export function AdminCompetenciaPage({ event, onBack }) {
-  const [step, setStep] = useState("participan");
+  const [step, setStep] = useState("participantes");
   const [pending, setPending] = useState(false);
   const [focusRubricId, setFocusRubricId] = useState(null);
   const [progress, setProgress] = useState(null);
@@ -66,102 +66,183 @@ export function AdminCompetenciaPage({ event, onBack }) {
   const orphanedCount = (progress?.orphaned ?? []).length;
 
   const stepCompletion = {
-    participan: categoriesActive.length > 0 && troupesActive.length > 0,
-    evaluan: specialtiesActive.length > 0,
-    puntuan: rubricsActive.length > 0 && rubricsComplete.length === rubricsActive.length,
-    revisar: false,
+    participantes: categoriesActive.length > 0 && troupesActive.length > 0,
+    jurados: specialtiesActive.length > 0,
+    rubros: rubricsActive.length > 0 && rubricsComplete.length === rubricsActive.length,
+    revision: false,
   };
-  stepCompletion.revisar = stepCompletion.participan && stepCompletion.evaluan && stepCompletion.puntuan
+  stepCompletion.revision = stepCompletion.participantes && stepCompletion.jurados && stepCompletion.rubros
     && uncoveredSpecialties.length === 0 && orphanedCount === 0;
   const stepAttention = {
-    participan: !stepCompletion.participan && (categoriesActive.length > 0 || troupesActive.length > 0),
-    evaluan: false,
-    puntuan: !stepCompletion.puntuan && rubricsActive.length > 0,
-    revisar: !stepCompletion.revisar && (stepCompletion.participan || stepCompletion.evaluan || stepCompletion.puntuan || orphanedCount > 0),
+    participantes: !stepCompletion.participantes && (categoriesActive.length > 0 || troupesActive.length > 0),
+    jurados: false,
+    rubros: !stepCompletion.rubros && rubricsActive.length > 0,
+    revision: !stepCompletion.revision && (stepCompletion.participantes || stepCompletion.jurados || stepCompletion.rubros || orphanedCount > 0),
   };
 
   const steps = [
-    { key: "participan", label: "1. Quiénes participan", detail: "Tipos y comparsas" },
-    { key: "evaluan", label: "2. Quién evalúa", detail: "Especialidades" },
-    { key: "puntuan", label: "3. Qué se puntúa", detail: "Rubros, ítems y criterios" },
-    { key: "revisar", label: "4. Revisar y cerrar", detail: "Resumen, matriz y pendientes" },
+    { key: "participantes", label: "Participantes", detail: "Tipos, comparsas y orden de pasada" },
+    { key: "jurados", label: "Jurados y especialidades", detail: "Especialidades por jurado" },
+    { key: "rubros", label: "Rubros, ítems y criterios", detail: "Qué se puntúa" },
+    { key: "revision", label: "Revisión final", detail: "Resumen y pendientes" },
   ];
-  const progressSteps = steps.map((item) => ({
-    ...item,
-    state: !progress
-      ? "pending"
-      : stepCompletion[item.key]
-        ? "done"
-        : step === item.key
-          ? "current"
-          : stepAttention[item.key]
-            ? "attention"
-            : "pending",
-  }));
-  const doneCount = progressSteps.filter((item) => item.state === "done").length;
+  const stepStateLabels = {
+    done: "Completo",
+    current: "Paso actual",
+    pending: "Pendiente",
+    attention: "Requiere atención",
+  };
+  const stepState = (key) => {
+    if (!progress) return "pending";
+    if (stepCompletion[key]) return "done";
+    if (step === key) return "current";
+    return stepAttention[key] ? "attention" : "pending";
+  };
+  const doneCount = steps.filter((item) => stepCompletion[item.key]).length;
+  const pct = Math.round((doneCount / steps.length) * 100);
+  const activeIndex = Math.max(0, steps.findIndex((item) => item.key === step));
+
+  // Accesibilidad: al cambiar de paso, el foco va al título del paso (no en el montaje inicial).
+  const stepTitleRef = useRef(null);
+  const firstRenderRef = useRef(true);
+  useEffect(() => {
+    if (firstRenderRef.current) { firstRenderRef.current = false; return; }
+    stepTitleRef.current?.focus();
+  }, [step]);
 
   const goStep = (key) => {
     setStep(key);
   };
 
-  const links = steps;
+  const pendingRubrics = rubricsActive.length - rubricsComplete.length;
+  const revisionPendings = (uncoveredSpecialties.length > 0 ? uncoveredSpecialties.length : 0)
+    + (orphanedCount > 0 ? 1 : 0)
+    + (pendingRubrics > 0 ? pendingRubrics : 0);
+  const summaryByStep = {
+    participantes: !progress
+      ? "Cargando el resumen del paso…"
+      : categoriesActive.length === 0
+        ? "Todavía no hay tipos de participación: creá al menos uno para poder dar de alta comparsas."
+        : troupesActive.length === 0
+          ? `Tenés ${categoriesActive.length} tipo(s) cargados y ninguna comparsa: agregá la primera comparsa.`
+          : `Tenés ${troupesActive.length} comparsa(s) activa(s) en ${categoriesActive.length} tipo(s): programá el orden de pasada en el último bloque.`,
+    jurados: !progress
+      ? "Cargando el resumen del paso…"
+      : specialtiesActive.length === 0
+        ? "Todavía no hay especialidades: creá al menos una, porque cada ítem del paso 3 pertenece a una especialidad activa."
+        : `Tenés ${specialtiesActive.length} especialidad(es) activa(s): los jurados que evalúan cada una se asignan en la pantalla de Jurados.`,
+    rubros: !progress
+      ? "Cargando el resumen del paso…"
+      : rubricsActive.length === 0
+        ? "Todavía no hay rubros: creá el primero y agregale ítems con su especialidad."
+        : pendingRubrics > 0
+          ? `${pendingRubrics} rubro(s) sin ítems puntuables: expandilos para completar la carga.`
+          : uncoveredSpecialties.length > 0
+            ? `La especialidad ${uncoveredSpecialties[0].name} todavía no evalúa ningún rubro: agregá un ítem con esa especialidad.`
+            : "Todos los rubros tienen ítems puntuables: revisá la matriz en el paso final.",
+    revision: !progress
+      ? "Cargando el resumen del paso…"
+      : stepCompletion.revision
+        ? "Sin pendientes: la configuración está completa y lista para abrir la votación."
+        : `Te faltan ${revisionPendings} punto(s) por resolver antes de abrir la votación: revisá el resumen y la matriz.`,
+  };
 
   return (
     <WriteContext.Provider value={{ writing, setPending }}>
       <PageShell layer="instrument" className="admin-shell" aria-busy={pending}>
         <fieldset aria-label="Configuracion de competencia" disabled={pending} className="fieldset-reset">
-          <header className="event-header">
+          <header className="event-header competencia-header">
             <div>
               <p className="eyebrow">Competencia</p>
               <h1>{event.name ?? "Evento"}</h1>
+              <p className="competencia-step-meta">Paso {activeIndex + 1} de {steps.length} · {pct}% completado</p>
             </div>
             <div className="event-actions">
               {onBack && <button className="secondary" type="button" onClick={onBack}>Volver</button>}
             </div>
           </header>
-          <nav className="competencia-nav" aria-label="Pasos de configuración de competencia">
-            {links.map((link) => (
-              <button
-                key={link.key}
-                className={step === link.key ? "active" : "secondary"}
-                type="button"
-                onClick={() => goStep(link.key)}
-              >
-                {link.label}
-              </button>
-            ))}
+          <nav className="competencia-nav competencia-stepper" aria-label="Pasos de configuración de competencia">
+            <ol>
+              {steps.map((item, index) => {
+                const state = stepState(item.key);
+                const isCurrent = step === item.key;
+                return (
+                  <li key={item.key}>
+                    <button
+                      type="button"
+                      className={isCurrent ? "active" : "secondary"}
+                      aria-current={isCurrent ? "step" : undefined}
+                      aria-label={`Paso ${index + 1} de ${steps.length}: ${item.label}. ${stepStateLabels[state]}.`}
+                      onClick={() => goStep(item.key)}
+                    >
+                      <span className="competencia-step-badge" aria-hidden="true">
+                        {state === "done" ? "✓" : index + 1}
+                      </span>
+                      <span className="competencia-step-copy">
+                        <span className="competencia-step-label">{item.label}</span>
+                        <span className="competencia-step-state">{stepStateLabels[state]}</span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
           </nav>
-          <ConfigurationProgress steps={progressSteps} value={(doneCount / steps.length) * 100} label="Configuración de la competencia" />
-          {step === "participan" && (
-            <>
-              <p className="step-intro">Primero los tipos de participación (cada comparsa elige uno al darse de alta), después las comparsas.</p>
-              <AdminCategoriesSection key={`categories-${event.id}`} event={event} />
-              <AdminTroupesSection key={`troupes-${event.id}`} event={event} />
-              <TroupeScheduleSection key={`schedule-${event.id}`} event={event} />
-            </>
+          <ProgressBar value={doneCount} max={steps.length} label="Progreso de configuración" sublabel={`${doneCount} de ${steps.length} pasos completados`} className="competencia-progress" />
+          {step === "participantes" && (
+            <section aria-labelledby="competencia-step-title">
+              <h2 id="competencia-step-title" ref={stepTitleRef} tabIndex={-1}>Participantes</h2>
+              <p className="step-intro">Cargá quiénes participan: primero los tipos, después las comparsas y por último el orden de pasada de cada jornada.</p>
+              <StepSummary stepLabel="Participantes" recommendation={summaryByStep.participantes} />
+              <section className="competencia-subblock" aria-label="Bloque 1 de 3: Tipos de participación">
+                <AdminCategoriesSection key={`categories-${event.id}`} event={event} />
+              </section>
+              <section className="competencia-subblock" aria-label="Bloque 2 de 3: Comparsas">
+                <AdminTroupesSection key={`troupes-${event.id}`} event={event} />
+              </section>
+              <section className="competencia-subblock" aria-label="Bloque 3 de 3: Orden de pasada por jornada">
+                <TroupeScheduleSection key={`schedule-${event.id}`} event={event} />
+              </section>
+            </section>
           )}
-          {step === "evaluan" && (
-            <>
-              <p className="step-intro">Cada ítem puntuable pertenece a una especialidad activa: creá al menos una antes de cargar ítems en el paso 3.</p>
+          {step === "jurados" && (
+            <section aria-labelledby="competencia-step-title">
+              <h2 id="competencia-step-title" ref={stepTitleRef} tabIndex={-1}>Jurados y especialidades</h2>
+              <p className="step-intro">Definí las especialidades que evalúan: cada ítem del paso 3 pertenece a una especialidad activa. Los jurados se asignan en <a href="#/admin/judges">Jurados</a>.</p>
+              <StepSummary stepLabel="Jurados y especialidades" recommendation={summaryByStep.jurados} />
               <AdminSpecialtiesSection key={`specialties-${event.id}`} event={event} />
-            </>
+            </section>
           )}
-          {step === "puntuan" && (
-            <>
-              <p className="step-intro">Creá el rubro y agregale ítems con su especialidad; al crearlo se abre solo para seguir cargando.</p>
+          {step === "rubros" && (
+            <section aria-labelledby="competencia-step-title">
+              <h2 id="competencia-step-title" ref={stepTitleRef} tabIndex={-1}>Rubros, ítems y criterios</h2>
+              <p className="step-intro">Creá cada rubro con sus ítems y criterios: al crearlo se abre solo para seguir cargando.</p>
+              <StepSummary stepLabel="Rubros, ítems y criterios" recommendation={summaryByStep.rubros} />
               <AdminRubricsSection key={`rubrics-${event.id}`} event={event} focusRubricId={focusRubricId} />
-            </>
+            </section>
           )}
-          {step === "revisar" && (
-            <>
-              <p className="step-intro">Revisá que no falte nada: el resumen, la matriz y los pendientes se generan solos desde lo cargado.</p>
+          {step === "revision" && (
+            <section aria-labelledby="competencia-step-title">
+              <h2 id="competencia-step-title" ref={stepTitleRef} tabIndex={-1}>Revisión final</h2>
+              <p className="step-intro">Verificá que no falte nada: el resumen, la matriz y los pendientes se generan solos desde lo cargado.</p>
+              <StepSummary stepLabel="Revisión final" recommendation={summaryByStep.revision} />
               <CompetenciaOverview key={event.id} event={event} onGoStep={goStep} />
-              <MatrizPlanillasSection key={`matrix-${event.id}`} event={event} onResolveRubric={(rubricId) => { setFocusRubricId(rubricId); goStep("puntuan"); }} />
-            </>
+              <MatrizPlanillasSection key={`matrix-${event.id}`} event={event} onResolveRubric={(rubricId) => { setFocusRubricId(rubricId); goStep("rubros"); }} />
+            </section>
           )}
         </fieldset>
       </PageShell>
     </WriteContext.Provider>
+  );
+}
+
+function StepSummary({ stepLabel, recommendation }) {
+  if (!recommendation) return null;
+  return (
+    <section className="competencia-step-summary" aria-label={`Resumen del paso ${stepLabel}`}>
+      <h3>Resumen del paso</h3>
+      <p role="status">{recommendation}</p>
+    </section>
   );
 }
 
@@ -217,17 +298,17 @@ function CompetenciaOverview({ event, onGoStep }) {
         <article className="overview-stat">
           <span className="overview-number">{data.troupes.filter((t) => t.active).length}</span>
           <span className="overview-label">Comparsas activas</span>
-          {onGoStep && <button type="button" className="link" onClick={() => onGoStep("participan")}>Ir al paso 1 →</button>}
+          {onGoStep && <button type="button" className="link" onClick={() => onGoStep("participantes")}>Ir al paso 1 →</button>}
         </article>
         <article className="overview-stat">
           <span className="overview-number">{data.specialties.filter((s) => s.active).length}</span>
           <span className="overview-label">Especialidades activas</span>
-          {onGoStep && <button type="button" className="link" onClick={() => onGoStep("evaluan")}>Ir al paso 2 →</button>}
+          {onGoStep && <button type="button" className="link" onClick={() => onGoStep("jurados")}>Ir al paso 2 →</button>}
         </article>
         <article className="overview-stat">
           <span className="overview-number">{data.rubrics.filter((r) => r.active).length}</span>
           <span className="overview-label">Rubros activos</span>
-          {onGoStep && <button type="button" className="link" onClick={() => onGoStep("puntuan")}>Ir al paso 3 →</button>}
+          {onGoStep && <button type="button" className="link" onClick={() => onGoStep("rubros")}>Ir al paso 3 →</button>}
         </article>
         <article className="overview-stat">
           <span className="overview-number">{data.rubrics.reduce((sum, r) => sum + (r.items?.length ?? 0), 0)}</span>
