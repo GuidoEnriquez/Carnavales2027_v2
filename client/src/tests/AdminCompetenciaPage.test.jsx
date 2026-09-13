@@ -28,12 +28,17 @@ const rubric = {
 };
 
 function mockCompetitionData({ orphaned = [], rubrics = [rubric], write = vi.fn().mockRejectedValue(new Error("Escritura inesperada")) } = {}) {
+  const liveRubrics = rubrics.map((entry) => ({ ...entry }));
   apiRequest.mockImplementation(async (path, options) => {
-    if (options?.method) return write(path, options);
+    if (options?.method) {
+      const result = await write(path, options);
+      if (options.method === "POST" && path.endsWith("/rubrics") && result?.id) liveRubrics.push({ ...result, items: [], criteria: [], specialties: [] });
+      return result;
+    }
     if (path.endsWith("/troupes")) return [{ id: "troupe-1", name: "Estrella", categoryId: "category-1", active: true }];
     if (path.endsWith("/categories")) return [{ id: "category-1", name: "Comparsa", code: "COMPARSA", displayOrder: 1, active: true }];
     if (path.endsWith("/specialties")) return [{ id: "specialty-1", name: "Danza", code: "DANZA", displayOrder: 1, active: true }];
-    if (path.endsWith("/rubrics")) return rubrics;
+    if (path.endsWith("/rubrics")) return liveRubrics.map((entry) => ({ ...entry }));
     if (path.startsWith("/api/v1/rubrics/")) return rubrics.find((entry) => path.endsWith(`/${entry.id}`));
     if (path.endsWith("/orphaned-criteria")) return orphaned;
     throw new Error(`Solicitud inesperada: ${path}`);
@@ -403,11 +408,16 @@ describe("AdminCompetenciaPage", () => {
       { id: "s-2", nightId: "night-1", troupeId: "troupe-2", troupeName: "Apagada", troupeBrandColor: null, presentationOrder: 2, status: "SCHEDULED" },
     ];
     function mockTroupes({ write = vi.fn(), schedule = scheduleRows } = {}) {
+      const live = troupes.map((t) => ({ ...t }));
       apiRequest.mockImplementation(async (path, options) => {
-        if (options?.method) return write(path, options);
+        if (options?.method) {
+          const result = await write(path, options);
+          if (options.method === "POST" && path.endsWith("/troupes") && result?.id) live.push({ ...result });
+          return result;
+        }
         if (path === "/api/v1/events/event-1/nights") return [{ id: "night-1", name: "Noche 1", displayOrder: 1, kind: "COMPETITION" }];
         if (path.startsWith("/api/v1/events/event-1/schedule")) return schedule.map((row) => ({ ...row }));
-        if (path.endsWith("/troupes")) return troupes.map((t) => ({ ...t }));
+        if (path.endsWith("/troupes")) return live.map((t) => ({ ...t }));
         if (path.endsWith("/categories")) return [{ id: "category-1", name: "Comparsa", code: "COMPARSA", displayOrder: 1, active: true }];
         if (path.endsWith("/specialties")) return [{ id: "specialty-1", name: "Danza", code: "DANZA", displayOrder: 1, active: true }];
         if (path.endsWith("/rubrics")) return [rubric];

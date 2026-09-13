@@ -159,12 +159,12 @@
 }
 
 .app-button-danger {
-  background: var(--danger);
+  background: var(--danger-border);
   color: var(--text-on-accent);
 }
 
 .app-button-danger:hover:not(:disabled) {
-  background: var(--danger-border);
+  background: var(--danger-hover);
 }
 
 .app-button-ghost {
@@ -401,7 +401,7 @@
 
 .card-rubric-name {
   margin: var(--space-1) 0 0 0;
-  color: var(--accent-primary);
+  color: var(--accent-text);
   font-weight: 600;
   font-size: var(--text-sm);
   text-transform: uppercase;
@@ -732,7 +732,7 @@
 
 .pending-troupe {
   font-size: var(--text-xs);
-  color: var(--accent-primary);
+  color: var(--accent-text);
   font-weight: 700;
 }
 
@@ -1927,7 +1927,7 @@
   display: inline-block;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
-  color: var(--accent-primary);
+  color: var(--accent-text);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;

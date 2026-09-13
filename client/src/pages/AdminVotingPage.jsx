@@ -20,6 +20,10 @@ export function AdminVotingPage() {
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
   const [pendingCloseDialog, setPendingCloseDialog] = useState(null);
+  const [reorderIds, setReorderIds] = useState(null);
+  const [reorderReason, setReorderReason] = useState("");
+  const [reorderMessage, setReorderMessage] = useState("");
+  const [reorderBusy, setReorderBusy] = useState(false);
   const closeButtonRef = useRef(null);
   const events = adminEvent?.events ?? localEvents;
   const eventId = adminEvent?.activeEventId ?? localEventId;
@@ -61,6 +65,12 @@ export function AdminVotingPage() {
 
   useEffect(() => { void refreshNight(); }, [eventId, nightId]);
 
+  useEffect(() => {
+    setReorderIds(null);
+    setReorderReason("");
+    setReorderMessage("");
+  }, [eventId, nightId]);
+
   const action = async (key, operation, success) => {
     if (!eventId || !nightId || busy) return;
     setBusy(key);
@@ -92,6 +102,53 @@ export function AdminVotingPage() {
   };
 
   const selectedEvent = events.find((event) => event.id === eventId);
+  const isEventOpen = selectedEvent?.status === "OPEN";
+  const runwayTroupes = [...(status?.troupes ?? [])].sort((a, b) => a.presentationOrder - b.presentationOrder);
+  const reorderView = reorderIds ?? runwayTroupes.map((troupe) => troupe.scheduleId);
+
+  const moveReorder = (scheduleId, delta) => {
+    const base = reorderIds ?? runwayTroupes.map((troupe) => troupe.scheduleId);
+    const index = base.indexOf(scheduleId);
+    const target = index + delta;
+    if (index < 0 || target < 0 || target >= base.length) return;
+    const next = [...base];
+    [next[index], next[target]] = [next[target], next[index]];
+    setReorderIds(next);
+  };
+
+  const confirmReorder = async () => {
+    if (reorderBusy) return;
+    if (!reorderReason.trim()) {
+      setReorderMessage("Indicá el motivo del reorden para continuar.");
+      return;
+    }
+    setReorderBusy(true);
+    setReorderMessage("");
+    try {
+      await apiRequest(`/api/v1/events/${eventId}/schedule/reorder`, {
+        method: "PATCH",
+        body: JSON.stringify({ nightId, orderedIds: reorderView, reason: reorderReason.trim() }),
+      });
+      setReorderIds(null);
+      setReorderReason("");
+      setReorderMessage("Orden de pasada actualizado y auditado.");
+      await refreshNight();
+    } catch (error) {
+      const messages = {
+        REORDER_REASON_REQUIRED: "Indicá el motivo del reorden para continuar.",
+        NIGHT_VOTING_STARTED: "La jornada ya inició votación; el orden quedó congelado.",
+        ORDER_CONFLICT: "El orden cambió. Recargamos la jornada; revisa antes de reintentar.",
+        EVENT_LOCKED: "El evento ya no permite modificar su configuración.",
+      };
+      if (error.code === "ORDER_CONFLICT") {
+        setReorderIds(null);
+        try { await refreshNight(); } catch { /* mensaje ya fijado abajo */ }
+      }
+      setReorderMessage(messages[error.code] ?? "No se pudo cambiar el orden.");
+    } finally {
+      setReorderBusy(false);
+    }
+  };
 
   return <PageShell layer="instrument" className="admin-shell voting-page">
     <header className="event-header">
@@ -207,6 +264,32 @@ export function AdminVotingPage() {
               );
             })}
           </div>
+        </section>
+      )}
+      {isEventOpen && runwayTroupes.length > 1 && (
+        <section className="config-section" aria-label="Reorden de pasada">
+          <div className="section-heading"><div>
+            <p className="eyebrow">Corrección operativa</p>
+            <h2>Reorden de pasada</h2>
+            <p>Solo antes de que la jornada inicie votación. Requiere motivo y queda auditado; no toca votos ni puntajes.</p>
+          </div></div>
+          <p className="feedback" role="status">{reorderMessage}</p>
+          <ol className="schedule-list">
+            {reorderView.map((scheduleId, index) => {
+              const troupe = runwayTroupes.find((entry) => entry.scheduleId === scheduleId);
+              if (!troupe) return null;
+              return (
+                <li key={scheduleId} className="schedule-row">
+                  <span className="mono-text">{index + 1}</span>
+                  <strong>{troupe.troupeName}</strong>
+                  <button type="button" className="secondary" aria-label={`Subir ${troupe.troupeName}`} disabled={index === 0 || reorderBusy} onClick={() => moveReorder(scheduleId, -1)}>Subir</button>
+                  <button type="button" className="secondary" aria-label={`Bajar ${troupe.troupeName}`} disabled={index === reorderView.length - 1 || reorderBusy} onClick={() => moveReorder(scheduleId, 1)}>Bajar</button>
+                </li>
+              );
+            })}
+          </ol>
+          <label>Motivo del reorden<input value={reorderReason} onChange={(event) => setReorderReason(event.target.value)} aria-label="Motivo del reorden" placeholder="Ej.: intercambio acordado entre comparsas" /></label>
+          <div className="event-actions"><button type="button" disabled={reorderBusy || !reorderIds} onClick={() => void confirmReorder()}>Confirmar reorden</button></div>
         </section>
       )}
       <section className="assignment-grid" aria-label="Planillas de la noche">

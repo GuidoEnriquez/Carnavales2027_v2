@@ -69,7 +69,7 @@ describe("VeedorMonitorPage SSE & Wallboard (Spec 022)", () => {
     delete window.EventSource;
   });
 
-  it("conecta vía SSE y muestra estado '● En vivo' al recibir evento connected (RF-191, RF-193)", async () => {
+  it("conecta vía SSE sin mostrar insignia de estado (canal silencioso)", async () => {
     render(<VeedorMonitorPage />);
 
     expect(await screen.findByRole("heading", { name: "Noche 1" })).toBeInTheDocument();
@@ -79,7 +79,7 @@ describe("VeedorMonitorPage SSE & Wallboard (Spec 022)", () => {
     MockEventSource.latestInstance.dispatch("connected", { status: "connected" });
 
     await waitFor(() => {
-      expect(screen.getByText("● En vivo")).toBeInTheDocument();
+      expect(screen.queryByText("● En vivo")).not.toBeInTheDocument();
     });
   });
 
@@ -99,7 +99,7 @@ describe("VeedorMonitorPage SSE & Wallboard (Spec 022)", () => {
     });
   });
 
-  it("cae a '○ Polling de respaldo' ante desconexión o fallo de SSE (RF-193)", async () => {
+  it("cae a polling silencioso ante desconexión o fallo de SSE", async () => {
     render(<VeedorMonitorPage />);
     expect(await screen.findByRole("heading", { name: "Noche 1" })).toBeInTheDocument();
 
@@ -107,7 +107,7 @@ describe("VeedorMonitorPage SSE & Wallboard (Spec 022)", () => {
     MockEventSource.latestInstance.simulateError();
 
     await waitFor(() => {
-      expect(screen.getByText("○ Polling de respaldo")).toBeInTheDocument();
+      expect(screen.queryByText("○ Polling de respaldo")).not.toBeInTheDocument();
     });
   });
 

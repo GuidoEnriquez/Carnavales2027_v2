@@ -98,6 +98,7 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
          || filename === "070_results_snapshot.sql"
          || filename === "072_schedule_order_deferrable.sql"
          || filename === "073_event_delete_policy.sql"
+         || filename === "074_schedule_reorder_in_open_event.sql"
   )));
 
   const status = await getMigrationStatus();
@@ -460,6 +461,11 @@ test("aplica migraciones pendientes una vez y conserva su estado", {
     {
       filename: "073_event_delete_policy.sql",
       version: "073",
+      applied: true,
+    },
+    {
+      filename: "074_schedule_reorder_in_open_event.sql",
+      version: "074",
       applied: true,
     },
   ]);

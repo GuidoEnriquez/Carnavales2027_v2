@@ -346,9 +346,6 @@ export function LoginPage({ onAuthenticated }) {
           </a>
         </div>
       </div>
-      <div className="login-device-status" aria-label="Estado del dispositivo">
-        <span aria-hidden="true">●</span> Dispositivo conectado
-      </div>
     </PageShell>
   );
 }

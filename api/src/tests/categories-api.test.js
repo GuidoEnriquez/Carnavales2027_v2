@@ -30,6 +30,7 @@ test("API ADMIN administra categorías y participaciones sin texto libre", { ski
     const troupeResponse = await fetch(`${baseUrl}/api/v1/events/${event.id}/troupes`, { method: "POST", headers, body: JSON.stringify({ name: "Comparsa API", categoryId: category.id }) });
     assert.equal(troupeResponse.status, 201);
     const troupe = await troupeResponse.json();
+    assert.equal(troupe.categoryName, "Primera");
     const listedTroupes = await fetch(`${baseUrl}/api/v1/events/${event.id}/troupes`, { headers });
     assert.equal(listedTroupes.status, 200);
     assert.equal((await listedTroupes.json()).length, 1);

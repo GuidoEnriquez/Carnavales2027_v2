@@ -13,7 +13,7 @@ import {
   updateTroupe,
 } from "../modules/troupes/category-service.js";
 import { createSpecialty, listSpecialties, updateSpecialty } from "../modules/specialties/specialty-service.js";
-import { listSchedule, reorderScheduleEntry, addTroupeToSchedule, removeScheduleEntry } from "../modules/schedule/schedule-service.js";
+import { listSchedule, reorderEventSchedule, reorderScheduleEntry, addTroupeToSchedule, removeScheduleEntry } from "../modules/schedule/schedule-service.js";
 import {
   createCriterion,
   createItem,
@@ -233,6 +233,17 @@ export function createEventsRouter({ requireSession }) {
       response.json(await reorderScheduleEntry({
         scheduleId: request.params.scheduleId, actorUserId: request.user.id,
         direction, neighborId, expectedOrder, expectedNeighborOrder,
+      }));
+    } catch (error) {
+      if (!sendKnownError(response, error)) next(error);
+    }
+  });
+  router.patch("/events/:eventId/schedule/reorder", async (request, response, next) => {
+    try {
+      const { nightId, orderedIds, reason } = request.body ?? {};
+      response.json(await reorderEventSchedule({
+        eventId: request.params.eventId, nightId, orderedIds, reason,
+        actorUserId: request.user.id,
       }));
     } catch (error) {
       if (!sendKnownError(response, error)) next(error);

@@ -113,8 +113,8 @@ describe("AdminVotingPage", () => {
     // Cronograma secuencial
     expect(screen.getByText("COMPLETADA")).toBeInTheDocument();
     expect(screen.getByText("EN ESPERA")).toBeInTheDocument();
-    expect(screen.getByText("Comparsa Fénix")).toBeInTheDocument();
-    expect(screen.getByText("Comparsa Bella Samba")).toBeInTheDocument();
+    expect(screen.getAllByText("Comparsa Fénix").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Comparsa Bella Samba").length).toBeGreaterThanOrEqual(1);
 
     // Botón de actualización de pista
     const refreshBtn = screen.getByRole("button", { name: "Actualizar estado de pista" });
@@ -122,5 +122,56 @@ describe("AdminVotingPage", () => {
     await waitFor(() => {
       expect(apiRequest).toHaveBeenCalledWith("/api/v1/events/event-1/nights/night-1/voting/status");
     });
+  });
+
+  it("reordena la pasada con motivo y muestra mensaje ante jornada congelada", async () => {
+    const troupes = [
+      { scheduleId: "s-1", troupeName: "Ara Berá", presentationOrder: 1 },
+      { scheduleId: "s-2", troupeName: "Porambá", presentationOrder: 2 },
+    ];
+    apiRequest.mockImplementation((path, options) => {
+      if (path === "/api/v1/events") return Promise.resolve([{ id: "event-1", name: "Carnaval", status: "OPEN" }]);
+      if (path === "/api/v1/events/event-1/nights") return Promise.resolve([{ id: "night-1", name: "Noche 1", kind: "COMPETITION", status: "OPEN" }]);
+      if (path.endsWith("/voting/status")) return Promise.resolve({ nightId: "night-1", nightStatus: "OPEN", counts: { OPEN: 0, SUBMITTED: 0, REOPENED: 0 }, total: 0, troupes });
+      if (path.endsWith("/voting/ballots")) return Promise.resolve([]);
+      if (path.endsWith("/schedule/reorder")) {
+        if (options?.method !== "PATCH") return Promise.reject({ code: "UNKNOWN" });
+        const body = JSON.parse(options.body);
+        if (!body.reason) return Promise.reject({ code: "REORDER_REASON_REQUIRED" });
+        return Promise.resolve({ changes: body.orderedIds });
+      }
+      return Promise.resolve({});
+    });
+    render(<AdminVotingPage />);
+
+    expect(await screen.findByRole("heading", { name: "Reorden de pasada" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Bajar Ara Berá" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Motivo del reorden" }), { target: { value: "Intercambio acordado" } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar reorden" }));
+    await waitFor(() => expect(apiRequest).toHaveBeenCalledWith(
+      "/api/v1/events/event-1/schedule/reorder",
+      { method: "PATCH", body: JSON.stringify({ nightId: "night-1", orderedIds: ["s-2", "s-1"], reason: "Intercambio acordado" }) },
+    ));
+    expect(await screen.findByText("Orden de pasada actualizado y auditado.")).toBeInTheDocument();
+  });
+
+  it("exige motivo antes de confirmar el reorden", async () => {
+    const troupes = [
+      { scheduleId: "s-1", troupeName: "Ara Berá", presentationOrder: 1 },
+      { scheduleId: "s-2", troupeName: "Porambá", presentationOrder: 2 },
+    ];
+    apiRequest.mockImplementation((path) => {
+      if (path === "/api/v1/events") return Promise.resolve([{ id: "event-1", name: "Carnaval", status: "OPEN" }]);
+      if (path === "/api/v1/events/event-1/nights") return Promise.resolve([{ id: "night-1", name: "Noche 1", kind: "COMPETITION", status: "OPEN" }]);
+      if (path.endsWith("/voting/status")) return Promise.resolve({ nightId: "night-1", nightStatus: "OPEN", counts: { OPEN: 0, SUBMITTED: 0, REOPENED: 0 }, total: 0, troupes });
+      if (path.endsWith("/voting/ballots")) return Promise.resolve([]);
+      return Promise.resolve({});
+    });
+    render(<AdminVotingPage />);
+
+    expect(await screen.findByRole("heading", { name: "Reorden de pasada" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Bajar Ara Berá" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar reorden" }));
+    expect(await screen.findByText("Indicá el motivo del reorden para continuar.")).toBeInTheDocument();
   });
 });

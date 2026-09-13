@@ -364,7 +364,9 @@ function AdminTroupesSection({ event }) {
   const save = async (path, body, method = "POST") => {
     try {
       const saved = await apiRequest(path, { method, body: JSON.stringify(body) });
-      setTroupes((prev) => {
+      const fresh = await apiRequest(`/api/v1/events/${event.id}/troupes`).catch(() => null);
+      if (fresh) setTroupes(fresh);
+      else setTroupes((prev) => {
         if (method === "POST") return [...prev, saved];
         return prev.map((t) => t.id === saved.id ? { ...t, ...saved } : t);
       });
@@ -669,7 +671,9 @@ function AdminCategoriesSection({ event }) {
   const save = async (path, body, method = "POST") => {
     try {
       const saved = await apiRequest(path, { method, body: JSON.stringify(body) });
-      setCategories((prev) => method === "POST" ? [...prev, saved] : prev.map((category) => category.id === saved.id ? { ...category, ...saved } : category));
+      const fresh = await apiRequest(`/api/v1/events/${event.id}/categories`).catch(() => null);
+      if (fresh) setCategories(fresh);
+      else setCategories((prev) => method === "POST" ? [...prev, saved] : prev.map((category) => category.id === saved.id ? { ...category, ...saved } : category));
       setMessage("Guardado.");
       setDrawerMode(null);
       return true;
@@ -780,7 +784,9 @@ function AdminSpecialtiesSection({ event }) {
   const save = async (path, body, method = "POST") => {
     try {
       const saved = await apiRequest(path, { method, body: JSON.stringify(body) });
-      setSpecialties((prev) => method === "POST" ? [...prev, saved] : prev.map((s) => s.id === saved.id ? { ...s, ...saved } : s));
+      const fresh = await apiRequest(`/api/v1/events/${event.id}/specialties`).catch(() => null);
+      if (fresh) setSpecialties(fresh);
+      else setSpecialties((prev) => method === "POST" ? [...prev, saved] : prev.map((s) => s.id === saved.id ? { ...s, ...saved } : s));
       setMessage("Guardado.");
       setDrawerMode(null);
       return true;
@@ -934,7 +940,9 @@ function AdminRubricsSection({ event, focusRubricId = null }) {
   const saveRubric = async (path, body, method = "POST") => {
     try {
       const saved = await apiRequest(path, { method, body: JSON.stringify(body) });
-      setRubrics((prev) => method === "POST" ? [...prev, { ...saved, items: [], criteria: [], specialties: [] }] : prev.map((r) => r.id === saved.id ? { ...r, ...saved } : r));
+      const fresh = await apiRequest(`/api/v1/events/${event.id}/rubrics`).catch(() => null);
+      if (fresh) setRubrics(fresh);
+      else setRubrics((prev) => method === "POST" ? [...prev, { ...saved, items: [], criteria: [], specialties: [] }] : prev.map((r) => r.id === saved.id ? { ...r, ...saved } : r));
       setMessage("Rubro guardado.");
       if (method === "POST" && saved?.id) {
         // El rubro recién creado se abre solo para seguir cargando ítems.

@@ -41,7 +41,8 @@ export function sendKnownError(response, error) {
     error.message === "CANNOT_DELETE_PENALTY" ||
     error.message === "PENALTY_FIELDS_IMMUTABLE" ||
     error.message === "OFFICIAL_RECORD_IMMUTABLE" ||
-    error.message === "TIE_BREAKER_PENDING"
+    error.message === "TIE_BREAKER_PENDING" ||
+    error.message === "NIGHT_VOTING_STARTED"
   ) {
     response.status(409).json({ code: error.message });
     return true;
@@ -73,6 +74,10 @@ export function sendKnownError(response, error) {
       error.message,
     )
   ) {
+    response.status(422).json({ code: error.message });
+    return true;
+  }
+  if (error.message === "REORDER_REASON_REQUIRED") {
     response.status(422).json({ code: error.message });
     return true;
   }

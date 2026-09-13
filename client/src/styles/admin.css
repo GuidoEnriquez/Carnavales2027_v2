@@ -434,7 +434,7 @@
 }
 
 .pending-dialog-content h2 {
-  color: var(--accent-primary);
+  color: var(--accent-text);
   font-family: var(--font-display, var(--font-sans));
 }
 
@@ -508,7 +508,7 @@
 }
 
 .voting-summary strong {
-  color: var(--accent-primary);
+  color: var(--accent-text);
   font-family: var(--font-display, var(--font-sans));
   font-size: clamp(1.75rem, 6vw, 3rem);
 }

@@ -176,20 +176,6 @@ export function VeedorMonitorPage() {
           <p>Conteos agregados por noche, sin puntajes ni datos de jurados.</p>
         </div>
         <div className="monitor-header-actions">
-          {/* Insignia reactiva de enlace (RF-193) */}
-          <div
-            className={`connection-status ${
-              connectionMode === "live" ? "is-live" : "is-polling"
-            }`}
-            role="status"
-            aria-live="polite"
-          >
-            <span className="status-dot" aria-hidden="true" />
-            <span>
-              {connectionMode === "live" ? "● En vivo" : "○ Polling de respaldo"}
-            </span>
-          </div>
-
           {/* Botón de alternancia de Modo Pared de Sala (RF-195) */}
           <button
             type="button"

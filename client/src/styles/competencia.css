@@ -54,7 +54,7 @@
 }
 
 .overview-number {
-  color: var(--primary-color);
+  color: var(--accent-text);
   font-family: var(--mono-font);
   font-size: 2rem;
   font-weight: 800;
