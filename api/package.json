@@ -12,6 +12,8 @@
     "pretest": "node --import=dotenv/config src/scripts/assert-test-database-url.js",
     "test": "node --import=dotenv/config --test --test-concurrency=1 src/tests/*.test.js src/db/tests/*.test.js src/modules/results/*.test.js",
     "db:migrate": "node src/db/migrate.js",
+    "db:backup": "bash scripts/backup.sh",
+    "db:restore": "bash scripts/restore.sh",
     "auth:migrate": "npx auth@1.6.27 migrate --config src/auth/auth.js --yes",
     "bootstrap:admin": "node src/scripts/bootstrap-admin.js",
     "seed:event:full": "node src/scripts/seed-full-event.js",
