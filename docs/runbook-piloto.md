@@ -28,3 +28,35 @@ nunca directo en prod sin ventana de corte (termina conexiones primero).
 2. `db:migrate` (75 migraciones, idempotente).
 3. `bootstrap:admin` una sola vez (exige `NODE_ENV=production`).
 4. `audit:verify` íntegro antes de operar.
+
+## Env de producción (plantilla, valores fuera del repo)
+
+```bash
+NODE_ENV=production
+DATABASE_URL=postgres://USER:***@HOST:5432/carnavales2027
+TRUST_PROXY=1              # o IP del proxy real, nunca 0/true en prod
+BETTER_AUTH_SECRET=<64 hex aleatorios, rotado>
+BETTER_AUTH_URL=https://api.tudominio
+FRONTEND_URL=https://tudominio
+EMAIL_PROVIDER=smtp
+SMTP_HOST / SMTP_PORT=587 / SMTP_SECURE=false
+SMTP_USER / SMTP_PASSWORD=<app password>
+```
+
+Verificación punta a punta: registro por invitación → OTP por mail → login
+con 2FA → abrir jornada → votar → cerrar.
+
+## Rotación de secretos (hacer una vez antes del piloto)
+
+1. Generar `BETTER_AUTH_SECRET` nuevo (64 hex).
+2. Cambiar password de DB y SMTP app-password.
+3. Actualizar `.env` prod, reiniciar API, verificar login + OTP.
+4. El `.env` local de desarrollo NO se reutiliza en prod.
+
+## Apertura/cierre de jornada (operador)
+
+- Todo desde UI con ADMIN+2FA: Eventos → abrir votación; Supervisión →
+  monitorear; Cierre exige planillas completas (bloquea con faltantes).
+- Ante incidente: backup inmediato, rollback por restore en ventana de
+  corte, `audit:verify` post-restore.
+- Responsable de guardia y contactos: completar aquí antes del piloto.
