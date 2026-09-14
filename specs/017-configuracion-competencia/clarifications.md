@@ -51,4 +51,10 @@
 - `brandColor` no activa el filtro de secretos de auditoria (`password|token|secret|otp|authorization|cookie`): se audita como campo funcional en `TROUPE_CREATED/UPDATED` con before/after.
 - El orden de pasada se edita solo sobre filas existentes de `night_troupe_schedule` (creadas por seeds/flujo de jornadas); T09b no crea ni elimina asignaciones a jornadas, solo intercambia `presentation_order` entre vecinos de la misma `night_id`.
 - T09b no toca Spec 025: es lectura + reorden administrativo bajo `CONFIGURING`; con evento `OPEN` los controles se ocultan igual que el resto de la configuracion.
-- Filtros/busqueda y preview son solo vista: no alteran Spec 004/007/010 ni generan planillas, votos o auditoria de votacion.
+## T09d - Eliminacion logica (2026-09-14)
+
+- `Eliminar` es rotulo UX de baja logica (`active=false`); nunca `DELETE` fisico ni tabla de archivo. Una sola fuente de verdad por entidad.
+- Comparsas: sin migracion (columna `active` vigente 009/021). Desactivar se permite aunque la categoria este inactiva (trigger 021); reactivar sigue exigiendo categoria activa (`CATEGORY_INACTIVE` 409).
+- Eventos: migracion 075 agrega `carnival_event.active DEFAULT true`. `DELETE /events/:id` pasa de cascada fisica a baja logica; conserva guardas `CONFIGURING` + `EVENT_HAS_*`. `PATCH /events/:id {active:true}` reactiva (solo `CONFIGURING`, auditado).
+- Filtros/busqueda son solo vista (RF-147b vigente): ocultar por defecto no borra ni altera Spec 004/007/010, votos, planillas ni auditoria.
+- `EVENT_DELETED` se conserva como accion de auditoria con `after.active=false` para no romper trazabilidad; no implica borrado fisico desde T09d.

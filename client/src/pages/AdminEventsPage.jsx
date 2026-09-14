@@ -55,11 +55,13 @@ export function AdminEventsPage() {
   const [message, setMessage] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [showDeleted, setShowDeleted] = useState(false);
   const [summaries, setSummaries] = useState({});
   const createTriggerRef = useRef(null);
   const deleteTriggerRef = useRef(null);
 
-  const events = adminEvent?.events ?? localEvents;
+  const allEvents = adminEvent?.events ?? localEvents;
+  const events = showDeleted ? allEvents : allEvents.filter((event) => event.active !== false);
   const activeEventId = adminEvent?.activeEventId ?? "";
   const hasAdminEventContext = Boolean(adminEvent);
 
@@ -209,6 +211,7 @@ export function AdminEventsPage() {
         <button ref={createTriggerRef} type="button" onClick={() => setIsCreateOpen(true)}>+ Nuevo evento</button>
       </header>
       <p className="feedback" role="status" aria-live="polite">{message}</p>
+      <label className="check"><input type="checkbox" checked={showDeleted} onChange={(e) => setShowDeleted(e.target.checked)} /> Mostrar eliminados (inactivos en BD)</label>
       {events.length === 0 ? (
         <section className="admin-events-empty card" aria-label="Catálogo de eventos vacío">
           <h2>Todavía no hay eventos</h2>
@@ -229,7 +232,7 @@ export function AdminEventsPage() {
                   await apiRequest(`/api/v1/events/${target.id}`, { method: "DELETE" });
                   if (target.id === activeEventId && adminEvent) adminEvent.setActiveEventId("");
                   await refreshEvents();
-                  setMessage(`Evento ${target.name} eliminado.`);
+                  setMessage(`Evento ${target.name} eliminado (desactivado en BD).`);
                 } catch (error) {
                   setMessage(error.code && error.code.startsWith("EVENT_HAS_")
                     ? "Solo se pueden eliminar eventos sin votación ni historial operativo."
@@ -238,6 +241,16 @@ export function AdminEventsPage() {
                       : "No se pudo eliminar el evento.");
                 }
               };
+              const reactivate = async () => {
+                try {
+                  await apiRequest(`/api/v1/events/${event.id}`, { method: "PATCH", body: JSON.stringify({ active: true }) });
+                  await refreshEvents();
+                  setMessage(`Evento ${event.name} reactivado.`);
+                } catch {
+                  setMessage("No se pudo reactivar el evento.");
+                }
+              };
+              const isDeleted = event.active === false;
               return (
                 <div className="event-catalog-actions">
                   {active ? (
@@ -247,33 +260,39 @@ export function AdminEventsPage() {
                     </>
                   ) : (
                     <>
-                      <button type="button" onClick={() => selectEvent(event)}>Usar este evento</button>
-                      {event.status === "CONFIGURING" && <button type="button" className="secondary" onClick={() => selectEvent(event)}>Ver detalle</button>}
+                      {!isDeleted && <button type="button" onClick={() => selectEvent(event)}>Usar este evento</button>}
+                      {event.status === "CONFIGURING" && !isDeleted && <button type="button" className="secondary" onClick={() => selectEvent(event)}>Ver detalle</button>}
                       {event.status === "OPEN" && <a className="button-link secondary" href={nextStep.href}>Ir a supervisión</a>}
                       {event.status === "CLOSED" && <a className="button-link secondary" href={nextStep.href}>Ver resultados</a>}
                     </>
                   )}
-                  {event.status === "CONFIGURING" && (
-                    <button
-                      type="button"
-                      className="secondary danger-action"
-                      aria-label={`Eliminar evento ${event.name}`}
-                      onClick={(e) => { deleteTriggerRef.current = e.currentTarget; setDeleteTarget(event); }}
-                    >
-                      Eliminar
+                  {isDeleted ? (
+                    <button type="button" className="secondary" aria-label={`Reactivar evento ${event.name}`} onClick={reactivate}>
+                      Reactivar
                     </button>
+                  ) : (
+                    event.status === "CONFIGURING" && (
+                      <button
+                        type="button"
+                        className="secondary danger-action"
+                        aria-label={`Eliminar evento ${event.name}`}
+                        onClick={(e) => { deleteTriggerRef.current = e.currentTarget; setDeleteTarget(event); }}
+                      >
+                        Eliminar
+                      </button>
+                    )
                   )}
                   {deleteTarget?.id === event.id && (
                     <Dialog
                       isOpen
                       onClose={() => setDeleteTarget(null)}
                       title={`Eliminar ${event.name}`}
-                      description="Esta acción borra el evento y toda su configuración. No se puede deshacer. Solo procede si nunca se abrió votación."
+                      description="Se ocultara del catalogo y quedara desactivado en BD (active=false). Podras verlo con Mostrar eliminados y reactivarlo. No se borra el historial."
                       focusReturnRef={deleteTriggerRef}
                     >
                       <div className="dialog-actions">
                         <button type="button" className="secondary" onClick={() => setDeleteTarget(null)}>Cancelar</button>
-                        <button type="button" className="danger-action" onClick={confirmDelete}>Eliminar definitivamente</button>
+                        <button type="button" className="danger-action" onClick={confirmDelete}>Eliminar (desactivar)</button>
                       </div>
                     </Dialog>
                   )}
@@ -283,12 +302,14 @@ export function AdminEventsPage() {
             const renderCard = (event, active) => {
               const summary = summaries[event.id] ?? EMPTY_SUMMARY;
               const nextStep = nextStepFor(event, summary);
+              const isDeleted = event.active === false;
               return (
                 <article className={`event-catalog-card${active ? " is-active" : ""}`} key={event.id}>
                   <div className="event-catalog-card-heading">
                     <div>
                       <h3>{event.name}</h3>
                       <StatusPill status={event.status} label={EVENT_STATUS_LABELS[event.status] ?? event.status} />
+                      {isDeleted && <StatusPill status="SUSPENDED" label="Eliminado (inactivo en BD)" />}
                     </div>
                     {active && <span className="event-active-label">✓ Evento activo</span>}
                   </div>

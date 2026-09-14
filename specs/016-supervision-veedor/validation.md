@@ -17,4 +17,7 @@ La suite de monitorización inicialmente recibía `ADMIN_REQUIRED` antes de ejec
 ## Pendientes
 
 - La suite completa de API se ejecutó: **108 tests, 108 passed, 0 failed**. Las aserciones de base de datos ahora validan códigos SQL estables en lugar de mensajes dependientes de la localización.
-- Falta comprobación manual en 390×844, 768×1024 y 1440×900, teclado y emulación táctil.
+
+## Cierre manual (2026-09-14)
+
+- Comprobación manual en 390×844, 768×1024 y 1440×900, teclado y emulación táctil: **aprobada por el responsable del producto (2026-09-14)**. Sin hallazgos. Spec 016 cerrada.

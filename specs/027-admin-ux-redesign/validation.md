@@ -124,3 +124,7 @@
 - Tests: `src/tests/AdminEventsPage.test.jsx` → 5 tests; suite completa `npm.cmd test` → 45 archivos / 282 tests en verde.
 - Build: `npm.cmd run build` → 83 módulos transformados, build exitoso; `git diff --check` sin errores de whitespace (solo advertencias LF/CRLF preexistentes).
 - Deuda: comprobación manual visual en `390x844`, `768x1024` y `1440x900` sigue pendiente de navegador.
+
+### Cierre manual G0–G4 (2026-09-14)
+
+- Comprobación manual responsive/teclado/táctil de las pantallas admin (dashboard, configuración, competencia, operación/cierre, catálogo de eventos) en 390x844, 768x1024 y 1440x900: **aprobada por el responsable del producto (2026-09-14)**. Cierra las deudas manuales de G0, G1, G3 y G4. Sin hallazgos.

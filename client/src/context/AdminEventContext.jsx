@@ -34,8 +34,8 @@ export function AdminEventProvider({ children }) {
       setEvents(items ?? []);
       setError("");
       setActiveEventIdState((current) => {
-        const storedEvent = (items ?? []).find((event) => event.id === current);
-        const nextId = storedEvent?.id ?? (items ?? [])[0]?.id ?? "";
+        const storedEvent = (items ?? []).find((event) => event.id === current && event.active !== false);
+        const nextId = storedEvent?.id ?? (items ?? []).find((event) => event.active !== false)?.id ?? "";
         storeEventId(nextId);
         return nextId;
       });

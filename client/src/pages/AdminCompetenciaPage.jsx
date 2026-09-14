@@ -349,8 +349,10 @@ function AdminTroupesSection({ event }) {
   const [message, setMessage] = useState("");
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("active");
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const drawerTriggerRef = useRef(null);
+  const deleteTriggerRef = useRef(null);
   const { writing, setPending } = useContext(WriteContext);
 
   useEffect(() => {
@@ -400,6 +402,44 @@ function AdminTroupesSection({ event }) {
     }
   };
 
+  const confirmDeleteTroupe = async () => {
+    const target = deleteTarget;
+    setDeleteTarget(null);
+    if (!target || writing.current) return;
+    writing.current = true;
+    setPending(true);
+    try {
+      await apiRequest(`/api/v1/troupes/${target.id}`, { method: "PATCH", body: JSON.stringify({ active: false }) });
+      const fresh = await apiRequest(`/api/v1/events/${event.id}/troupes`).catch(() => null);
+      if (fresh) setTroupes(fresh);
+      else setTroupes((prev) => prev.map((t) => t.id === target.id ? { ...t, active: false } : t));
+      setMessage(`Comparsa ${target.name} eliminada (desactivada en BD).`);
+    } catch {
+      setMessage("No se pudo eliminar la comparsa.");
+    } finally {
+      writing.current = false;
+      setPending(false);
+    }
+  };
+
+  const reactivateTroupe = async (troupe) => {
+    if (writing.current) return;
+    writing.current = true;
+    setPending(true);
+    try {
+      await apiRequest(`/api/v1/troupes/${troupe.id}`, { method: "PATCH", body: JSON.stringify({ active: true }) });
+      const fresh = await apiRequest(`/api/v1/events/${event.id}/troupes`).catch(() => null);
+      if (fresh) setTroupes(fresh);
+      else setTroupes((prev) => prev.map((t) => t.id === troupe.id ? { ...t, active: true } : t));
+      setMessage(`Comparsa ${troupe.name} reactivada.`);
+    } catch (e) {
+      setMessage(e.code === "CATEGORY_INACTIVE" ? "No se puede reactivar: la categoria esta inactiva." : "No se pudo reactivar la comparsa.");
+    } finally {
+      writing.current = false;
+      setPending(false);
+    }
+  };
+
   const filtered = troupes.filter((troupe) => {
     if (statusFilter === "active" && troupe.active === false) return false;
     if (statusFilter === "inactive" && troupe.active !== false) return false;
@@ -415,7 +455,7 @@ function AdminTroupesSection({ event }) {
     <section className="config-section">
       <div className="section-heading">
         <h2>Comparsas</h2>
-        <p>Participaciones y tipo de participacion vigente. Cada comparsa necesita un tipo: si la lista está vacía, crealo arriba. El color se muestra como banda en la planilla del jurado.</p>
+        <p>Eliminar oculta la comparsa de la vista y la conserva desactivada en BD. Para verlas usa el filtro de estado.</p>
       </div>
       <p className="feedback" role="status">{message}</p>
       {!locked && <button type="button" onClick={(event) => { drawerTriggerRef.current = event.currentTarget; setDrawerMode({ mode: "create" }); }}>+ Nueva comparsa</button>}
@@ -463,7 +503,16 @@ function AdminTroupesSection({ event }) {
                     <td>
                       <button className="secondary" type="button" aria-label={`Editar comparsa ${troupe.name}`} onClick={(event) => { drawerTriggerRef.current = event.currentTarget; setDrawerMode({ mode: "edit", troupeId: troupe.id }); }}>
                         Editar
-                      </button>
+                      </button>{" "}
+                      {troupe.active !== false ? (
+                        <button className="secondary danger-action" type="button" aria-label={`Eliminar comparsa ${troupe.name}`} onClick={(event) => { deleteTriggerRef.current = event.currentTarget; setDeleteTarget(troupe); }}>
+                          Eliminar
+                        </button>
+                      ) : (
+                        <button className="secondary" type="button" aria-label={`Reactivar comparsa ${troupe.name}`} onClick={() => reactivateTroupe(troupe)}>
+                          Reactivar
+                        </button>
+                      )}
                     </td>
                   )}
                 </tr>
@@ -492,6 +541,18 @@ function AdminTroupesSection({ event }) {
           <button type="button" className="secondary" onClick={() => setDrawerMode(null)}>Cancelar</button>
         </DialogFooter>
       </EntityDrawer>
+      <Dialog
+        isOpen={deleteTarget !== null && !locked}
+        onClose={() => setDeleteTarget(null)}
+        title={deleteTarget ? `Eliminar ${deleteTarget.name}` : "Eliminar comparsa"}
+        description="Se ocultara de la lista y quedara desactivada en BD (active=false). Podras verla con el filtro Inactivas y reactivarla. No se borra el historial."
+        focusReturnRef={deleteTriggerRef}
+      >
+        <div className="dialog-actions">
+          <button type="button" className="secondary" onClick={() => setDeleteTarget(null)}>Cancelar</button>
+          <button type="button" className="danger-action" onClick={confirmDeleteTroupe}>Eliminar (desactivar)</button>
+        </div>
+      </Dialog>
     </section>
   );
 }
@@ -610,6 +671,7 @@ function TroupeScheduleSection({ event }) {
             <span className="mono-text">{entry.presentationOrder}</span>
             {entry.troupeBrandColor && <span className="troupe-swatch" role="img" aria-label={`Color ${entry.troupeBrandColor}`} style={{ backgroundColor: entry.troupeBrandColor }} />}
             <strong>{entry.troupeName}</strong>
+            <ScheduledPassTime scheduledAt={entry.scheduledAt} scheduledTimezone={entry.scheduledTimezone} />
             {!locked && <>
               <button className="secondary" type="button" aria-label={`Subir ${entry.troupeName} en ${nightName}`} disabled={index === 0} onClick={() => reorder(entry, ordered[index - 1], "UP")}>Subir</button>
               <button className="secondary" type="button" aria-label={`Bajar ${entry.troupeName} en ${nightName}`} disabled={index === ordered.length - 1} onClick={() => reorder(entry, ordered[index + 1], "DOWN")}>Bajar</button>
@@ -618,6 +680,9 @@ function TroupeScheduleSection({ event }) {
           </li>
         ))}
       </ol>
+      {ordered.some((entry) => entry.orderSource === "TEST_SIMULATED_DRAW") && (
+        <p>Horarios y orden simulados para pruebas; no son un cronograma oficial de la COC.</p>
+      )}
       {nightId && ordered.length === 0 && <p>Sin comparsas programadas en esta jornada. Programá al menos una para poder abrir la votación.</p>}
       {quitTarget && (
         <Dialog
@@ -1269,3 +1334,4 @@ function MatrizPlanillasSection({ event, onResolveRubric }) {
     </section>
   );
 }
+import { ScheduledPassTime } from "../components/ScheduledPassTime.jsx";

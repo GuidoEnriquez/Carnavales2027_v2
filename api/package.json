@@ -14,11 +14,7 @@
     "db:migrate": "node src/db/migrate.js",
     "auth:migrate": "npx auth@1.6.27 migrate --config src/auth/auth.js --yes",
     "bootstrap:admin": "node src/scripts/bootstrap-admin.js",
-    "db:seed": "node src/db/seed.js",
-    "db:seed:goya": "node src/scripts/seed-goya-2027.js",
-    "db:seed:test": "node src/scripts/seed-test-prueba.js",
-    "db:seed:penalties": "node src/scripts/seed-penalties-demo.js",
-    "db:seed:fiction": "node src/scripts/seed-fiction-contest.js",
+    "seed:event:full": "node src/scripts/seed-full-event.js",
     "predb:test": "node --import=dotenv/config src/scripts/assert-test-database-url.js",
     "db:test": "node --import=dotenv/config --test src/db/tests/*.test.js",
     "audit:verify": "node src/scripts/verify-audit-chain.js"

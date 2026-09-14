@@ -49,7 +49,7 @@ async function seedVirginEvent(pool, name) {
   return { event, troupe };
 }
 
-test("API eventos: borra evento virgen con cascada total", {
+test("API eventos: eliminar es baja logica (oculta, conserva fila desactivada)", {
   skip: !process.env.TEST_DATABASE_URL,
 }, async (context) => {
   context.after(async () => {
@@ -74,14 +74,18 @@ test("API eventos: borra evento virgen con cascada total", {
     const headers = { "x-test-session": "admin" };
     const del = await fetch(`${baseUrl}/api/v1/events/${event.id}`, { method: "DELETE", headers });
     assert.equal(del.status, 200);
-    assert.equal((await del.json()).id, event.id);
-    for (const table of ["night", "event_category", "event_troupe", "event_specialty", "rubric", "evaluation_item", "carnival_event"]) {
-      const where = table === "carnival_event" ? "id" : "event_id";
-      const { rows } = await pool.query(`SELECT COUNT(*)::int AS n FROM ${table} WHERE ${where}=$1`, [event.id]);
-      assert.equal(rows[0].n, 0, `${table} sin filas`);
+    assert.deepEqual(await del.json(), { id: event.id, active: false });
+    const { rows: [row] } = await pool.query("SELECT active FROM carnival_event WHERE id=$1", [event.id]);
+    assert.equal(row.active, false);
+    for (const table of ["night", "event_category", "event_troupe", "event_specialty", "rubric", "evaluation_item"]) {
+      const { rows } = await pool.query(`SELECT COUNT(*)::int AS n FROM ${table} WHERE event_id=$1`, [event.id]);
+      assert.equal(rows[0].n, 1, `${table} conserva filas`);
     }
     const again = await fetch(`${baseUrl}/api/v1/events/${event.id}`, { method: "DELETE", headers });
     assert.equal(again.status, 404);
+    const reactivated = await fetch(`${baseUrl}/api/v1/events/${event.id}`, { method: "PATCH", headers: { ...headers, "content-type": "application/json" }, body: JSON.stringify({ active: true }) });
+    assert.equal(reactivated.status, 200);
+    assert.equal((await reactivated.json()).active, true);
   });
 });
 

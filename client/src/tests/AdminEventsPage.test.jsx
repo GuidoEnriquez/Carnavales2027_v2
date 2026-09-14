@@ -91,16 +91,31 @@ describe("AdminEventsPage", () => {
 
   it("elimina un evento en preparación con confirmación crítica", async () => {
     apiRequest.mockImplementation((path, options) => {
-      if (path === "/api/v1/events") return Promise.resolve([{ id: "e1", name: "Prueba", status: "CONFIGURING" }]);
-      if (path === "/api/v1/events/e1" && options?.method === "DELETE") return Promise.resolve({ id: "e1" });
+      if (path === "/api/v1/events") return Promise.resolve([{ id: "e1", name: "Prueba", status: "CONFIGURING", active: true }]);
+      if (path === "/api/v1/events/e1" && options?.method === "DELETE") return Promise.resolve({ id: "e1", active: false });
       return Promise.resolve([]);
     });
     render(<AdminEventsPage />);
     fireEvent.click(await screen.findByRole("button", { name: "Eliminar evento Prueba" }));
     expect(await screen.findByRole("dialog", { name: "Eliminar Prueba" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Eliminar definitivamente" }));
-    expect(await screen.findByText("Evento Prueba eliminado.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Eliminar (desactivar)" }));
+    expect(await screen.findByText("Evento Prueba eliminado (desactivado en BD).")).toBeInTheDocument();
     expect(apiRequest).toHaveBeenCalledWith("/api/v1/events/e1", { method: "DELETE" });
+  });
+
+  it("oculta eventos eliminados por defecto y los muestra con el toggle", async () => {
+    apiRequest.mockImplementation((path) => {
+      if (path === "/api/v1/events") return Promise.resolve([
+        { id: "e1", name: "Visible", status: "CONFIGURING", active: true },
+        { id: "e2", name: "Eliminado", status: "CONFIGURING", active: false },
+      ]);
+      return Promise.resolve([]);
+    });
+    render(<AdminEventsPage />);
+    expect(await screen.findByText("Visible")).toBeInTheDocument();
+    expect(screen.queryByText("Eliminado")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Mostrar eliminados (inactivos en BD)" }));
+    expect(await screen.findByText("Eliminado")).toBeInTheDocument();
   });
 
   it("muestra mensaje humano cuando el evento no se puede eliminar", async () => {
@@ -115,7 +130,7 @@ describe("AdminEventsPage", () => {
     });
     render(<AdminEventsPage />);
     fireEvent.click(await screen.findByRole("button", { name: "Eliminar evento Prueba" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Eliminar definitivamente" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Eliminar (desactivar)" }));
     expect(await screen.findByText("Solo se pueden eliminar eventos sin votación ni historial operativo.")).toBeInTheDocument();
   });
 });

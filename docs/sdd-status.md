@@ -45,15 +45,30 @@
 
 ## Incremento activo
 
+- Spec 030 — Seed integral de evento (2026-09-14): implementado y validado
+  automáticamente. CLI `seed:event:full`, migración 076 de horarios, tres
+  jornadas, nueve jurados, 21 participaciones, 36 rubros, cero votos iniciales.
+  API/DB 195/195, cliente 310/310, build 84 módulos. Equivalencias y módulos
+  diferidos documentados en `specs/030-seed-evento-integral/validation.md`.
+  T04 consolidada: `seed:event:full` es el único seed; retirados fixtures y
+  comandos anteriores. Focales 23/23, API/DB 190/190 y build 84 módulos;
+  login/OTP de las doce cuentas del integral comprobado automáticamente.
+
+- Spec 029 — Usuarios del seed de desarrollo (2026-09-14): completada y
+  validada históricamente. Su fixture básico y CLI se retiran en Spec030/T04;
+  las identidades se integran al único seed vigente `seed:event:full`.
+  Focales 12/12, suite API/DB 181/181, build Vite 83 módulos. Ver
+  `specs/029-seed-usuarios-demo/validation.md`. No abre votación ni escrutinio.
+
 - Corrección Spec 019/T08 completada el 2026-09-10: límites de sesión/autenticación y TRUST_PROXY (RF-170/RF-171). Pruebas focalizadas 12/12, API/integración 151/151, persistencia 72/72, cliente 258/258 y build correctos. Sin nuevas migraciones; entrega local en `fix/auth-rate-limit-proxy`, sin push. Ver evidencia T08 en su `validation.md`.
 
 - Corrección Spec 022/024 completada el 2026-09-10 (fix post-commit SSE): eventos de dominio se difunden solo tras COMMIT (scope `AsyncLocalStorage` en `monitor-event-bus.js`, integrado en `withTransaction` y `runTransaction`) y el canal público solo notifica `RESULTS_SNAPSHOT_UPDATED` con `{eventId, version}`. Evidencia: `api/src/tests/monitor-event-bus.test.js` (8/8), `api/src/tests/sse-post-commit.test.js` (3/3), `api/src/tests/public-results-api.test.js` (1/1) y `client/src/tests/PublicResultsPage.test.jsx` (5/5). Suite completa y build pendientes de ejecutar; cambios sin commitear en la rama `fix/auth-rate-limit-proxy`.
 
 - Fase 6 del Plan Maestro completada (Specs 019–024 cerradas según `source-map.md` y log de commits).
 - Spec 026 — Optimización de diseño: T01–T10 validadas; T11 pendiente (requiere navegador).
-- Spec 027 — Rediseño UX admin: G0–G4 validadas automáticamente; comprobación manual responsive, teclado y táctil pendiente.
-- Spec 016 — Supervisión de votación por VEEDOR. La implementación y validación automatizada están completas; falta comprobación manual en los viewports operativos.
-- Spec 017 — Configuración de competencia. T01-T03 con evidencia del alcance original; T04 en curso, con validación responsive y hallazgos pendientes.
+- Spec 027 — Rediseño UX admin: G0–G4 validadas automáticamente y con comprobación manual responsive/teclado/táctil aprobada por el responsable del producto el 2026-09-14.
+- Spec 016 — Supervisión de votación por VEEDOR. Implementación y validación automatizada completas; comprobación manual responsive/teclado/táctil aprobada por el responsable del producto el 2026-09-14. Cerrada.
+- Spec 017 — Configuración de competencia. T01-T03 con evidencia del alcance original; T04 completada (manual aprobado 2026-09-14); T09d completada automáticamente + manual aprobado 2026-09-14. T05/T10/T11 siguen bloqueadas por aclaraciones; T06 en curso por revisión final.
 - Spec 025 — Propuesta pendiente de aprobación (ver contradicción arriba); no es incremento activo hasta su aprobación.
 
 ## Diferido explícitamente
@@ -79,4 +94,4 @@ Toda spec que modifique una pantalla operativa debe declarar el criterio de uso 
 
 ## Verificación de referencia
 
-Al 2026-09-10, la evidencia automatizada del estado actual es: cliente 45 archivos / 282 tests en verde, API 142 tests en verde y build Vite exitoso (83 módulos). `git diff --check` no detecta errores de whitespace. Permanecen pendientes las comprobaciones manuales responsive/teclado/táctil de las pantallas admin, además de Spec 026 T11 y Spec 016 responsive.
+Al 2026-09-10, la evidencia automatizada del estado actual es: cliente 45 archivos / 282 tests en verde, API 142 tests en verde y build Vite exitoso (83 módulos). `git diff --check` no detecta errores de whitespace. El 2026-09-14 el responsable aprobó el responsive/teclado/táctil de Specs 016, 017 (T04/T09d) y 027; permanece pendiente Spec 026 T11 (requiere navegador, es tarea de código, no de validación visual) además de las aclaraciones T05/T10/T11.

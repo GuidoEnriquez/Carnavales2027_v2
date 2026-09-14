@@ -19,19 +19,39 @@ export async function requireEventExists({ client = getPool(), eventId }) {
 export async function requireConfiguringEvent({ client = getPool(), eventId }) {
   const event = await requireEventExists({ client, eventId });
   if (event.status !== "CONFIGURING") throw new Error("EVENT_LOCKED");
+  // T09d: los inactivos no configuran. Compatible con esquemas historicos pre-075 sin columna active
+  // y con llamadas fuera de transaccion (SAVEPOINT solo es legal dentro de una transaccion).
+  let savepoint = false;
+  try {
+    await client.query("SAVEPOINT require_configuring_active_compat");
+    savepoint = true;
+  } catch (error) {
+    if (error?.code !== "25P01") throw error;
+  }
+  try {
+    const { rows } = await client.query("SELECT active FROM carnival_event WHERE id=$1", [requireText(eventId, "eventId")]);
+    if (savepoint) await client.query("RELEASE SAVEPOINT require_configuring_active_compat");
+    if (rows[0]?.active === false) throw new Error("EVENT_LOCKED");
+  } catch (error) {
+    if (error?.code !== "42703") throw error;
+    if (savepoint) {
+      await client.query("ROLLBACK TO SAVEPOINT require_configuring_active_compat");
+      await client.query("RELEASE SAVEPOINT require_configuring_active_compat");
+    }
+  }
   return event;
 }
 
 export async function createEvent({ client = getPool(), name }) {
-  const { rows } = await client.query("INSERT INTO carnival_event (name) VALUES ($1) RETURNING id, name, status", [requireText(name, "name")]);
+  const { rows } = await client.query("INSERT INTO carnival_event (name) VALUES ($1) RETURNING id, name, status, active", [requireText(name, "name")]);
   return rows[0];
 }
 export async function listEvents({ client = getPool() } = {}) {
-  const { rows } = await client.query("SELECT id, name, status FROM carnival_event ORDER BY created_at");
+  const { rows } = await client.query("SELECT id, name, status, active FROM carnival_event ORDER BY created_at");
   return rows;
 }
 export async function getEvent({ client = getPool(), eventId }) {
-  const { rows } = await client.query("SELECT id, name, status FROM carnival_event WHERE id = $1", [requireText(eventId, "eventId")]);
+  const { rows } = await client.query("SELECT id, name, status, active FROM carnival_event WHERE id = $1", [requireText(eventId, "eventId")]);
   return rows[0] ?? null;
 }
 export async function listNights({ client = getPool(), eventId }) {
@@ -44,10 +64,18 @@ export async function listNights({ client = getPool(), eventId }) {
   return rows;
 }
 
-export async function updateEvent({ client = getPool(), eventId, name }) {
+export async function updateEvent({ client = getPool(), eventId, name, active }) {
+  const id = requireText(eventId, "eventId");
+  const hasName = name !== undefined;
+  const hasActive = active !== undefined;
+  if (!hasName && !hasActive) throw new TypeError("Nada para actualizar.");
+  if (hasActive && typeof active !== "boolean") throw new TypeError("active debe ser booleano.");
+  const { rows: current } = await client.query("SELECT id, status FROM carnival_event WHERE id = $1", [id]);
+  if (!current[0]) throw new Error("EVENT_NOT_FOUND");
+  if (current[0].status !== "CONFIGURING") throw new Error("EVENT_LOCKED");
   const { rows } = await client.query(
-    "UPDATE carnival_event SET name = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING id, name, status",
-    [requireText(eventId, "eventId"), requireText(name, "name")],
+    "UPDATE carnival_event SET name = COALESCE($2, name), active = COALESCE($3, active), updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING id, name, status, active",
+    [id, hasName ? requireText(name, "name") : null, hasActive ? active : null],
   );
   if (!rows[0]) throw new Error("EVENT_NOT_FOUND");
   return rows[0];
@@ -69,31 +97,22 @@ export async function deleteEvent({ client = null, eventId, actorUserId = null }
   try {
     if (owned) await db.query("BEGIN");
     const id = requireText(eventId, "eventId");
-    const { rows: events } = await db.query("SELECT id, name, status FROM carnival_event WHERE id = $1 FOR UPDATE", [id]);
-    if (!events[0]) throw new Error("EVENT_NOT_FOUND");
+    const { rows: events } = await db.query("SELECT id, name, status, active FROM carnival_event WHERE id = $1 FOR UPDATE", [id]);
+    if (!events[0] || events[0].active === false) throw new Error("EVENT_NOT_FOUND");
     if (events[0].status !== "CONFIGURING") throw new Error("EVENT_LOCKED");
     for (const [table, code] of DELETE_BLOCKERS) {
       const { rows: [{ n }] } = await db.query(`SELECT COUNT(*)::int AS n FROM ${table} WHERE event_id = $1`, [id]);
       if (n > 0) throw new Error(code);
     }
-    await db.query("DELETE FROM rubric_criterion WHERE rubric_id IN (SELECT id FROM rubric WHERE event_id = $1)", [id]);
-    await db.query("DELETE FROM evaluation_item WHERE event_id = $1", [id]);
-    await db.query("DELETE FROM troupe_nomination WHERE event_id = $1", [id]);
-    await db.query("DELETE FROM night_troupe_schedule WHERE event_id = $1", [id]);
-    await db.query("DELETE FROM voting_window WHERE event_id = $1", [id]);
-    await db.query("DELETE FROM night WHERE event_id = $1", [id]);
-    await db.query("DELETE FROM event_troupe WHERE event_id = $1", [id]);
-    await db.query("DELETE FROM event_category WHERE event_id = $1", [id]);
-    await db.query("DELETE FROM rubric WHERE event_id = $1", [id]);
-    await db.query("DELETE FROM event_specialty WHERE event_id = $1", [id]);
-    await db.query("DELETE FROM configuration_seed WHERE event_id = $1", [id]);
-    await db.query("DELETE FROM carnival_event WHERE id = $1", [id]);
+    // T09d: baja logica. Sin cascada fisica: el registro se conserva con active=false.
+    await db.query("UPDATE carnival_event SET active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1", [id]);
     await auditEvent(db, {
       actorUserId, action: "EVENT_DELETED", entityType: "carnival_event", entityId: id,
-      before: { name: events[0].name, status: events[0].status },
+      before: { name: events[0].name, status: events[0].status, active: true },
+      after: { active: false },
     });
     if (owned) await db.query("COMMIT");
-    return { id };
+    return { id, active: false };
   } catch (error) {
     if (owned) await db.query("ROLLBACK");
     throw error;
