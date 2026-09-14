@@ -125,4 +125,46 @@ describe("AdminJudgesPage", () => {
     fireEvent.change(screen.getByRole("combobox", { name: "Filtrar personas por estado" }), { target: { value: "REGISTERED" } });
     expect(screen.getByText("Jurado Registrado")).toBeInTheDocument();
   });
+
+  it("ofrece reintentar sin recargar cuando la carga inicial falla", async () => {
+    let reads = 0;
+    apiRequest.mockImplementation((path, options) => {
+      if ((path === "/api/v1/judges" || path === "/api/v1/operational-profiles") && !options) {
+        reads += 1;
+        if (reads <= 2) return Promise.reject(new Error("offline"));
+        if (path === "/api/v1/judges") return Promise.resolve([registered]);
+        return Promise.resolve([]);
+      }
+      return Promise.resolve({});
+    });
+    render(<AdminJudgesPage />);
+    expect(await screen.findByRole("button", { name: "Reintentar" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+    expect(await screen.findByText("Jurado Registrado")).toBeInTheDocument();
+  });
+
+  it("limpia los filtros tras un alta para mostrar el nuevo registro sin F5", async () => {
+    let judgeRequests = 0;
+    apiRequest.mockImplementation((path, options) => {
+      if (path === "/api/v1/operational-profiles") return Promise.resolve([]);
+      if (path === "/api/v1/judges" && !options) {
+        judgeRequests += 1;
+        return Promise.resolve([registered]);
+      }
+      if (path === "/api/v1/judges") return Promise.resolve({ judge: { id: "j1" } });
+      return Promise.resolve({});
+    });
+    render(<AdminJudgesPage />);
+    await screen.findByText("Jurado Registrado");
+    fireEvent.change(screen.getByRole("searchbox", { name: "Buscar persona por nombre, correo o DNI" }), { target: { value: "nadie" } });
+    expect(screen.getByText("Sin jurados para los filtros actuales.")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Nombre completo"), { target: { value: "Jurado Registrado" } });
+    fireEvent.change(screen.getByLabelText("Correo"), { target: { value: "jurado@example.test" } });
+    fireEvent.change(screen.getByLabelText("DNI"), { target: { value: "12345678" } });
+    fireEvent.click(screen.getByRole("button", { name: "Registrar e invitar" }));
+
+    expect(await screen.findByText("Jurado Registrado")).toBeInTheDocument();
+    expect(screen.getByRole("searchbox", { name: "Buscar persona por nombre, correo o DNI" })).toHaveValue("");
+  });
 });

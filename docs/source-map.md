@@ -4,6 +4,21 @@
 
 ## Estado SDD actual
 
+- Spec 030 (2026-09-14): fixture FULL_EVENT 2027.2 pedido por producto. Seed
+  integral de tres jornadas, siete comparsas, nueve jurados, 36 rubros y
+  programación ficticia rotativa con timestamps (migración 076). Validado
+  automáticamente; evento CONFIGURING/readiness true, cero votos/planillas
+  iniciales. Offline permanece diferido. Ver `specs/030-seed-evento-integral/`.
+  T04 retira todos los seeds anteriores por pedido explícito de producto:
+  un único CLI/comando, `seed:event:full`, con configuración y doce cuentas.
+
+- Spec 029 (2026-09-14): pedido directo del responsable de proyecto para un
+  seed completo de desarrollo con ADMIN, tres jurados y ESCRIBANO. Cuentas
+  registradas, contraseña común desde entorno, idempotencia, login/OTP y
+  recuperación validados; evidencia en `specs/029-seed-usuarios-demo/validation.md`.
+  Antecedente histórico: su fixture/CLI básico se retira por pedido de producto
+  en Spec030/T04; el único seed vigente es `seed:event:full`.
+
 - I1/I1-C: configuración operativa, validado.
 - I2-A/I2-B: padrón, invitaciones, cupos, asignaciones y reemplazos, validados.
 - I3 + Specs 004, 006 y 007: planillas, puntuaciones, secreto, completitud, cierre sin reapertura e inmutabilidad por ítem, implementados y validados.

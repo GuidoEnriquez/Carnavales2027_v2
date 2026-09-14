@@ -57,9 +57,21 @@ export async function openEvent({ client = null, eventId, actorUserId = null }) 
   const db = client ?? await getPool().connect();
   try {
     if (owned) await db.query("BEGIN");
-    const { rows } = await db.query("SELECT id,status FROM carnival_event WHERE id=$1 FOR UPDATE", [eventId]);
+    let rows;
+    await db.query("SAVEPOINT open_event_active_compat");
+    try {
+      ({ rows } = await db.query("SELECT id,status,active FROM carnival_event WHERE id=$1 FOR UPDATE", [eventId]));
+      await db.query("RELEASE SAVEPOINT open_event_active_compat");
+    } catch (error) {
+      // Compatibilidad con esquemas historicos aislados (pre-075) sin columna active.
+      if (error?.code !== "42703") throw error;
+      await db.query("ROLLBACK TO SAVEPOINT open_event_active_compat");
+      await db.query("RELEASE SAVEPOINT open_event_active_compat");
+      ({ rows } = await db.query("SELECT id,status FROM carnival_event WHERE id=$1 FOR UPDATE", [eventId]));
+      rows[0] = rows[0] ? { ...rows[0], active: true } : rows[0];
+    }
     if (!rows[0]) throw new Error("EVENT_NOT_FOUND");
-    if (rows[0].status !== "CONFIGURING") throw new Error("EVENT_LOCKED");
+    if (rows[0].active === false || rows[0].status !== "CONFIGURING") throw new Error("EVENT_LOCKED");
     const readiness = await getReadiness({ client: db, eventId });
     if (!readiness.ready) {
       const error = new Error("EVENT_CONFIGURATION_INCOMPLETE");

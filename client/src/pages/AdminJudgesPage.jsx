@@ -37,8 +37,8 @@ export function AdminJudgesPage() {
       setOperationalProfiles(nextOperational);
       setLoadError(false);
     } catch {
-      setJudges([]);
-      setOperationalProfiles([]);
+      // No vaciar el listado ante un fallo de recarga: se conserva lo último
+      // conocido para que un alta exitosa no desaparezca hasta el próximo F5.
       setLoadError(true);
       setMessage("No se pudieron cargar las personas y accesos.");
     } finally {
@@ -77,6 +77,10 @@ export function AdminJudgesPage() {
         setMessage("Perfil registrado e invitación enviada.");
       }
       form.reset();
+      // Mostrar el listado sin filtros tras un alta exitosa para que el nuevo
+      // registro sea visible automáticamente sin recargar la página.
+      setQuery("");
+      setStatusFilter("all");
     } catch (error) {
       setMessage(
         error.code === "TWO_FACTOR_REQUIRED"
@@ -132,7 +136,10 @@ export function AdminJudgesPage() {
     <PageShell layer="instrument" className="admin-shell roster-page">
       <header className="event-header">
         <div><p className="eyebrow">Identidad y acceso</p><h1>Personas y accesos</h1></div>
-        <span className="roster-count">{judges.length} jurados · {operationalProfiles.length} auxiliares</span>
+        <div className="event-actions">
+          <span className="roster-count">{judges.length} jurados · {operationalProfiles.length} auxiliares</span>
+          <button type="button" className="secondary" onClick={() => void refresh()} disabled={loading || Boolean(busy)}>Actualizar</button>
+        </div>
       </header>
 
       <section className="config-section">
@@ -165,7 +172,9 @@ export function AdminJudgesPage() {
         </select></label>
         <span className="filter-count" role="status">{visibleJudges.length + visibleOperational.length} de {judges.length + operationalProfiles.length} personas</span>
       </div>
-      {loading ? <p>Cargando padrón…</p> : loadError ? null : judges.length === 0 ? <p className="empty-state">Todavía no hay jurados registrados.</p> : visibleJudges.length === 0 ? <p className="empty-state">Sin jurados para los filtros actuales.</p> : (
+      {loading ? <p>Cargando padrón…</p> : loadError && judges.length === 0 && operationalProfiles.length === 0 ? (
+        <p className="empty-state">No se pudieron cargar las personas y accesos. <button type="button" className="secondary" onClick={() => void refresh()} disabled={loading}>Reintentar</button></p>
+      ) : judges.length === 0 ? <p className="empty-state">Todavía no hay jurados registrados.</p> : visibleJudges.length === 0 ? <p className="empty-state">Sin jurados para los filtros actuales.</p> : (
         <section className="judge-grid" aria-label="Padrón de jurados">
           {visibleJudges.map((judge) => {
             const invitation = judge.invitation;
@@ -207,6 +216,30 @@ export function AdminJudgesPage() {
                       run: () => action(`${judge.id}-suspend`, `/api/v1/judges/${judge.id}/suspend`, "POST", "Jurado suspendido y sesiones revocadas."),
                     });
                   }} aria-label={`Suspender a ${judge.name}`}>Suspender</button>}
+                  {judge.registrationStatus === "REGISTERED" && <button className="secondary" type="button" disabled={rowBusy} onClick={(event) => {
+                    actionTriggerRef.current = event.currentTarget;
+                    setPendingAction({
+                      title: "Enviar enlace de restablecimiento",
+                      description: `¿Enviar a ${judge.email} un enlace para definir una nueva contraseña?`,
+                      confirmLabel: "Enviar enlace",
+                      run: async () => {
+                        if (busy) return;
+                        setBusy(`${judge.id}-reset`);
+                        setMessage("");
+                        try {
+                          await apiRequest("/api/auth/forget-password", {
+                            method: "POST",
+                            body: JSON.stringify({ email: judge.email, redirectTo: "/#/reset-password" }),
+                          });
+                          setMessage("Enlace enviado.");
+                        } catch {
+                          setMessage("No se pudo enviar el enlace.");
+                        } finally {
+                          setBusy("");
+                        }
+                      },
+                    });
+                  }} aria-label={`Enviar enlace de restablecimiento a ${judge.name}`}>Enviar enlace</button>}
                   {judge.registrationStatus === "SUSPENDED" && <button className="secondary" type="button" aria-label={`Reintentar cierre de sesiones de ${judge.name}`} disabled={rowBusy} onClick={() => action(`${judge.id}-suspend`, `/api/v1/judges/${judge.id}/suspend`, "POST", "Sesiones revocadas.")}>Reintentar cierre de sesiones</button>}
                   {judge.registrationStatus === "SUSPENDED" && <button type="button" aria-label={`Reactivar a ${judge.name}`} disabled={rowBusy} onClick={() => action(`${judge.id}-reactivate`, `/api/v1/judges/${judge.id}/reactivate`, "POST", "Jurado reactivado.")}>Reactivar</button>}
                 </div>
@@ -215,7 +248,7 @@ export function AdminJudgesPage() {
           })}
         </section>
       )}
-      {!loading && !loadError && <section className="config-section operational-roster">
+      {!loading && (!loadError || judges.length > 0 || operationalProfiles.length > 0) && <section className="config-section operational-roster">
         <div className="section-heading"><div><h2>Accesos auxiliares</h2><p>Veedores, Comisarios, Escrutadores y Escribanos.</p></div></div>
         {operationalProfiles.length === 0 ? <p className="empty-state">Todavía no hay accesos auxiliares.</p> : filtering && visibleOperational.length === 0 ? <p className="empty-state">Sin accesos auxiliares para los filtros actuales.</p> : <div className="operational-user-list">
           {visibleOperational.map((profile) => {

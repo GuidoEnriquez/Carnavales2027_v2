@@ -140,68 +140,297 @@ El código exploratorio de I4-A conserva la revisión de planilla y el ledger `b
 
 ## Requisitos
 
-- Node.js 20 o superior.
-- PostgreSQL 14 o superior.
+- Node.js **24 LTS recomendado**. Vite requiere Node 20.19+ en la rama 20, o 22.12+ en ramas posteriores.
+- PostgreSQL 14 o superior, instalado y en ejecución.
 - Dos bases PostgreSQL separadas para desarrollo y pruebas.
+- Dos terminales: una para la API y otra para el cliente.
 
-## Instalación local
+## Primera instalación local
 
-Instalar dependencias en ambos módulos:
+Los siguientes pasos usan **Windows PowerShell**. Se utiliza `npm.cmd` para
+evitar el bloqueo de `npm.ps1` por la política de ejecución de Windows.
+En Linux/macOS, usar `npm` y `export NODE_ENV=development` en lugar de
+`$env:NODE_ENV = "development"`.
 
-```bash
-cd api && npm ci
-cd ../client && npm ci
+### 1. Instalar dependencias
+
+Desde la **raíz del repositorio**, donde están las carpetas `api/` y `client/`:
+
+```powershell
+npm.cmd --prefix api ci
+npm.cmd --prefix client ci
 ```
 
-Crear `api/.env` a partir de [`api/.env.example`](api/.env.example), completar las conexiones PostgreSQL y generar un secreto local:
+### 2. Preparar PostgreSQL
 
-```bash
-openssl rand -base64 32
+Crear dos bases vacías desde pgAdmin o mediante `createdb`, usando un usuario
+PostgreSQL con permiso para crearlas. Por ejemplo, si usás el usuario `postgres`
+y las herramientas de PostgreSQL están en el PATH:
+
+```powershell
+createdb -U postgres carnavales2027_v2
+createdb -U postgres carnavales2027_v2_test
 ```
 
-Configurar el resultado como `BETTER_AUTH_SECRET`. Luego, desde `api/`:
+Si las bases ya existen, continuar con el siguiente paso. La aplicación se
+conecta a la base de desarrollo mediante `DATABASE_URL`; las pruebas usan
+`TEST_DATABASE_URL`.
 
-```bash
-npm run auth:migrate
-npm run db:migrate
-NODE_ENV=development npm run db:seed
-NODE_ENV=development npm run db:seed:goya
-npm run dev
+### 3. Configurar `api/.env`
+
+Desde la raíz, copiar el ejemplo si todavía no existe una configuración local:
+
+```powershell
+if (-not (Test-Path -LiteralPath ".\api\.env")) {
+  Copy-Item -LiteralPath ".\api\.env.example" -Destination ".\api\.env"
+}
 ```
 
-El seed ADMIN usa `SEED_ADMIN_EMAIL`, `SEED_ADMIN_NAME` y `SEED_ADMIN_PASSWORD`. El seed de Goya crea solo datos iniciales sugeridos: evento, noches, categoría y especialidades; no crea comparsas, rubros ni ítems completos.
+Editar `api/.env` y completar estas variables. Las variables
+de seed aparecen comentadas en el ejemplo: quitar su `#` para activarlas.
 
-### Usuarios de demostracion local
+| Variable | Configuración local |
+|---|---|
+| `DATABASE_URL` | Conexión PostgreSQL a `carnavales2027_v2`, con tu usuario y contraseña reales |
+| `TEST_DATABASE_URL` | Conexión a la base separada `carnavales2027_v2_test` |
+| `BETTER_AUTH_SECRET` | Secreto aleatorio generado localmente; reemplazar el placeholder |
+| `BETTER_AUTH_URL` | `http://localhost:3000` |
+| `FRONTEND_URL` | `http://localhost:5173` |
+| `EMAIL_PROVIDER` | `console` |
+| `TRUST_PROXY` | `0` |
+| `SEED_ADMIN_EMAIL` | Correo con el que ingresarás como ADMIN |
+| `SEED_ADMIN_NAME` | Nombre visible del ADMIN |
+| `SEED_DEMO_PASSWORD` | Contraseña común de las cuentas del fixture, de 8 a 128 caracteres |
 
-El fixture local `Carnaval de Fantasia 2027 - Noche Unica` contiene los siguientes usuarios. Todos usan el valor local de `SEED_ADMIN_PASSWORD` en `api/.env`; la contrasena no se versiona ni se documenta en texto plano.
+Si omitís `SEED_DEMO_PASSWORD`, definir `SEED_ADMIN_PASSWORD`: el seed integral
+la usa como contraseña común. Guardar contraseñas y conexiones solamente en
+`api/.env`, que no se versiona.
 
-| Rol | Nombre | Email |
-| --- | --- | --- |
-| JUDGE (titular) | Alba Acosta | `demo.alba.acosta@carnaval.local` |
-| JUDGE (titular) | Clara Cabral | `demo.clara.cabral@carnaval.local` |
-| JUDGE (titular) | Esteban Escobar | `demo.esteban.escobar@carnaval.local` |
-| JUDGE (suplente) | Bruno Benitez | `demo.bruno.benitez@carnaval.local` |
-| JUDGE (suplente) | Diana Duarte | `demo.diana.duarte@carnaval.local` |
-| JUDGE (suplente) | Florencia Fernandez | `demo.florencia.fernandez@carnaval.local` |
-| ESCRIBANO | Escribano demo | `demo.escribano@carnaval.local` |
-| COMISARIO | Comisario demo | `demo.comisario@carnaval.local` |
+Para generar el secreto de Better Auth con Node y copiarlo al portapapeles:
 
-Cada cuenta debe completar 2FA antes de usar rutas protegidas.
-
-Si una base local fue creada con una versión anterior del fixture y muestra `Invalid password hash`, regenerá primero la credencial del ADMIN y luego repará las cuentas demo:
-
-```bash
-NODE_ENV=development npm run db:seed
-npm run db:seed:fiction
+```powershell
+node -e "process.stdout.write(require('node:crypto').randomBytes(32).toString('hex'))" | Set-Clipboard
 ```
 
-En otra terminal, desde `client/`:
+Pegar el resultado como valor de `BETTER_AUTH_SECRET` en `api/.env`.
 
-```bash
-npm run dev
+### 4. Crear las tablas y cargar el evento integral
+
+Desde la raíz, entrar en `api/`. Los comandos de la API deben ejecutarse allí
+para que `dotenv` encuentre `api/.env`.
+
+```powershell
+Set-Location .\api
+$env:NODE_ENV = "development"
+npm.cmd run auth:migrate
+npm.cmd run seed:event:full
 ```
 
-Abrir `http://localhost:5173/#/login`. En desarrollo, Vite redirige `/api` a `http://localhost:3000` y conserva el flujo same-origin.
+`auth:migrate` crea las tablas de Better Auth. `seed:event:full` aplica las
+migraciones de dominio y carga **Carnavales Goyanos 2027 - Evento Integral TEST**:
+tres jornadas, siete comparsas, nueve jurados asignados, 36 rubros, orden de
+pasadas, horarios y cuentas ADMIN/ESCRIBANO/VEEDOR.
+
+**`seed:event:full` es el único seed del proyecto.** Incluye toda la
+configuración y las cuentas del fixture; no hay seeds complementarios que ejecutar.
+
+El seed deja el evento **configurado, sin iniciar y sin votos**. Su salida debe
+incluir `Evento listo para comenzar (CONFIGURING; readiness válido)`.
+
+### 5. Iniciar API y cliente
+
+**Terminal 1 — API**, continuando dentro de `api/`:
+
+```powershell
+npm.cmd run dev
+```
+
+Debe mostrar `API listening on http://localhost:3000`. Mantener esta terminal
+abierta: con `EMAIL_PROVIDER=console`, los códigos OTP de desarrollo aparecen
+en ella cuando se solicitan desde el login.
+
+**Terminal 2 — cliente**, abriendo otra terminal en la raíz del repositorio:
+
+```powershell
+Set-Location .\client
+npm.cmd run dev -- --port 5173 --strictPort
+```
+
+Abrir **http://localhost:5173/#/login**. Vite reenvía `/api` a
+`http://localhost:3000`; el cliente y la API deben estar ejecutándose a la vez.
+
+### 6. Ingresar y comenzar la competencia
+
+1. Ingresar con el correo de `SEED_ADMIN_EMAIL` y la contraseña común configurada.
+2. Completar la habilitación/verificación 2FA que solicite la pantalla. Obtener
+   el OTP en la terminal de la API cuando el proveedor local sea `console`.
+3. Seleccionar **Carnavales Goyanos 2027 - Evento Integral TEST** en Eventos.
+4. Revisar jornadas, comparsas, asignaciones y orden de pasada. Abrir el evento.
+5. Pasar la jornada elegida de `DRAFT` a `OPEN` mediante la API autenticada
+   (procedimiento debajo). Actualmente `NightForm` no expone el estado y
+   **Abrir votación** exige que la jornada ya esté `OPEN`.
+6. Recargar la aplicación, ir a Control de votación, seleccionar evento y
+   jornada y pulsar **Abrir votación**. Se generan las tres planillas de sus
+   jurados con ítems `PENDING`.
+7. Cada jurado ingresa con su correo de la tabla del evento integral, la contraseña común
+   y su propio OTP. Las otras jornadas siguen sin planillas hasta su apertura.
+
+<details>
+<summary>Procedimiento actual para abrir una jornada por API (ADMIN con 2FA)</summary>
+
+Después de abrir el evento desde la aplicación, ejecutar este fragmento en
+la consola de desarrollador del navegador, sobre `http://localhost:5173`,
+con la sesión ADMIN ya verificada. Utiliza la cookie de la sesión sin copiar
+tokens. Cambiar `numeroJornada` para elegir otra jornada del fixture.
+
+```javascript
+const numeroJornada = 1;
+async function solicitar(path, options = {}) {
+  const response = await fetch(`/api/v1${path}`, {
+    credentials: "include",
+    ...options,
+    headers: { "Content-Type": "application/json" },
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.code ?? `HTTP ${response.status}`);
+  return data;
+}
+const evento = (await solicitar("/events")).find(
+  (entry) => entry.name === "Carnavales Goyanos 2027 - Evento Integral TEST",
+);
+if (!evento || evento.status !== "OPEN") throw new Error("Abrir primero el evento desde la aplicación.");
+const jornada = (await solicitar(`/events/${evento.id}/nights`)).find(
+  (entry) => entry.displayOrder === numeroJornada,
+);
+if (!jornada) throw new Error("Jornada no encontrada.");
+await solicitar(`/nights/${jornada.id}`, {
+  method: "PATCH",
+  body: JSON.stringify({
+    name: jornada.name,
+    displayOrder: jornada.displayOrder,
+    kind: jornada.kind,
+    eventDate: jornada.eventDate?.slice(0, 10) ?? null,
+    status: "OPEN",
+  }),
+});
+```
+
+Este paso abre el estado de la jornada. La creación de planillas ocurre
+después, al pulsar **Abrir votación** en Control de votación. La API conserva
+sus verificaciones de sesión, ADMIN, 2FA y transiciones válidas.
+
+</details>
+
+## Arranque diario (proyecto ya instalado)
+
+Con PostgreSQL en ejecución, abrir dos terminales desde la raíz.
+
+**API:**
+
+```powershell
+Set-Location .\api
+$env:NODE_ENV = "development"
+npm.cmd run dev
+```
+
+**Cliente:**
+
+```powershell
+Set-Location .\client
+npm.cmd run dev -- --port 5173 --strictPort
+```
+
+Ingresar en **http://localhost:5173/#/login**. Para detener cada proceso, usar
+`Ctrl+C` en su terminal.
+
+Los datos permanecen en PostgreSQL. **No repetir el seed en cada arranque**:
+rechaza eventos ya iniciados o modificados y cierra las sesiones de sus cuentas.
+Después de incorporar nuevas migraciones del repositorio, ejecutar
+`npm.cmd run db:migrate` desde `api/` antes de levantar la API.
+
+### Comprobaciones rápidas
+
+- **API disponible:** abrir `http://localhost:3000/health`.
+- **Error de conexión a BD:** verificar PostgreSQL en ejecución, base creada y
+  credenciales/puerto de `DATABASE_URL`.
+- **Variable de seed requerida:** revisar que esté definida sin `#` en
+  `api/.env` y ejecutar el comando desde `api/` con `NODE_ENV=development`.
+- **No aparece el OTP:** revisar la terminal de la API, `EMAIL_PROVIDER=console`
+  y que la petición de código se haya realizado desde la pantalla de login.
+- **Puerto 5173 ocupado:** detener el proceso que lo utiliza antes de iniciar
+  Vite; `--strictPort` evita cambiar silenciosamente la URL del cliente.
+- **`FULL_EVENT_SEED_DRIFT` o `FULL_EVENT_SEED_EVENT_LOCKED`:** el fixture ya
+  cambió o comenzó. Para seguir trabajando, usar el arranque diario.
+- **`NIGHT_NOT_OPEN` al abrir votación:** completar antes la transición de
+  la jornada mediante el procedimiento autenticado anterior.
+
+## Contenido del evento integral — Spec 030
+
+Desde `api/`, el comando permanente es:
+
+```powershell
+$env:NODE_ENV = "development"
+npm.cmd run seed:event:full
+```
+
+En una instalación nueva ejecutar primero `npm.cmd run auth:migrate`.
+El seed aplica las migraciones de dominio y crea el evento
+**Carnavales Goyanos 2027 - Evento Integral TEST** con:
+
+- Tres jornadas puntuables ficticias: 06/02, 07/02 y 13/02/2027.
+- Ará Porá, Imperio del Sur, Yasí Berá, Samba del Paraná, Fénix, Alma Guaraní
+  y Brillo de Carnaval, sin prefijo TEST en sus nombres visibles.
+- 25 rubros nominativos, 11 aleatorios y 36 ítems integrales de testing.
+- Nueve jurados distintos: BAILE, VESTUARIO y BATERIA en cada jornada.
+- 21 participaciones con el orden rotativo simulado y horarios desde 20:30
+  cada 90 minutos. Fecha completa y zona `America/Argentina/Cordoba`, incluyendo
+  el día siguiente después de medianoche; visibles en Competencia → Participantes.
+- ADMIN del entorno, ESCRIBANO `demo.escrutinio@carnaval.local` y VEEDOR
+  `demo.veedor.integral@example.test`. Son roles globales con acceso según
+  sus permisos existentes, no jurados adicionales.
+
+| Jornada | Especialidad | Jurado ficticio | Correo |
+|---|---|---|---|
+| 1 | BAILE | Martín Salvatierra | `jury-baile-01@example.test` |
+| 1 | VESTUARIO | Carolina Benítez | `jury-vestuario-01@example.test` |
+| 1 | BATERIA | Federico Acosta | `jury-bateria-01@example.test` |
+| 2 | BAILE | Luciana Ferreyra | `jury-baile-02@example.test` |
+| 2 | VESTUARIO | Alejandro Ramírez | `jury-vestuario-02@example.test` |
+| 2 | BATERIA | Mariana Duarte | `jury-bateria-02@example.test` |
+| 3 | BAILE | Sebastián Molina | `jury-baile-03@example.test` |
+| 3 | VESTUARIO | Valeria Romero | `jury-vestuario-03@example.test` |
+| 3 | BATERIA | Diego Cáceres | `jury-bateria-03@example.test` |
+
+Configurar `SEED_ADMIN_EMAIL`, `SEED_ADMIN_NAME` y `SEED_DEMO_PASSWORD`
+(o `SEED_ADMIN_PASSWORD`) en `api/.env`. La contraseña común admite 8–128
+caracteres; no se imprime ni versiona. Las cuentas completan OTP normalmente.
+Repetir el seed cierra las sesiones de sus usuarios y conserva UUIDs/conteos.
+
+**Estado inicial real:** evento `CONFIGURING`, readiness válido, jornadas
+`DRAFT`, participaciones `SCHEDULED`, cero planillas y cero votos/sanciones.
+ADMIN debe abrir el evento, pasar la jornada elegida a `OPEN` y abrir su
+votación. El servicio genera tres planillas por jornada con `PENDING/NULL`;
+son nueve al abrir las tres jornadas, porque una planilla contiene todas
+las comparsas de un jurado. Pendientes bloquean confirmación y cierre.
+
+Reejecuciones sobre un evento iniciado, desactivado o modificado se rechazan
+sin restablecer su configuración. La configuración se confirma en una sola
+transacción; las identidades usan los servicios y transacciones de Better Auth.
+Se registra `EVENT_CONFIGURED_FROM_SEED` una vez, además de la auditoría
+obligatoria de alta de usuarios y roles.
+
+Datos centralizados en `api/src/db/seeds/full-event.fixture.js`. Fechas,
+personas, horarios y sorteo son ficticios, no oficiales COC. Los 175 vínculos
+nominativos son cobertura implícita, sin tabla puente nueva. Los aleatorios
+quedan sin nominaciones y usan el generador actual por comparsa. Los horarios
+son descriptivos, no activan ventanas temporales. Offline-First sigue diferido
+y no hay catálogo de penalizaciones por minuto/decimales: las diferencias
+están detalladas en `specs/030-seed-evento-integral/clarifications.md`.
+
+Pendiente específico de resultados: el criterio de desempate por Batería
+reconoce actualmente el código heredado `BATERIA`, mientras este catálogo
+usa `BATERIA_COMPARSA`. Ese caso requiere aclaración/configuración del motor;
+el seed no altera la regla de cálculo ni renombra el catálogo solicitado.
 
 ## Roles y rutas de cliente
 
@@ -214,6 +443,10 @@ Abrir `http://localhost:5173/#/login`. En desarrollo, Vite redirige `/api` a `ht
 - `#/invitations/accept`: aceptación de invitaciones de jurados.
 - `#/invitations/operational/accept`: aceptación de invitaciones de perfiles operativos (VEEDOR, COMISARIO, SCRUTINEER, ESCRIBANO).
 - `#/invitations/role/accept?token=:token`: aceptación pública de una invitación operativa; el cliente elimina el token de la URL antes de inspeccionarla.
+- `#/reset-password?token=:token`: definir una nueva contraseña desde el enlace de recupero (llega por correo).
+- `#/cuenta`: cambiar la contraseña ingresando la actual.
+
+Recupero de contraseña: en Personas (`#/admin/judges`), cada persona registrada tiene el botón **Enviar enlace** (con confirmación, solo ADMIN). También existe `#/forgot-password` como ruta directa de solicitud. El envío usa SMTP en producción (`sendResetPassword`); con `EMAIL_PROVIDER=console` el enlace aparece en la terminal de la API.
 
 Las rutas protegidas requieren 2FA verificado. `ADMIN` administra el sistema; `JUDGE` solo accede a sus asignaciones activas y planillas propias; `VEEDOR` ve conteos operativos sin puntajes.
 
@@ -271,6 +504,17 @@ El bootstrap requiere `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_NAME` y `BOOTSTR
 
 El cliente no es servido por la API. En producción se necesita un reverse proxy o servidor same-origin que sirva el cliente y reenvíe `/api` a la API; el proxy de Vite es solo para desarrollo.
 
+### Piloto: backup, restore y runbook
+
+```bash
+cd api
+DATABASE_URL="<prod>" npm run db:backup -- backups/carnavales-$(date +%Y%m%d-%H%M).dump
+bash scripts/restore.sh <dump> "<DATABASE_URL destino>"   # rollback en ventana de corte
+```
+
+Procedimiento completo (arranque, env prod, rotación de secretos, operación
+de jornada, guardia): [`docs/runbook-piloto.md`](docs/runbook-piloto.md).
+
 ### IP del cliente y límites de autenticación (Spec 019/T08)
 
 Para acceso local directo a Node, configurar `TRUST_PROXY=0` en `api/.env` (también se acepta `false`): la API ignora `X-Forwarded-For`. Con Vite como proxy, Node verá la IP del proxy local; esta configuración local no representa varios clientes reales.
@@ -302,7 +546,11 @@ npm audit
 
 Las pruebas PostgreSQL requieren que `TEST_DATABASE_URL` apunte a una base aislada. La evidencia detallada está en los archivos `validation.md` de cada especificación en [`specs/`](specs/).
 
-La evidencia automatizada completa reporta 38 pruebas de persistencia, 107 de API y 99 de cliente, además del build exitoso de Vite y las migraciones 001-065 sin pendientes.
+Los tests del seed completo también requieren permiso PostgreSQL `CREATEDB`
+en ese servidor para validar una instalación realmente vacía. Conservan
+bases `demo_seed_test_*` como evidencia; no borran bases ni fixtures previos.
+
+La evidencia automatizada completa reporta 95 pruebas de persistencia, 190 de API y 315 de cliente, además del build exitoso de Vite y las migraciones 001-076 sin pendientes.
 
 ## SDD y seguridad
 

@@ -61,6 +61,16 @@ Implementar en unidades verticales pequenas, preservando primero los contratos c
 
 Cada unidad se detiene tras su validacion. T07 no requiere migracion porque restaura contratos existentes; las capacidades nuevas con impacto de datos requieren sus migraciones antes del frontend.
 
+## Diseno T09d - Eliminacion logica (2026-09-14)
+
+- Migracion 075 posterior a 074, sin reescribir checksums: `ALTER TABLE carnival_event ADD COLUMN active BOOLEAN NOT NULL DEFAULT true`.
+- `deleteEvent`: conserva `FOR UPDATE` + guarda `CONFIGURING` + `DELETE_BLOCKERS` (`EVENT_HAS_*`); reemplaza cascada de `DELETE FROM ...` por `UPDATE carnival_event SET active=false`; audita `EVENT_DELETED` con `before{name,status}` y `after{active:false}`; retorna `{id, active:false}`. Segundo `DELETE` sobre inactivo retorna `EVENT_NOT_FOUND` o `EVENT_ALREADY_INACTIVE` segun guarda (se opta por `EVENT_NOT_FOUND` para ocultar).
+- `updateEvent`: acepta `{name?, active?}`; reactivar (`active:true`) exige `CONFIGURING`, audita `EVENT_UPDATED`.
+- `listEvents/getEvent/createEvent`: exponen `active`; `openEvent` rechaza inactivo con `EVENT_LOCKED`.
+- Comparsas: sin cambio API/DB; UI agrega boton `Eliminar` + `Dialog` critico que hace `PATCH active:false`; filtro por defecto `Activas`; insignia `Inactiva`; reactivar via `Editar → Activa`.
+- Eventos UI: catalogo filtra `active!==false` por defecto con toggle `Mostrar eliminados`; insignia `Inactivo`; dialogo aclara "se ocultara y quedara desactivado en BD"; boton `Reactivar` via `PATCH active:true`.
+- Pruebas: API delete-soft + reactivacion + bloqueo con historial; cliente eliminar/reactivar/filtro por defecto; suites + build + diff.
+
 ## Diseno T08
 
 - Migracion 067 posterior a 066, sin reescribir checksums: trigger que impide nuevos criterios NULL y desasignaciones, preservando ediciones de huerfanos historicos con identidad y parentela intactas. FK compuesta vigente.

@@ -39,7 +39,8 @@ export async function listSchedule({ client = getPool(), eventId, nightId = null
     `SELECT s.id, s.event_id AS "eventId", s.night_id AS "nightId", n.name AS "nightName",
             s.event_troupe_id AS "troupeId", t.name AS "troupeName",
             t.brand_color AS "troupeBrandColor",
-            s.presentation_order AS "presentationOrder", s.status
+             s.presentation_order AS "presentationOrder", s.status,
+             s.scheduled_at AS "scheduledAt", s.scheduled_timezone AS "scheduledTimezone", s.order_source AS "orderSource"
        FROM night_troupe_schedule s
        JOIN night n ON n.id = s.night_id
        JOIN event_troupe t ON t.id = s.event_troupe_id

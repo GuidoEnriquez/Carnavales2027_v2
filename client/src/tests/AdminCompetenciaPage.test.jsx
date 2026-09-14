@@ -432,6 +432,14 @@ describe("AdminCompetenciaPage", () => {
       expect((await screen.findAllByRole("table"))).toHaveLength(2);
     }
 
+    it("muestra horario de API y distingue el cronograma ficticio", async () => {
+      mockTroupes({ schedule: [{ ...scheduleRows[0], scheduledAt: "2027-02-07T04:00:00.000Z",
+        scheduledTimezone: "America/Argentina/Cordoba", orderSource: "TEST_SIMULATED_DRAW" }] });
+      await openTroupesTab();
+      expect(await screen.findByText(/Programada:.*01:00/)).toHaveTextContent("07/02/2027");
+      expect(screen.getByText(/no son un cronograma oficial de la COC/)).toBeInTheDocument();
+    });
+
     it("crea comparsa con color y muestra preview Vista jurado", async () => {
       const write = vi.fn().mockResolvedValue({ id: "troupe-3", name: "Nueva", categoryId: "category-1", categoryName: "Comparsa", brandColor: "#22C55E", active: true });
       mockTroupes({ write });
@@ -495,6 +503,9 @@ describe("AdminCompetenciaPage", () => {
       await openTroupesTab();
       const section = screen.getByRole("heading", { name: "Comparsas" }).closest("section");
       const cards = () => within(section);
+      expect(screen.getByText("1 de 2 comparsas")).toBeInTheDocument();
+      expect(cards().queryByText("Apagada")).not.toBeInTheDocument();
+      fireEvent.change(screen.getByRole("combobox", { name: "Filtrar comparsas por estado" }), { target: { value: "all" } });
       expect(screen.getByText("2 de 2 comparsas")).toBeInTheDocument();
       fireEvent.change(screen.getByRole("searchbox", { name: "Buscar comparsa por nombre" }), { target: { value: "estre" } });
       expect(cards().getByText("Estrella")).toBeInTheDocument();
@@ -504,6 +515,24 @@ describe("AdminCompetenciaPage", () => {
       fireEvent.change(screen.getByRole("combobox", { name: "Filtrar comparsas por estado" }), { target: { value: "inactive" } });
       expect(cards().queryByText("Estrella")).not.toBeInTheDocument();
       expect(cards().getByText("Apagada")).toBeInTheDocument();
+    });
+
+    it("elimina (desactiva) comparsa con confirmacion y permite reactivar", async () => {
+      const write = vi.fn(async (path, options) => {
+        const body = JSON.parse(options.body);
+        if (path === "/api/v1/troupes/troupe-1" && options.method === "PATCH") return { id: "troupe-1", ...body };
+        throw new Error(`Solicitud inesperada: ${path}`);
+      });
+      mockTroupes({ write });
+      await openTroupesTab();
+      fireEvent.click(screen.getByRole("button", { name: "Eliminar comparsa Estrella" }));
+      expect(await screen.findByRole("dialog", { name: "Eliminar Estrella" })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Eliminar (desactivar)" }));
+      expect(write).toHaveBeenCalledWith("/api/v1/troupes/troupe-1", {
+        method: "PATCH",
+        body: JSON.stringify({ active: false }),
+      });
+      expect(await screen.findByText("Comparsa Estrella eliminada (desactivada en BD).")).toBeInTheDocument();
     });
 
     it("muestra orden por jornada y reordena con vecino esperado", async () => {

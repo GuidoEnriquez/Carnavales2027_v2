@@ -7,7 +7,7 @@
 | T01 | Completada | Ninguna |
 | T02 | Completada | T01 |
 | T03 | Completada | T02 |
-| T04 | En curso | T03 |
+| T04 | Completada (manual 2026-09-14) | T03 |
 | T05 | Bloqueada por aclaracion | T02 |
 | T06 | En curso | T02-T05 |
 | T07 | Completada | T03 |
@@ -45,7 +45,7 @@
 
 **Hecho cuando:** pruebas UI, build y comprobacion responsive proporcional pasan.
 
-**Evidencia:** pruebas cliente completas 41 archivos, 258 tests; build Vite exitoso. La comprobacion manual responsive sigue pendiente y bloquea el cierre de T04. El hallazgo de falta del control `expectedSubjectType` para rubros NOMINATION fue resuelto en T07: el control admite los seis valores soportados (PERSON, COUPLE, GROUP, FIGURE, ELEMENT, OTHER), se envia null para TROUPE y cuenta con pruebas de regresion parametrizadas en `AdminCompetenciaPage.test.jsx` (it.each de creacion y edicion; 33/33 aprobados el 2026-09-10).
+**Evidencia:** pruebas cliente completas 41 archivos, 258 tests; build Vite exitoso. El hallazgo de falta del control `expectedSubjectType` para rubros NOMINATION fue resuelto en T07: el control admite los seis valores soportados (PERSON, COUPLE, GROUP, FIGURE, ELEMENT, OTHER), se envia null para TROUPE y cuenta con pruebas de regresion parametrizadas en `AdminCompetenciaPage.test.jsx` (it.each de creacion y edicion; 33/33 aprobados el 2026-09-10). Comprobación manual responsive/teclado/táctil (390x844, 768x1024, 1440x900): **aprobada por el responsable del producto (2026-09-14)**. T04 completada.
 
 ## T05 - Implementar estados de configuracion y competencia
 
@@ -103,6 +103,13 @@
 **Alcance:** `PATCH /events/:id/schedule/reorder` (`{nightId, orderedIds[], reason?}`) habilitado en `OPEN` solo con ADMIN+2FA, motivo obligatorio (422 sin motivo) y cero ballots en la jornada (409 con votacion iniciada); en `CONFIGURING` mantiene reglas vigentes sin motivo. Auditoria append-only `NIGHT_TROUPE_SCHEDULE_REORDERED`. UI Subir/Bajar + motivo en mesa de control (`AdminVotingPage`), no en Competencia. Sin tocar votacion/puntajes/resultados.
 **Hecho cuando:** tests API (OPEN con motivo OK; sin motivo 422; con ballots 409; sin 2FA 403; CONFIGURING sin motivo OK) y tests cliente en verde; suites API + cliente + build + `git diff --check` sin fallos.
 **Estado:** En curso (automatica 2026-09-12).
+
+## T09d - Eliminacion logica rotulada Eliminar (2026-09-14)
+
+**RF:** RF-158, RF-159; RNF-30, RNF-33, RNF-34.
+**Alcance:** comparsas: boton Eliminar + Dialog que hace `PATCH active:false`, filtro por defecto Activas, insignia Inactiva, reactivar via Editar. Eventos: migracion 075 `carnival_event.active`, `DELETE` = baja logica con guardas vigentes, catalogo oculta inactivos por defecto con toggle, insignia + Reactivar via `PATCH active:true`. Sin DELETE fisico ni tabla paralela.
+**Hecho cuando:** tests API (soft-delete comparsa/evento, reactivacion, bloqueo con historial, sin perdida de filas) y cliente (eliminar/reactivar/filtro por defecto) en verde; suites + build + `git diff --check` sin fallos.
+**Estado:** Completada (automatica 2026-09-14). Migracion 075, `DELETE` evento = baja logica, boton Eliminar + Dialog en comparsas y eventos, filtro por defecto Activas / catalogo sin eliminados + toggle, reactivacion via PATCH.
 
 ## T10 - Revision historica y jornadas
 

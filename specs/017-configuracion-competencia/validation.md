@@ -7,15 +7,15 @@
 - Cliente: `npm.cmd test` → 45 archivos / 282 tests en verde; `npm.cmd run build` → 83 módulos transformados, build exitoso.
 - API/DB: `npm.cmd test` → 142 tests en verde.
 - `git diff --check`: sin errores de whitespace; las advertencias LF/CRLF corresponden a la configuración del working tree.
-- T09a/T09b permanecen automatizadas y validadas; T04 continúa pendiente de comprobación manual responsive y T05/T10/T11 siguen bloqueadas por sus aclaraciones documentadas.
+- T09a/T09b permanecen automatizadas y validadas; T04 completada con cierre manual 2026-09-14; T05/T10/T11 siguen bloqueadas por sus aclaraciones documentadas.
 
 - Incremento activo; T03 validada automaticamente para su alcance original. El pedido ampliado no esta validado.
 - T01 completada el 2026-09-07.
 - T02 completada automaticamente.
 - T03 completada el 2026-09-07.
-- T04 en curso: falta solo la comprobacion manual responsive; los hallazgos de inspeccion sobre `expectedSubjectType` quedaron resueltos en T07 (control de tipo de sujeto, `null` para TROUPE y pruebas de regresion parametrizadas).
+- T04 completada (cierre manual responsive/teclado/táctil aprobado 2026-09-14); los hallazgos de inspeccion sobre `expectedSubjectType` quedaron resueltos en T07 (control de tipo de sujeto, `null` para TROUPE y pruebas de regresion parametrizadas).
 - T05 continúa bloqueada por la aclaración COC sobre `PUBLISHED`/`LOCKED`.
-- T06 continúa en curso por la comprobación manual responsive y revisión final de alcance.
+- T06 continúa en curso por revisión final de alcance (la comprobación manual responsive ya fue aprobada el 2026-09-14).
 - T07 y T08 completadas con evidencia automatizada. T09-T11 pendientes; no se cierra el plan integral.
 
 ## Evidencia disponible
@@ -63,7 +63,26 @@
 | Build cliente | `vite build` | Exitoso, 71 modulos |
 | Diff | `git diff --check` + `git status` | Sin errores; alcance acotado a troupes/schedule/admin.css/specs-017; sin secretos en el diff |
 
-- Pendientes (no bloquean T09a/T09b): comprobacion manual responsive/teclado/tactil (390x844, 768x1024, 1440x900) de la nueva ficha y del reorder por jornada; decisiones bloqueantes T05/T10/T11 sin cambios.
+## Evidencia T09d - Eliminacion logica rotulada Eliminar (2026-09-14)
+
+- RF-158/RF-159: `Eliminar` = baja logica (`active=false`) en la misma tabla; sin `DELETE` fisico ni tabla paralela. Comparsas sin migracion; eventos con migracion 075 (`carnival_event.active DEFAULT true`). `DELETE /events/:id` conserva guardas `CONFIGURING` + `EVENT_HAS_*` y audita `EVENT_DELETED` con `after.active=false`; reactivacion `PATCH {active:true}` auditada `EVENT_UPDATED`. UI: boton Eliminar + Dialog critico, filtro comparsas por defecto `Activas`, catalogo eventos oculta eliminados con toggle `Mostrar eliminados`, insignias `Inactiva` / `Eliminado (inactivo en BD)`, botones Reactivar. `openEvent` y `requireConfiguringEvent` rechazan inactivos (`EVENT_LOCKED`) con compatibilidad pre-075 (fallback `42703` con SAVEPOINT condicional) para esquemas historicos aislados.
+- Archivos: `075_carnival_event_active.sql` (nueva), `event-service.js` (CRUD + `active`, `deleteEvent` soft), `event-readiness.service.js` (`openEvent` bloquea inactivo + compat), `migrate.test.js` (075), `event-delete.test.js` (soft + reactivacion), `AdminCompetenciaPage.jsx` + test (Eliminar/Reactiva/filtro), `AdminEventsPage.jsx` + test (toggle/reactivar), `AdminEventContext.jsx` (no auto-selecciona inactivos).
+
+| Area | Comando | Resultado |
+|---|---|---|
+| Cliente focal | `npx vitest run src/tests/AdminEventsPage.test.jsx src/tests/AdminCompetenciaPage.test.jsx` | 2 archivos, 56 tests aprobados |
+| Cliente integral | `npx vitest run` | 46 archivos / 306 tests en verde (un run previo 45/46 con 1 fallo intermitente tipo OfficialRecord, documentado como intermitencia conocida; re-run 46/46) |
+| Cliente build | `npm run build` | Exitoso, 83 modulos |
+| API focal | `node --import=dotenv/config --test --test-concurrency=1 src/tests/event-delete.test.js src/tests/events-api.test.js src/tests/categories-api.test.js` | 4 aprobados |
+| API migracion | `... src/db/tests/migrate.test.js` | 1 aprobado (075 aplicada) |
+| API integral | `node --import=dotenv/config --test --test-concurrency=1` | 175/175 aprobados |
+| Diff | `git diff --check` | Sin errores de whitespace (solo advertencias LF/CRLF preexistentes del working tree) |
+
+- Pendientes (no bloquean T09d): decisiones bloqueantes T05/T10/T11 sin cambios. Cambios ajenos preexistentes en el working tree (README, api/.env.example, package, AdminJudgesPage, seeds untracked) quedan fuera de alcance.
+
+## Cierre manual T04/T08/T09a/T09b/T09d (2026-09-14)
+
+- Comprobación manual responsive/teclado/táctil (390x844, 768x1024, 1440x900) de la configuración de competencia, incluida la ficha de comparsa, el reorden por jornada y Eliminar/Reactivar: **aprobada por el responsable del producto (2026-09-14)**. T04 completada. Restan T05/T10/T11 (bloqueadas por aclaraciones, no por validación manual) y el cierre integral T06.
 
 ## Evidencia T07
 

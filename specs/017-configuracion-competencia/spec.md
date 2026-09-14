@@ -61,7 +61,12 @@ Separar la administracion general del evento de la configuracion competitiva y r
 - No generar planillas nuevas ni modificar planillas existentes en este incremento.
 - No alterar la semantica de `PENDING`, `SCORED` o `NOT_PRESENTED` de Spec 004.
 - No activar Offline-First ni publicacion externa de resultados.
-- No implementar borrado fisico de configuracion.
+- No implementar borrado fisico de configuracion ni tablas paralelas de archivo: la eliminacion es baja logica (`active=false`) sobre la misma tabla.
+
+## Ampliacion T09d - Eliminacion logica rotulada "Eliminar" (2026-09-14)
+
+- **RF-158.** La accion `Eliminar` de comparsa DEBE ejecutar baja logica (`PATCH /troupes/:id {active:false}`, auditada `TROUPE_UPDATED`), SIN `DELETE` fisico ni migracion a otra tabla. El registro DEBE conservarse en `event_troupe` con `active=false`. Solo en evento `CONFIGURING` (guarda `EVENT_LOCKED` vigente en UI; la API conserva su contrato). La lista DEBE ocultar inactivas por defecto (filtro por defecto `Activas`) y permitir verlas con filtro `Todas/Inactivas` con insignia `Inactiva`.
+- **RF-159.** La accion `Eliminar` de evento DEBE ejecutar baja logica (`DELETE /events/:id` = `UPDATE carnival_event SET active=false`, columna 075, auditada `EVENT_DELETED` con `after.active=false`), SIN cascada fisica. El registro DEBE conservarse con `active=false`. Solo en `CONFIGURING` y sin historial operativo (guardas `EVENT_LOCKED` y `EVENT_HAS_*` vigentes: ballots, asignaciones, cupos, penalizaciones, actas, resultados). El catalogo DEBE ocultar inactivos por defecto con toggle `Mostrar eliminados` e insignia `Eliminado/Inactivo`; la reactivacion es `PATCH /events/:id {active:true}` auditada `EVENT_UPDATED`.
 
 ## Requisitos funcionales
 
