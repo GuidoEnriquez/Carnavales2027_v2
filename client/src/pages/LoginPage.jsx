@@ -98,6 +98,7 @@ export function LoginPage({ onAuthenticated }) {
   const [resendCooldown, setResendCooldown] = useState(28);
   const [otpValues, setOtpValues] = useState(Array(OTP_LENGTH).fill(""));
   const otpRefs = useRef([]);
+  const submittingRef = useRef(false);
 
   useEffect(() => {
     if (step !== "otp" || resendCooldown <= 0) return undefined;
@@ -109,6 +110,8 @@ export function LoginPage({ onAuthenticated }) {
 
   const submitCredentials = async (event) => {
     event.preventDefault();
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     const form = event.currentTarget;
     const data = new FormData(form);
     setLoading(true);
@@ -123,8 +126,10 @@ export function LoginPage({ onAuthenticated }) {
           method: "POST",
           body: JSON.stringify({ email, password }),
         });
-      } catch {
-        setMessage("Correo o contraseña incorrectos.");
+      } catch (error) {
+        setMessage(error?.code === "RATE_LIMIT_EXCEEDED"
+          ? "Demasiados intentos. Esperá unos minutos antes de reintentar."
+          : "Correo o contraseña incorrectos.");
         return;
       }
       if (!signIn.twoFactorRedirect) {
@@ -142,6 +147,7 @@ export function LoginPage({ onAuthenticated }) {
     } catch {
       setMessage("No pudimos iniciar sesión. Intentá nuevamente.");
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
@@ -156,11 +162,13 @@ export function LoginPage({ onAuthenticated }) {
 
   const submitOtp = async (event) => {
     event.preventDefault();
+    if (submittingRef.current) return;
     const code = otpValues.join("");
     if (code.length < OTP_LENGTH) {
       setMessage("Ingresá los 6 números para continuar.");
       return;
     }
+    submittingRef.current = true;
     setLoading(true);
     setMessage("");
     try {
@@ -180,8 +188,10 @@ export function LoginPage({ onAuthenticated }) {
       } else {
         setMessage("No pudimos verificar el código. Intentá nuevamente.");
       }
+      submittingRef.current = false;
       return;
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
 
@@ -195,7 +205,8 @@ export function LoginPage({ onAuthenticated }) {
   };
 
   const resendOtp = async () => {
-    if (resendCooldown > 0) return;
+    if (resendCooldown > 0 || submittingRef.current) return;
+    submittingRef.current = true;
     setLoading(true);
     setMessage("");
     try {
@@ -205,6 +216,7 @@ export function LoginPage({ onAuthenticated }) {
     } catch {
       setMessage("No se pudo reenviar el código. Intentá nuevamente.");
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
@@ -283,6 +295,7 @@ export function LoginPage({ onAuthenticated }) {
             <button className="primary-action" disabled={loading}>
               {loading ? "Verificando…" : "Ingresar"}
             </button>
+            <p className="login-forgot"><a href="#/forgot-password">Olvidé mi contraseña</a></p>
           </form>
         ) : step === "otp" ? (
           <form onSubmit={submitOtp}>

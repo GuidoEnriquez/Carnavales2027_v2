@@ -216,6 +216,30 @@ export function AdminJudgesPage() {
                       run: () => action(`${judge.id}-suspend`, `/api/v1/judges/${judge.id}/suspend`, "POST", "Jurado suspendido y sesiones revocadas."),
                     });
                   }} aria-label={`Suspender a ${judge.name}`}>Suspender</button>}
+                  {judge.registrationStatus === "REGISTERED" && <button className="secondary" type="button" disabled={rowBusy} onClick={(event) => {
+                    actionTriggerRef.current = event.currentTarget;
+                    setPendingAction({
+                      title: "Enviar enlace de restablecimiento",
+                      description: `¿Enviar a ${judge.email} un enlace para definir una nueva contraseña?`,
+                      confirmLabel: "Enviar enlace",
+                      run: async () => {
+                        if (busy) return;
+                        setBusy(`${judge.id}-reset`);
+                        setMessage("");
+                        try {
+                          await apiRequest("/api/auth/forget-password", {
+                            method: "POST",
+                            body: JSON.stringify({ email: judge.email, redirectTo: "/#/reset-password" }),
+                          });
+                          setMessage("Enlace enviado.");
+                        } catch {
+                          setMessage("No se pudo enviar el enlace.");
+                        } finally {
+                          setBusy("");
+                        }
+                      },
+                    });
+                  }} aria-label={`Enviar enlace de restablecimiento a ${judge.name}`}>Enviar enlace</button>}
                   {judge.registrationStatus === "SUSPENDED" && <button className="secondary" type="button" aria-label={`Reintentar cierre de sesiones de ${judge.name}`} disabled={rowBusy} onClick={() => action(`${judge.id}-suspend`, `/api/v1/judges/${judge.id}/suspend`, "POST", "Sesiones revocadas.")}>Reintentar cierre de sesiones</button>}
                   {judge.registrationStatus === "SUSPENDED" && <button type="button" aria-label={`Reactivar a ${judge.name}`} disabled={rowBusy} onClick={() => action(`${judge.id}-reactivate`, `/api/v1/judges/${judge.id}/reactivate`, "POST", "Jurado reactivado.")}>Reactivar</button>}
                 </div>

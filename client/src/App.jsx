@@ -22,6 +22,9 @@ import { JudgeBallotPage } from "./pages/JudgeBallotPage.jsx";
 import { JudgeAssignmentPage } from "./pages/JudgeAssignmentPage.jsx";
 import { VeedorMonitorPage } from "./pages/VeedorMonitorPage.jsx";
 import { LoginPage } from "./pages/LoginPage.jsx";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage.jsx";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage.jsx";
+import { AccountPage } from "./pages/AccountPage.jsx";
 import { PublicResultsPage } from "./pages/PublicResultsPage.jsx";
 import { apiRequest } from "./api/http.js";
 import { EventCard } from "./components/EventCard.jsx";
@@ -102,6 +105,8 @@ export default function App({ session: providedSession }) {
     route === "#/login" ||
     route === "" ||
     route.startsWith("#/invitations") ||
+    route === "#/reset-password" ||
+    route === "#/forgot-password" ||
     route === "#/resultados";
   const currentLayer = isBrandRoute ? "brand" : "instrument";
 
@@ -123,6 +128,12 @@ export default function App({ session: providedSession }) {
       return <AcceptOperationalInvitationPage key={secret} secret={secret} />;
     }
     if (route === "#/invitations/accepted") return <AcceptedJudgeInvitationPage />;
+    if (route === "#/reset-password") {
+      const token = new URLSearchParams(query).get("token") ?? "";
+      return <ResetPasswordPage key={token} token={token} />;
+    }
+    if (route === "#/forgot-password") return <ForgotPasswordPage />;
+    if (route === "#/cuenta") return <AccountPage />;
     if (route === "#/login" || route === "") return <LoginPage />;
   if (route === "#/judge/assignment") {
     return <RoleArea session={session} role="JUDGE"><JudgeAssignmentPage session={session} /></RoleArea>;

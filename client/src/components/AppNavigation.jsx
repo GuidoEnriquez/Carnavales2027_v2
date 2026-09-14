@@ -127,6 +127,7 @@ export function AppNavigation({ session }) {
           </label>
         )}
         <span>{session.user?.name}</span>
+        <a href="#/cuenta">Mi cuenta</a>
         <button className="secondary" type="button" disabled={closing} onClick={signOut}>Salir</button>
       </div>
       {message && <p className="navigation-feedback" role="alert">{message}</p>}
