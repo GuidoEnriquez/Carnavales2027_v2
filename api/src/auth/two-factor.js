@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { otpEmail } from "../email-templates.js";
 
 function requireEnvironment(name) {
   const value = process.env[name];
@@ -49,6 +50,7 @@ export function createOtpDelivery({
       to: user.email,
       subject: "Código de verificación - Carnavales 2027",
       text: `Tu código de verificación es: ${otp}`,
+      html: otpEmail({ otp }),
     });
   };
 }
