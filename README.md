@@ -443,6 +443,10 @@ el seed no altera la regla de cálculo ni renombra el catálogo solicitado.
 - `#/invitations/accept`: aceptación de invitaciones de jurados.
 - `#/invitations/operational/accept`: aceptación de invitaciones de perfiles operativos (VEEDOR, COMISARIO, SCRUTINEER, ESCRIBANO).
 - `#/invitations/role/accept?token=:token`: aceptación pública de una invitación operativa; el cliente elimina el token de la URL antes de inspeccionarla.
+- `#/reset-password?token=:token`: definir una nueva contraseña desde el enlace de recupero (llega por correo).
+- `#/cuenta`: cambiar la contraseña ingresando la actual.
+
+Recupero de contraseña: en Personas (`#/admin/judges`), cada persona registrada tiene el botón **Enviar enlace** (con confirmación, solo ADMIN). También existe `#/forgot-password` como ruta directa de solicitud. El envío usa SMTP en producción (`sendResetPassword`); con `EMAIL_PROVIDER=console` el enlace aparece en la terminal de la API.
 
 Las rutas protegidas requieren 2FA verificado. `ADMIN` administra el sistema; `JUDGE` solo accede a sus asignaciones activas y planillas propias; `VEEDOR` ve conteos operativos sin puntajes.
 
@@ -546,7 +550,7 @@ Los tests del seed completo también requieren permiso PostgreSQL `CREATEDB`
 en ese servidor para validar una instalación realmente vacía. Conservan
 bases `demo_seed_test_*` como evidencia; no borran bases ni fixtures previos.
 
-La evidencia automatizada completa reporta 38 pruebas de persistencia, 107 de API y 99 de cliente, además del build exitoso de Vite y las migraciones 001-065 sin pendientes.
+La evidencia automatizada completa reporta 95 pruebas de persistencia, 190 de API y 315 de cliente, además del build exitoso de Vite y las migraciones 001-076 sin pendientes.
 
 ## SDD y seguridad
 

@@ -25,7 +25,7 @@ nunca directo en prod sin ventana de corte (termina conexiones primero).
 ## Orden de arranque limpio
 
 1. `auth:migrate` (tablas Better Auth) — SIEMPRE antes que `db:migrate`.
-2. `db:migrate` (75 migraciones, idempotente).
+2. `db:migrate` (76 migraciones, idempotente).
 3. `bootstrap:admin` una sola vez (exige `NODE_ENV=production`).
 4. `audit:verify` íntegro antes de operar.
 
@@ -39,6 +39,7 @@ BETTER_AUTH_SECRET=<64 hex aleatorios, rotado>
 BETTER_AUTH_URL=https://api.tudominio
 FRONTEND_URL=https://tudominio
 EMAIL_PROVIDER=smtp
+EMAIL_FROM=noreply@tudominio   # remitente del OTP y del recupero de contraseña
 SMTP_HOST / SMTP_PORT=587 / SMTP_SECURE=false
 SMTP_USER / SMTP_PASSWORD=<app password>
 ```
@@ -52,6 +53,13 @@ con 2FA → abrir jornada → votar → cerrar.
 2. Cambiar password de DB y SMTP app-password.
 3. Actualizar `.env` prod, reiniciar API, verificar login + OTP.
 4. El `.env` local de desarrollo NO se reutiliza en prod.
+
+## Recupero de contraseña (operador)
+
+- La persona pide el enlace o el ADMIN lo envía desde Personas → **Enviar enlace** (con confirmación).
+- El correo llega con el enlace a `#/reset-password?token=...`; el token es de un solo uso y vence.
+- Si no llega: verificar `EMAIL_FROM`/SMTP en prod, spam, y que la cuenta exista con ese correo.
+- En desarrollo (`EMAIL_PROVIDER=console`) el enlace aparece en la terminal de la API.
 
 ## Apertura/cierre de jornada (operador)
 
