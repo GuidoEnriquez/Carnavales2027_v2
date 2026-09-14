@@ -54,8 +54,10 @@ export function AdminEventsPage() {
   const [configurationError, setConfigurationError] = useState(false);
   const [message, setMessage] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [summaries, setSummaries] = useState({});
   const createTriggerRef = useRef(null);
+  const deleteTriggerRef = useRef(null);
 
   const events = adminEvent?.events ?? localEvents;
   const activeEventId = adminEvent?.activeEventId ?? "";
@@ -220,6 +222,22 @@ export function AdminEventsPage() {
             const otherEvents = events.filter((event) => event.id !== activeEventId);
             const renderActions = (event, active) => {
               const nextStep = nextStepFor(event, summaries[event.id] ?? EMPTY_SUMMARY);
+              const confirmDelete = async () => {
+                const target = deleteTarget;
+                setDeleteTarget(null);
+                try {
+                  await apiRequest(`/api/v1/events/${target.id}`, { method: "DELETE" });
+                  if (target.id === activeEventId && adminEvent) adminEvent.setActiveEventId("");
+                  await refreshEvents();
+                  setMessage(`Evento ${target.name} eliminado.`);
+                } catch (error) {
+                  setMessage(error.code && error.code.startsWith("EVENT_HAS_")
+                    ? "Solo se pueden eliminar eventos sin votación ni historial operativo."
+                    : error.code === "EVENT_LOCKED"
+                      ? "Solo se pueden eliminar eventos en preparación."
+                      : "No se pudo eliminar el evento.");
+                }
+              };
               return (
                 <div className="event-catalog-actions">
                   {active ? (
@@ -234,6 +252,30 @@ export function AdminEventsPage() {
                       {event.status === "OPEN" && <a className="button-link secondary" href={nextStep.href}>Ir a supervisión</a>}
                       {event.status === "CLOSED" && <a className="button-link secondary" href={nextStep.href}>Ver resultados</a>}
                     </>
+                  )}
+                  {event.status === "CONFIGURING" && (
+                    <button
+                      type="button"
+                      className="secondary danger-action"
+                      aria-label={`Eliminar evento ${event.name}`}
+                      onClick={(e) => { deleteTriggerRef.current = e.currentTarget; setDeleteTarget(event); }}
+                    >
+                      Eliminar
+                    </button>
+                  )}
+                  {deleteTarget?.id === event.id && (
+                    <Dialog
+                      isOpen
+                      onClose={() => setDeleteTarget(null)}
+                      title={`Eliminar ${event.name}`}
+                      description="Esta acción borra el evento y toda su configuración. No se puede deshacer. Solo procede si nunca se abrió votación."
+                      focusReturnRef={deleteTriggerRef}
+                    >
+                      <div className="dialog-actions">
+                        <button type="button" className="secondary" onClick={() => setDeleteTarget(null)}>Cancelar</button>
+                        <button type="button" className="danger-action" onClick={confirmDelete}>Eliminar definitivamente</button>
+                      </div>
+                    </Dialog>
                   )}
                 </div>
               );

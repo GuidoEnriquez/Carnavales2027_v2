@@ -218,18 +218,6 @@ export function PublicResultsPage({ initialEventId = null }) {
             </div>
           </div>
           <div className="public-header-actions">
-            <div
-              className={`live-indicator-badge is-${liveStatus}`}
-              role="status"
-              aria-live="polite"
-              title={liveStatus === "live" ? "Conectado al canal en tiempo real" : "Actualización periódica activa"}
-            >
-              <span className="live-dot" aria-hidden="true" />
-              {liveStatus === "live" && "En vivo"}
-              {liveStatus === "polling" && "Respaldo (30s)"}
-              {liveStatus === "connecting" && "Conectando..."}
-              {liveStatus === "offline" && "Sin conexión"}
-            </div>
             <a href="#/login" className="public-login-link">
               Acceso Operativo
             </a>

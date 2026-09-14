@@ -1,4 +1,5 @@
 import { getPool } from "../../db/pool.js";
+import { auditEvent } from "../../audit/audit-service.js";
 
 function requireText(value, name) {
   if (typeof value !== "string" || value.trim().length === 0) throw new TypeError(`${name} debe ser texto no vacío.`);
@@ -50,6 +51,55 @@ export async function updateEvent({ client = getPool(), eventId, name }) {
   );
   if (!rows[0]) throw new Error("EVENT_NOT_FOUND");
   return rows[0];
+}
+
+const DELETE_BLOCKERS = [
+  ["ballot", "EVENT_HAS_BALLOTS"],
+  ["judge_assignment", "EVENT_HAS_ASSIGNMENTS"],
+  ["judge_quota", "EVENT_HAS_QUOTAS"],
+  ["troupe_penalty", "EVENT_HAS_PENALTIES"],
+  ["official_scrutiny_record", "EVENT_HAS_SCRUTINY_RECORD"],
+  ["results_release", "EVENT_HAS_RESULTS"],
+  ["results_snapshot", "EVENT_HAS_RESULTS"],
+];
+
+export async function deleteEvent({ client = null, eventId, actorUserId = null }) {
+  const owned = !client;
+  const db = client ?? await getPool().connect();
+  try {
+    if (owned) await db.query("BEGIN");
+    const id = requireText(eventId, "eventId");
+    const { rows: events } = await db.query("SELECT id, name, status FROM carnival_event WHERE id = $1 FOR UPDATE", [id]);
+    if (!events[0]) throw new Error("EVENT_NOT_FOUND");
+    if (events[0].status !== "CONFIGURING") throw new Error("EVENT_LOCKED");
+    for (const [table, code] of DELETE_BLOCKERS) {
+      const { rows: [{ n }] } = await db.query(`SELECT COUNT(*)::int AS n FROM ${table} WHERE event_id = $1`, [id]);
+      if (n > 0) throw new Error(code);
+    }
+    await db.query("DELETE FROM rubric_criterion WHERE rubric_id IN (SELECT id FROM rubric WHERE event_id = $1)", [id]);
+    await db.query("DELETE FROM evaluation_item WHERE event_id = $1", [id]);
+    await db.query("DELETE FROM troupe_nomination WHERE event_id = $1", [id]);
+    await db.query("DELETE FROM night_troupe_schedule WHERE event_id = $1", [id]);
+    await db.query("DELETE FROM voting_window WHERE event_id = $1", [id]);
+    await db.query("DELETE FROM night WHERE event_id = $1", [id]);
+    await db.query("DELETE FROM event_troupe WHERE event_id = $1", [id]);
+    await db.query("DELETE FROM event_category WHERE event_id = $1", [id]);
+    await db.query("DELETE FROM rubric WHERE event_id = $1", [id]);
+    await db.query("DELETE FROM event_specialty WHERE event_id = $1", [id]);
+    await db.query("DELETE FROM configuration_seed WHERE event_id = $1", [id]);
+    await db.query("DELETE FROM carnival_event WHERE id = $1", [id]);
+    await auditEvent(db, {
+      actorUserId, action: "EVENT_DELETED", entityType: "carnival_event", entityId: id,
+      before: { name: events[0].name, status: events[0].status },
+    });
+    if (owned) await db.query("COMMIT");
+    return { id };
+  } catch (error) {
+    if (owned) await db.query("ROLLBACK");
+    throw error;
+  } finally {
+    if (owned) db.release();
+  }
 }
 export async function createNight({ client = getPool(), eventId, name, displayOrder, kind, eventDate = null }) {
   await requireConfiguringEvent({ client, eventId });

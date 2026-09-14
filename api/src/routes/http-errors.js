@@ -41,7 +41,8 @@ export function sendKnownError(response, error) {
     error.message === "CANNOT_DELETE_PENALTY" ||
     error.message === "PENALTY_FIELDS_IMMUTABLE" ||
     error.message === "OFFICIAL_RECORD_IMMUTABLE" ||
-    error.message === "TIE_BREAKER_PENDING"
+    error.message === "TIE_BREAKER_PENDING" ||
+    error.message === "NIGHT_VOTING_STARTED"
   ) {
     response.status(409).json({ code: error.message });
     return true;
@@ -76,12 +77,30 @@ export function sendKnownError(response, error) {
     response.status(422).json({ code: error.message });
     return true;
   }
+  if (error.message === "REORDER_REASON_REQUIRED") {
+    response.status(422).json({ code: error.message });
+    return true;
+  }
   if (error.message === "EVENT_LOCKED" || error.message === "LAST_ADMIN_REQUIRED") {
     response.status(409).json({ code: error.message });
     return true;
   }
   if (["CATEGORY_INACTIVE", "SPECIALTY_INACTIVE"].includes(error.message)) {
     response.status(409).json({ code: error.message });
+    return true;
+  }
+  if ([
+    "EVENT_HAS_BALLOTS",
+    "EVENT_HAS_ASSIGNMENTS",
+    "EVENT_HAS_QUOTAS",
+    "EVENT_HAS_PENALTIES",
+    "EVENT_HAS_SCRUTINY_RECORD",
+    "EVENT_HAS_RESULTS",
+  ].includes(error.message)) {
+    response.status(409).json({
+      code: error.message,
+      message: "Solo se pueden eliminar eventos sin votación ni historial operativo.",
+    });
     return true;
   }
   if (["INVALID_JUDGE_STATUS", "ACCOUNT_ALREADY_EXISTS"].includes(error.message)) {
@@ -139,13 +158,19 @@ export function sendKnownError(response, error) {
     "TROUPE_PRECEDENCE_REQUIRED",
     "EVENT_NOT_OPEN",
     "NIGHT_NOT_OPEN",
+    "NIGHT_SCHEDULE_EMPTY",
     "VOTING_COMPETITION_ONLY",
     "VOTING_WINDOW_CLOSED",
     "VOTING_WINDOW_NOT_OPEN",
     "SYNC_OPERATION_MISMATCH",
     "SYNC_BATCH_MIXED_RETRY",
   ].includes(error.message)) {
-    response.status(409).json({ code: error.message });
+    const messages = {
+      NIGHT_SCHEDULE_EMPTY: "La jornada no tiene comparsas programadas. Programá comparsas en la jornada antes de abrir la votación.",
+    };
+    const body = { code: error.message };
+    if (messages[error.message]) body.message = messages[error.message];
+    response.status(409).json(body);
     return true;
   }
   if (error.message === "INVITATION_INVALID") {

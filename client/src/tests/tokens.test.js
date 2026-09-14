@@ -28,7 +28,7 @@ describe("Design System Tokens (Spec 020 / RF-176, RF-177)", () => {
     ["--surface-login-input", "#304258"],
     ["--border-input", "rgba(148, 163, 184, 0.34)"],
     ["--surface-hover-subtle", "rgba(148, 163, 184, 0.1)"],
-    ["--text-on-primary", "#082b61"],
+    ["--text-on-primary", "#ffffff"],
     ["--text-on-accent", "#ffffff"],
   ])("define %s globalmente una sola vez con el valor existente", (name, value) => {
     const root = css.match(/:root\s*\{([^{}]*)\}/)?.[1] ?? "";
@@ -303,7 +303,7 @@ describe("Design System Tokens (Spec 020 / RF-176, RF-177)", () => {
     const readinessOk = competenciaCss.match(/\.readiness-ok\s*\{([^{}]*)\}/)?.[1] ?? "";
     const opsSummary = adminCss.match(/\.operations-summary\s*\{([^{}]*)\}/)?.[1] ?? "";
 
-    expect(votingSummaryStrong).toMatch(/color:\s*var\(--accent-primary\);/);
+    expect(votingSummaryStrong).toMatch(/color:\s*var\(--accent-text\);/);
     expect(votingSummaryStrong).toMatch(/font-family:\s*var\(--font-display,\s*var\(--font-sans\)\);/);
     expect(pendingDialogH2).toMatch(/font-family:\s*var\(--font-display,\s*var\(--font-sans\)\);/);
     expect(readinessFail).toMatch(/border-inline-start:\s*3px solid var\(--danger\);/);

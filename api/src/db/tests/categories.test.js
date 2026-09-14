@@ -6,7 +6,7 @@ import { createEvent } from "../../modules/events/event-service.js";
 
 const originalDatabaseUrl = process.env.DATABASE_URL;
 
-test("las categorías son únicas por evento y solo admiten soft-disable", {
+test("las categorías son únicas por evento y admiten borrado físico solo sin historial", {
   skip: !process.env.TEST_DATABASE_URL,
 }, async (context) => {
   context.after(async () => {
@@ -42,10 +42,8 @@ test("las categorías son únicas por evento y solo admiten soft-disable", {
     );
     await client.query("UPDATE event_category SET active = false WHERE id = $1", [categoryRows[0].id]);
     await client.query("SAVEPOINT physical_category_delete");
-    await assert.rejects(
-      () => client.query("DELETE FROM event_category WHERE id = $1", [categoryRows[0].id]),
-      /CATEGORY_DELETE_FORBIDDEN/,
-    );
+    // Migración 073: sin ballots ni asignaciones, el borrado físico está permitido.
+    await client.query("DELETE FROM event_category WHERE id = $1", [categoryRows[0].id]);
     await client.query("ROLLBACK TO SAVEPOINT physical_category_delete");
   } finally {
     await client.query("ROLLBACK");

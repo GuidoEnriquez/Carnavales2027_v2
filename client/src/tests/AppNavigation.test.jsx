@@ -53,7 +53,7 @@ describe("AppNavigation", () => {
     window.location.hash = "#/admin/penalties";
     render(<AppNavigation session={{ user: { name: "Comisario" }, roles: ["COMISARIO"] }} />);
     openMenu();
-    expect(screen.getByText("En vivo")).toBeInTheDocument();
+    expect(screen.queryByText("En vivo")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Penalizaciones" })).toHaveAttribute("href", "#/admin/penalties");
     expect(screen.getByRole("link", { name: "Penalizaciones" })).toHaveAttribute("aria-current", "page");
     expect(screen.queryByRole("link", { name: "Evento" })).not.toBeInTheDocument();

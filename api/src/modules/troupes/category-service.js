@@ -31,9 +31,10 @@ function optionalBrandColor(value) {
 export async function createCategory({ client = getPool(), eventId, name, code, displayOrder }) {
   await requireConfiguringEvent({ client, eventId });
   const { rows } = await client.query(
-    `INSERT INTO event_category (event_id, name, code, display_order) VALUES ($1, $2, $3, $4)
+    `INSERT INTO event_category (event_id, name, code, display_order)
+     VALUES ($1, $2, $3, COALESCE($4, (SELECT COALESCE(MAX(display_order), 0) + 1 FROM event_category WHERE event_id = $1)))
      RETURNING id, event_id AS "eventId", name, code, display_order AS "displayOrder", active`,
-    [text(eventId, "eventId"), text(name, "name"), text(code, "code"), order(displayOrder)],
+    [text(eventId, "eventId"), text(name, "name"), text(code, "code"), displayOrder === undefined ? null : order(displayOrder)],
   );
   return rows[0];
 }
@@ -76,10 +77,19 @@ export async function createTroupe({ client = getPool(), eventId, categoryId, na
   await requireConfiguringEvent({ client, eventId });
   const { rows } = await client.query(
     `INSERT INTO event_troupe (event_id, category_id, name, brand_color) VALUES ($1, $2, $3, $4)
-     RETURNING id, event_id AS "eventId", category_id AS "categoryId", name, active, brand_color AS "brandColor"`,
+     RETURNING id`,
     [text(eventId, "eventId"), text(categoryId, "categoryId"), text(name, "name"), optionalBrandColor(brandColor)],
   );
-  return rows[0];
+  const { rows: created } = await client.query(
+    `SELECT t.id, t.event_id AS "eventId", t.category_id AS "categoryId", t.name, t.active,
+            t.brand_color AS "brandColor",
+            c.name AS "categoryName", c.code AS "categoryCode", c.active AS "categoryActive"
+       FROM event_troupe t
+       JOIN event_category c ON c.id = t.category_id
+      WHERE t.id = $1`,
+    [rows[0].id],
+  );
+  return created[0];
 }
 
 export async function listTroupes({ client = getPool(), eventId }) {

@@ -167,7 +167,6 @@ export function AppNavigation({ session }) {
             <a href="#/admin/competencia" aria-current={currentRoute === "#/admin/competencia" ? "page" : undefined}>Competencia</a>
             <a href="#/admin/judges" aria-current={currentRoute === "#/admin/judges" ? "page" : undefined}>Personas</a>
             <a href="#/admin/assignments" aria-current={currentRoute === "#/admin/assignments" ? "page" : undefined}>Asignaciones</a>
-            <span className="nav-section-label">En vivo</span>
             <a href="#/admin/voting" aria-current={currentRoute === "#/admin/voting" ? "page" : undefined}>Votación</a>
             <a href="#/veedor" aria-current={currentRoute === "#/veedor" ? "page" : undefined}>Supervisión</a>
             <a href="#/admin/penalties" aria-current={currentRoute === "#/admin/penalties" ? "page" : undefined}>Penalizaciones</a>
@@ -179,14 +178,12 @@ export function AppNavigation({ session }) {
         )}
         {session.roles?.includes("COMISARIO") && !session.roles?.includes("ADMIN") && (
           <>
-            <span className="nav-section-label">En vivo</span>
             <a href="#/admin/penalties" aria-current={currentRoute === "#/admin/penalties" ? "page" : undefined}>Penalizaciones</a>
           </>
         )}
         {session.roles?.includes("JUDGE") && <a href="#/judge" aria-current={currentRoute === "#/judge" ? "page" : undefined}>Mi panel</a>}
         {(session.roles?.includes("ADMIN") || session.roles?.includes("VEEDOR")) && !session.roles?.includes("ADMIN") && (
           <>
-            <span className="nav-section-label">En vivo</span>
             <a href="#/veedor" aria-current={currentRoute === "#/veedor" ? "page" : undefined}>Supervisión</a>
           </>
         )}

@@ -88,4 +88,34 @@ describe("AdminEventsPage", () => {
     expect(screen.getByRole("button", { name: "Cancelar" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Crear evento" })).toBeInTheDocument();
   });
+
+  it("elimina un evento en preparación con confirmación crítica", async () => {
+    apiRequest.mockImplementation((path, options) => {
+      if (path === "/api/v1/events") return Promise.resolve([{ id: "e1", name: "Prueba", status: "CONFIGURING" }]);
+      if (path === "/api/v1/events/e1" && options?.method === "DELETE") return Promise.resolve({ id: "e1" });
+      return Promise.resolve([]);
+    });
+    render(<AdminEventsPage />);
+    fireEvent.click(await screen.findByRole("button", { name: "Eliminar evento Prueba" }));
+    expect(await screen.findByRole("dialog", { name: "Eliminar Prueba" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Eliminar definitivamente" }));
+    expect(await screen.findByText("Evento Prueba eliminado.")).toBeInTheDocument();
+    expect(apiRequest).toHaveBeenCalledWith("/api/v1/events/e1", { method: "DELETE" });
+  });
+
+  it("muestra mensaje humano cuando el evento no se puede eliminar", async () => {
+    apiRequest.mockImplementation((path, options) => {
+      if (path === "/api/v1/events") return Promise.resolve([{ id: "e1", name: "Prueba", status: "CONFIGURING" }]);
+      if (path === "/api/v1/events/e1" && options?.method === "DELETE") {
+        const error = new Error("EVENT_HAS_BALLOTS");
+        error.code = "EVENT_HAS_BALLOTS";
+        return Promise.reject(error);
+      }
+      return Promise.resolve([]);
+    });
+    render(<AdminEventsPage />);
+    fireEvent.click(await screen.findByRole("button", { name: "Eliminar evento Prueba" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Eliminar definitivamente" }));
+    expect(await screen.findByText("Solo se pueden eliminar eventos sin votación ni historial operativo.")).toBeInTheDocument();
+  });
 });

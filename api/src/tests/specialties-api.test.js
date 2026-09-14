@@ -50,5 +50,12 @@ test("API ADMIN mantiene especialidades independientes por evento sin defaults g
     const listA = await fetch(`${base}/api/v1/events/${eventA.id}/specialties`, { headers });
     const listB = await fetch(`${base}/api/v1/events/${eventB.id}/specialties`, { headers });
     assert.equal((await listA.json()).length, 1); assert.deepEqual(await listB.json(), []);
+    const autoOrder = await fetch(`${base}/api/v1/events/${eventA.id}/specialties`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ name: "Sin orden", code: "SIN_ORDEN" }),
+    });
+    assert.equal(autoOrder.status, 201);
+    assert.equal((await autoOrder.json()).displayOrder, 3);
   } finally { await new Promise((resolve) => server.close(resolve)); }
 });

@@ -296,6 +296,13 @@ export async function openVoting({ actorUserId, eventId, nightId }) {
       );
     }
 
+    const { rows: scheduled } = await client.query(
+      `SELECT count(*)::INTEGER AS count FROM night_troupe_schedule
+        WHERE event_id = $1 AND night_id = $2 AND status = 'SCHEDULED'`,
+      [eventId, nights[0].id],
+    );
+    if ((scheduled[0]?.count ?? 0) === 0) throw new Error("NIGHT_SCHEDULE_EMPTY");
+
     const created = await createBallotsForNight(client, { eventId, nightId: nights[0].id, actorUserId });
     await auditEvent(client, {
       actorUserId,

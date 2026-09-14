@@ -97,6 +97,13 @@
 **Hecho cuando:** tests DB/API de intercambio + concurrencia + autorizacion en verde; controles conectados solo tras validar BD/API; build ok.
 **Estado:** Completada (automatica 2026-09-10). Migracion 072 (`schedule_night_order_unique` DEFERRABLE), servicio `schedule-service.js`, rutas `GET /events/:eventId/schedule` y `POST /schedule/:scheduleId/reorder`, UI `TroupeScheduleSection`.
 
+## T09c - Reorden de pasada en evento abierto (2026-09-12)
+
+**RF:** RF-153, RF-154, RF-155, RF-156, RF-157; RNF-33, RNF-34.
+**Alcance:** `PATCH /events/:id/schedule/reorder` (`{nightId, orderedIds[], reason?}`) habilitado en `OPEN` solo con ADMIN+2FA, motivo obligatorio (422 sin motivo) y cero ballots en la jornada (409 con votacion iniciada); en `CONFIGURING` mantiene reglas vigentes sin motivo. Auditoria append-only `NIGHT_TROUPE_SCHEDULE_REORDERED`. UI Subir/Bajar + motivo en mesa de control (`AdminVotingPage`), no en Competencia. Sin tocar votacion/puntajes/resultados.
+**Hecho cuando:** tests API (OPEN con motivo OK; sin motivo 422; con ballots 409; sin 2FA 403; CONFIGURING sin motivo OK) y tests cliente en verde; suites API + cliente + build + `git diff --check` sin fallos.
+**Estado:** En curso (automatica 2026-09-12).
+
 ## T10 - Revision historica y jornadas
 
 **RF:** RF-150, RF-151.

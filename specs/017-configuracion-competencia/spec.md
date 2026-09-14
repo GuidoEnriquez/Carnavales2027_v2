@@ -108,6 +108,14 @@ Separar la administracion general del evento de la configuracion competitiva y r
 - **RF-148b.** La ficha DEBE ofrecer un preview de solo lectura "Vista jurado" (nombre + banda de color + tipo) que NO crea votos, planillas ni auditoria de votacion.
 - **RF-149b.** El orden de pasada (`night_troupe_schedule.presentation_order`, unico por jornada) DEBE poder consultarse por jornada desde Competencia y reordenarse con operaciones atomicas Subir/Bajar con control de concurrencia optimista (409 ante solicitud obsoleta); no abre votacion ni cambia readiness/apertura vigentes.
 
+## Ampliacion T09c - Reorden de pasada en evento abierto (2026-09-12)
+
+- **RF-153.** El orden de pasada (`night_troupe_schedule.presentation_order`) DEBE poder corregirse con el evento en `OPEN`, exclusivamente antes de que la jornada inicie votacion (cero filas en `ballot` para ese `night_id`). Con ballots existentes el reorden DEBE rechazarse sin mutar posiciones.
+- **RF-154.** El reorden en `OPEN` DEBE exigir actor `ADMIN` con 2FA verificado y motivo obligatorio no vacio; sin motivo DEBE rechazarse con 422. En `CONFIGURING` se mantienen las reglas vigentes (sin motivo obligatorio).
+- **RF-155.** El reorden (en `CONFIGURING` y en `OPEN`) DEBE ser atomico, serializado y con auditoria append-only (`NIGHT_TROUPE_SCHEDULE_REORDERED` con before/after, motivo y actor). La operacion NO DEBE abrir votacion, crear planillas, ni alterar puntajes, resultados o readiness/apertura vigentes.
+- **RF-156.** La UI de reorden en evento abierto DEBE vivir en la pantalla de supervision/operacion (mesa de control), NO en Competencia; con controles Subir/Bajar, campo de motivo obligatorio y mensajes ante 422/409. Visible solo bajo permiso ADMIN (la ruta ya exige ADMIN+2FA en servidor).
+- **RF-157.** El contrato `PATCH /events/:id/schedule/reorder` (`{nightId, orderedIds[], reason?}`) DEBE validar pertenencia total al mismo evento y jornada (conjunto exacto, sin duplicados) y rechazar vistas obsoletas con 409.
+
 ## Criterios de aceptacion
 
 1. No existe una tabla nueva de tipos de participacion; la UI usa el catalogo existente.

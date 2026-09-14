@@ -4,7 +4,7 @@ const text = (v, n) => { if (typeof v !== "string" || !v.trim()) throw new TypeE
 const order = (v) => { if (!Number.isInteger(v) || v <= 0) throw new TypeError("displayOrder debe ser entero positivo."); return v; };
 export async function createSpecialty({ client = getPool(), eventId, name, code, displayOrder }) {
   await requireConfiguringEvent({ client, eventId });
-  const { rows } = await client.query(`INSERT INTO event_specialty (event_id,name,code,display_order) VALUES ($1,$2,$3,$4) RETURNING id,event_id AS "eventId",name,code,display_order AS "displayOrder",active`, [text(eventId,"eventId"),text(name,"name"),text(code,"code"),order(displayOrder)]); return rows[0];
+  const { rows } = await client.query(`INSERT INTO event_specialty (event_id,name,code,display_order) VALUES ($1,$2,$3,COALESCE($4,(SELECT COALESCE(MAX(display_order),0)+1 FROM event_specialty WHERE event_id=$1))) RETURNING id,event_id AS "eventId",name,code,display_order AS "displayOrder",active`, [text(eventId,"eventId"),text(name,"name"),text(code,"code"),displayOrder === undefined ? null : order(displayOrder)]); return rows[0];
 }
 export async function listSpecialties({ client = getPool(), eventId }) { await requireEventExists({ client, eventId }); const { rows } = await client.query(`SELECT id,event_id AS "eventId",name,code,display_order AS "displayOrder",active FROM event_specialty WHERE event_id=$1 ORDER BY display_order`, [text(eventId,"eventId")]); return rows; }
 export async function updateSpecialty({ client = getPool(), specialtyId, name, code, displayOrder, active }) {

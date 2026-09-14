@@ -17,7 +17,7 @@
 }
 
 .competencia-nav button {
-  min-block-size: 2.25rem;
+  min-block-size: 2.75rem;
   padding: 0.4rem 0.75rem;
   border-radius: var(--radius-sm);
   color: var(--text-muted);
@@ -54,7 +54,7 @@
 }
 
 .overview-number {
-  color: var(--primary-color);
+  color: var(--accent-text);
   font-family: var(--mono-font);
   font-size: 2rem;
   font-weight: 800;
@@ -327,4 +327,153 @@
   .overview-alert form { grid-template-columns: 1fr; }
   .matrix-table th,
   .matrix-table td { padding: 0.4rem 0.5rem; font-size: 0.8rem; }
+}
+
+/* Asistente de configuración (Spec 017 wizard): intro de paso y destino resaltado */
+.step-intro {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-inline-start: 4px solid var(--accent-primary);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+}
+.subrecord.is-target {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Refinamiento UX: cabecera compacta, stepper en una línea de progreso y resumen del paso */
+.competencia-header .competencia-step-meta {
+  margin: 0.35rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  font-weight: 650;
+}
+
+.competencia-nav.competencia-stepper {
+  display: block;
+}
+
+.competencia-stepper ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.competencia-stepper li {
+  flex: 1 1 11rem;
+  min-inline-size: 0;
+}
+
+.competencia-stepper button {
+  inline-size: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-align: start;
+}
+
+.competencia-stepper button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.competencia-step-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 1.75rem;
+  min-block-size: 1.75rem;
+  border-radius: 999px;
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.competencia-stepper button.active .competencia-step-badge {
+  background: var(--surface-hover-subtle);
+  color: var(--text-on-accent);
+}
+
+.competencia-step-copy {
+  display: grid;
+  gap: 0.1rem;
+  min-inline-size: 0;
+}
+
+.competencia-step-label {
+  font-weight: 750;
+  overflow-wrap: break-word;
+}
+
+.competencia-step-state {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.competencia-progress {
+  margin-block-end: 1.25rem;
+  min-inline-size: 0;
+}
+
+.competencia-step-summary {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-subtle);
+  border-inline-start: 4px solid var(--success);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  min-inline-size: 0;
+}
+
+.competencia-step-summary h3 {
+  margin: 0 0 0.25rem;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.competencia-step-summary p {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  overflow-wrap: break-word;
+}
+
+.competencia-subblock {
+  min-inline-size: 0;
+  margin-block-end: 1.5rem;
+}
+
+.competencia-subblock:last-of-type {
+  margin-block-end: 0;
+}
+
+#competencia-step-title:focus {
+  outline: none;
+}
+
+#competencia-step-title:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-sm);
+}
+
+@media (max-width: 36rem) {
+  .competencia-stepper li {
+    flex-basis: 100%;
+  }
 }

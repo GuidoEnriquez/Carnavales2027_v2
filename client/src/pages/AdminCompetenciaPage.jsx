@@ -3,7 +3,10 @@ import { PageShell } from "../components/PageShell.jsx";
 import { apiRequest } from "../api/http.js";
 import { StatusPill } from "../components/StatusPill.jsx";
 import { EntityDrawer } from "../components/EntityDrawer.jsx";
+import { Dialog } from "../components/Dialog.jsx";
 import { DialogFooter } from "../components/DialogFooter.jsx";
+import { Button } from "../components/Button.jsx";
+import { ProgressBar } from "../components/ProgressBar.jsx";
 import { TroupeForm } from "../features/TroupeForm.jsx";
 import { CatalogForm } from "../features/CatalogForm.jsx";
 import { RubricTree } from "../features/RubricTree.jsx";
@@ -30,58 +33,220 @@ function SaveForm({ onSubmit, resetOnSuccess = false, ...props }) {
 }
 
 export function AdminCompetenciaPage({ event, onBack }) {
-  const [subPage, setSubPage] = useState("overview");
+  const [step, setStep] = useState("participantes");
   const [pending, setPending] = useState(false);
   const [focusRubricId, setFocusRubricId] = useState(null);
+  const [progress, setProgress] = useState(null);
   const writing = useRef(false);
 
-  const links = [
-    { key: "overview", label: "Resumen" },
-    { key: "troupes", label: "Comparsas" },
-    { key: "categories", label: "Tipos de participacion" },
-    { key: "specialties", label: "Especialidades" },
-    { key: "rubrics", label: "Rubros" },
-    { key: "matrix", label: "Planillas de evaluación" },
+  // Conteo liviano para el progreso del asistente (solo lectura; el detalle
+  // y las mutaciones siguen en cada sección). Guía sin bloquear (T05 intacta).
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      apiRequest(`/api/v1/events/${event.id}/troupes`).catch(() => []),
+      apiRequest(`/api/v1/events/${event.id}/categories`).catch(() => []),
+      apiRequest(`/api/v1/events/${event.id}/specialties`).catch(() => []),
+      apiRequest(`/api/v1/events/${event.id}/rubrics`).catch(() => []),
+      apiRequest(`/api/v1/events/${event.id}/orphaned-criteria`).catch(() => []),
+    ]).then(([troupes, categories, specialties, rubrics, orphaned]) => {
+      if (active) setProgress({ troupes, categories, specialties, rubrics, orphaned });
+    });
+    return () => { active = false; };
+  }, [event.id]);
+
+  const troupesActive = (progress?.troupes ?? []).filter((t) => t.active !== false);
+  const categoriesActive = (progress?.categories ?? []).filter((c) => c.active !== false);
+  const specialtiesActive = (progress?.specialties ?? []).filter((s) => s.active !== false);
+  const rubricsActive = (progress?.rubrics ?? []).filter((r) => r.active !== false);
+  const rubricsComplete = rubricsActive.filter((r) => (r.items ?? []).some((i) => i.active !== false));
+  const uncoveredSpecialties = specialtiesActive.filter(
+    (s) => !rubricsActive.some((r) => (r.items ?? []).some((i) => i.active !== false && i.specialtyId === s.id)),
+  );
+  const orphanedCount = (progress?.orphaned ?? []).length;
+
+  const stepCompletion = {
+    participantes: categoriesActive.length > 0 && troupesActive.length > 0,
+    jurados: specialtiesActive.length > 0,
+    rubros: rubricsActive.length > 0 && rubricsComplete.length === rubricsActive.length,
+    revision: false,
+  };
+  stepCompletion.revision = stepCompletion.participantes && stepCompletion.jurados && stepCompletion.rubros
+    && uncoveredSpecialties.length === 0 && orphanedCount === 0;
+  const stepAttention = {
+    participantes: !stepCompletion.participantes && (categoriesActive.length > 0 || troupesActive.length > 0),
+    jurados: false,
+    rubros: !stepCompletion.rubros && rubricsActive.length > 0,
+    revision: !stepCompletion.revision && (stepCompletion.participantes || stepCompletion.jurados || stepCompletion.rubros || orphanedCount > 0),
+  };
+
+  const steps = [
+    { key: "participantes", label: "Participantes", detail: "Tipos, comparsas y orden de pasada" },
+    { key: "jurados", label: "Jurados y especialidades", detail: "Especialidades por jurado" },
+    { key: "rubros", label: "Rubros, ítems y criterios", detail: "Qué se puntúa" },
+    { key: "revision", label: "Revisión final", detail: "Resumen y pendientes" },
   ];
+  const stepStateLabels = {
+    done: "Completo",
+    current: "Paso actual",
+    pending: "Pendiente",
+    attention: "Requiere atención",
+  };
+  const stepState = (key) => {
+    if (!progress) return "pending";
+    if (stepCompletion[key]) return "done";
+    if (step === key) return "current";
+    return stepAttention[key] ? "attention" : "pending";
+  };
+  const doneCount = steps.filter((item) => stepCompletion[item.key]).length;
+  const pct = Math.round((doneCount / steps.length) * 100);
+  const activeIndex = Math.max(0, steps.findIndex((item) => item.key === step));
+
+  // Accesibilidad: al cambiar de paso, el foco va al título del paso (no en el montaje inicial).
+  const stepTitleRef = useRef(null);
+  const firstRenderRef = useRef(true);
+  useEffect(() => {
+    if (firstRenderRef.current) { firstRenderRef.current = false; return; }
+    stepTitleRef.current?.focus();
+  }, [step]);
+
+  const goStep = (key) => {
+    setStep(key);
+  };
+
+  const pendingRubrics = rubricsActive.length - rubricsComplete.length;
+  const revisionPendings = (uncoveredSpecialties.length > 0 ? uncoveredSpecialties.length : 0)
+    + (orphanedCount > 0 ? 1 : 0)
+    + (pendingRubrics > 0 ? pendingRubrics : 0);
+  const summaryByStep = {
+    participantes: !progress
+      ? "Cargando el resumen del paso…"
+      : categoriesActive.length === 0
+        ? "Todavía no hay tipos de participación: creá al menos uno para poder dar de alta comparsas."
+        : troupesActive.length === 0
+          ? `Tenés ${categoriesActive.length} tipo(s) cargados y ninguna comparsa: agregá la primera comparsa.`
+          : `Tenés ${troupesActive.length} comparsa(s) activa(s) en ${categoriesActive.length} tipo(s): programá el orden de pasada en el último bloque.`,
+    jurados: !progress
+      ? "Cargando el resumen del paso…"
+      : specialtiesActive.length === 0
+        ? "Todavía no hay especialidades: creá al menos una, porque cada ítem del paso 3 pertenece a una especialidad activa."
+        : `Tenés ${specialtiesActive.length} especialidad(es) activa(s): los jurados que evalúan cada una se asignan en la pantalla de Jurados.`,
+    rubros: !progress
+      ? "Cargando el resumen del paso…"
+      : rubricsActive.length === 0
+        ? "Todavía no hay rubros: creá el primero y agregale ítems con su especialidad."
+        : pendingRubrics > 0
+          ? `${pendingRubrics} rubro(s) sin ítems puntuables: expandilos para completar la carga.`
+          : uncoveredSpecialties.length > 0
+            ? `La especialidad ${uncoveredSpecialties[0].name} todavía no evalúa ningún rubro: agregá un ítem con esa especialidad.`
+            : "Todos los rubros tienen ítems puntuables: revisá la matriz en el paso final.",
+    revision: !progress
+      ? "Cargando el resumen del paso…"
+      : stepCompletion.revision
+        ? "Sin pendientes: la configuración está completa y lista para abrir la votación."
+        : `Te faltan ${revisionPendings} punto(s) por resolver antes de abrir la votación: revisá el resumen y la matriz.`,
+  };
 
   return (
     <WriteContext.Provider value={{ writing, setPending }}>
       <PageShell layer="instrument" className="admin-shell" aria-busy={pending}>
         <fieldset aria-label="Configuracion de competencia" disabled={pending} className="fieldset-reset">
-          <header className="event-header">
+          <header className="event-header competencia-header">
             <div>
               <p className="eyebrow">Competencia</p>
               <h1>{event.name ?? "Evento"}</h1>
+              <p className="competencia-step-meta">Paso {activeIndex + 1} de {steps.length} · {pct}% completado</p>
             </div>
             <div className="event-actions">
               {onBack && <button className="secondary" type="button" onClick={onBack}>Volver</button>}
             </div>
           </header>
-          <nav className="competencia-nav" aria-label="Secciones de competencia">
-            {links.map((link) => (
-              <button
-                key={link.key}
-                className={subPage === link.key ? "active" : "secondary"}
-                type="button"
-                onClick={() => setSubPage(link.key)}
-              >
-                {link.label}
-              </button>
-            ))}
+          <nav className="competencia-nav competencia-stepper" aria-label="Pasos de configuración de competencia">
+            <ol>
+              {steps.map((item, index) => {
+                const state = stepState(item.key);
+                const isCurrent = step === item.key;
+                return (
+                  <li key={item.key}>
+                    <button
+                      type="button"
+                      className={isCurrent ? "active" : "secondary"}
+                      aria-current={isCurrent ? "step" : undefined}
+                      aria-label={`Paso ${index + 1} de ${steps.length}: ${item.label}. ${stepStateLabels[state]}.`}
+                      onClick={() => goStep(item.key)}
+                    >
+                      <span className="competencia-step-badge" aria-hidden="true">
+                        {state === "done" ? "✓" : index + 1}
+                      </span>
+                      <span className="competencia-step-copy">
+                        <span className="competencia-step-label">{item.label}</span>
+                        <span className="competencia-step-state">{stepStateLabels[state]}</span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
           </nav>
-          {subPage === "overview" && <CompetenciaOverview key={event.id} event={event} />}
-          {subPage === "troupes" && <><AdminTroupesSection key={`troupes-${event.id}`} event={event} /><TroupeScheduleSection key={`schedule-${event.id}`} event={event} /></>}
-          {subPage === "categories" && <AdminCategoriesSection key={`categories-${event.id}`} event={event} />}
-          {subPage === "specialties" && <AdminSpecialtiesSection key={`specialties-${event.id}`} event={event} />}
-          {subPage === "rubrics" && <AdminRubricsSection key={`rubrics-${event.id}`} event={event} focusRubricId={focusRubricId} />}
-          {subPage === "matrix" && <MatrizPlanillasSection key={`matrix-${event.id}`} event={event} onResolveRubric={(rubricId) => { setFocusRubricId(rubricId); setSubPage("rubrics"); }} />}
+          <ProgressBar value={doneCount} max={steps.length} label="Progreso de configuración" sublabel={`${doneCount} de ${steps.length} pasos completados`} className="competencia-progress" />
+          {step === "participantes" && (
+            <section aria-labelledby="competencia-step-title">
+              <h2 id="competencia-step-title" ref={stepTitleRef} tabIndex={-1}>Participantes</h2>
+              <p className="step-intro">Cargá quiénes participan: primero los tipos, después las comparsas y por último el orden de pasada de cada jornada.</p>
+              <StepSummary stepLabel="Participantes" recommendation={summaryByStep.participantes} />
+              <section className="competencia-subblock" aria-label="Bloque 1 de 3: Tipos de participación">
+                <AdminCategoriesSection key={`categories-${event.id}`} event={event} />
+              </section>
+              <section className="competencia-subblock" aria-label="Bloque 2 de 3: Comparsas">
+                <AdminTroupesSection key={`troupes-${event.id}`} event={event} />
+              </section>
+              <section className="competencia-subblock" aria-label="Bloque 3 de 3: Orden de pasada por jornada">
+                <TroupeScheduleSection key={`schedule-${event.id}`} event={event} />
+              </section>
+            </section>
+          )}
+          {step === "jurados" && (
+            <section aria-labelledby="competencia-step-title">
+              <h2 id="competencia-step-title" ref={stepTitleRef} tabIndex={-1}>Jurados y especialidades</h2>
+              <p className="step-intro">Definí las especialidades que evalúan: cada ítem del paso 3 pertenece a una especialidad activa. Los jurados se asignan en <a href="#/admin/judges">Jurados</a>.</p>
+              <StepSummary stepLabel="Jurados y especialidades" recommendation={summaryByStep.jurados} />
+              <AdminSpecialtiesSection key={`specialties-${event.id}`} event={event} />
+            </section>
+          )}
+          {step === "rubros" && (
+            <section aria-labelledby="competencia-step-title">
+              <h2 id="competencia-step-title" ref={stepTitleRef} tabIndex={-1}>Rubros, ítems y criterios</h2>
+              <p className="step-intro">Creá cada rubro con sus ítems y criterios: al crearlo se abre solo para seguir cargando.</p>
+              <StepSummary stepLabel="Rubros, ítems y criterios" recommendation={summaryByStep.rubros} />
+              <AdminRubricsSection key={`rubrics-${event.id}`} event={event} focusRubricId={focusRubricId} />
+            </section>
+          )}
+          {step === "revision" && (
+            <section aria-labelledby="competencia-step-title">
+              <h2 id="competencia-step-title" ref={stepTitleRef} tabIndex={-1}>Revisión final</h2>
+              <p className="step-intro">Verificá que no falte nada: el resumen, la matriz y los pendientes se generan solos desde lo cargado.</p>
+              <StepSummary stepLabel="Revisión final" recommendation={summaryByStep.revision} />
+              <CompetenciaOverview key={event.id} event={event} onGoStep={goStep} />
+              <MatrizPlanillasSection key={`matrix-${event.id}`} event={event} onResolveRubric={(rubricId) => { setFocusRubricId(rubricId); goStep("rubros"); }} />
+            </section>
+          )}
         </fieldset>
       </PageShell>
     </WriteContext.Provider>
   );
 }
 
-function CompetenciaOverview({ event }) {
+function StepSummary({ stepLabel, recommendation }) {
+  if (!recommendation) return null;
+  return (
+    <section className="competencia-step-summary" aria-label={`Resumen del paso ${stepLabel}`}>
+      <h3>Resumen del paso</h3>
+      <p role="status">{recommendation}</p>
+    </section>
+  );
+}
+
+function CompetenciaOverview({ event, onGoStep }) {
   const [data, setData] = useState(null);
   const [message, setMessage] = useState("");
   const locked = event.status === "OPEN";
@@ -133,14 +298,17 @@ function CompetenciaOverview({ event }) {
         <article className="overview-stat">
           <span className="overview-number">{data.troupes.filter((t) => t.active).length}</span>
           <span className="overview-label">Comparsas activas</span>
+          {onGoStep && <button type="button" className="link" onClick={() => onGoStep("participantes")}>Ir al paso 1 →</button>}
         </article>
         <article className="overview-stat">
           <span className="overview-number">{data.specialties.filter((s) => s.active).length}</span>
           <span className="overview-label">Especialidades activas</span>
+          {onGoStep && <button type="button" className="link" onClick={() => onGoStep("jurados")}>Ir al paso 2 →</button>}
         </article>
         <article className="overview-stat">
           <span className="overview-number">{data.rubrics.filter((r) => r.active).length}</span>
           <span className="overview-label">Rubros activos</span>
+          {onGoStep && <button type="button" className="link" onClick={() => onGoStep("rubros")}>Ir al paso 3 →</button>}
         </article>
         <article className="overview-stat">
           <span className="overview-number">{data.rubrics.reduce((sum, r) => sum + (r.items?.length ?? 0), 0)}</span>
@@ -196,7 +364,9 @@ function AdminTroupesSection({ event }) {
   const save = async (path, body, method = "POST") => {
     try {
       const saved = await apiRequest(path, { method, body: JSON.stringify(body) });
-      setTroupes((prev) => {
+      const fresh = await apiRequest(`/api/v1/events/${event.id}/troupes`).catch(() => null);
+      if (fresh) setTroupes(fresh);
+      else setTroupes((prev) => {
         if (method === "POST") return [...prev, saved];
         return prev.map((t) => t.id === saved.id ? { ...t, ...saved } : t);
       });
@@ -245,7 +415,7 @@ function AdminTroupesSection({ event }) {
     <section className="config-section">
       <div className="section-heading">
         <h2>Comparsas</h2>
-        <p>Participaciones y tipo de participacion vigente. El color se muestra como banda en la planilla del jurado.</p>
+        <p>Participaciones y tipo de participacion vigente. Cada comparsa necesita un tipo: si la lista está vacía, crealo arriba. El color se muestra como banda en la planilla del jurado.</p>
       </div>
       <p className="feedback" role="status">{message}</p>
       {!locked && <button type="button" onClick={(event) => { drawerTriggerRef.current = event.currentTarget; setDrawerMode({ mode: "create" }); }}>+ Nueva comparsa</button>}
@@ -329,7 +499,10 @@ function AdminTroupesSection({ event }) {
 function TroupeScheduleSection({ event }) {
   const [nights, setNights] = useState([]);
   const [schedule, setSchedule] = useState([]);
+  const [troupes, setTroupes] = useState([]);
   const [nightId, setNightId] = useState("");
+  const [troupeToAdd, setTroupeToAdd] = useState("");
+  const [quitTarget, setQuitTarget] = useState(null);
   const [message, setMessage] = useState("");
   const { writing, setPending } = useContext(WriteContext);
   const locked = event.status === "OPEN";
@@ -339,6 +512,7 @@ function TroupeScheduleSection({ event }) {
       setNights(loaded ?? []);
       setNightId((loaded ?? [])[0]?.id ?? "");
     }).catch(() => {});
+    apiRequest(`/api/v1/events/${event.id}/troupes`).then((loaded) => setTroupes(loaded ?? [])).catch(() => {});
   }, [event.id]);
 
   useEffect(() => {
@@ -350,6 +524,7 @@ function TroupeScheduleSection({ event }) {
 
   const ordered = [...schedule].sort((a, b) => a.presentationOrder - b.presentationOrder);
   const nightName = nights.find((n) => n.id === nightId)?.name ?? "";
+  const unprogrammed = troupes.filter((t) => t.active !== false && !schedule.some((s) => s.troupeId === t.id));
 
   const reorder = async (current, neighbor, direction) => {
     if (writing.current || locked || !neighbor) return;
@@ -384,7 +559,7 @@ function TroupeScheduleSection({ event }) {
     <section className="config-section" aria-label="Orden de pasada por jornada">
       <div className="section-heading">
         <h2>Orden de pasada</h2>
-        <p>Orden de presentacion por jornada. Solo lectura y reorden: no abre votacion ni crea planillas.</p>
+        <p>Programá las comparsas en cada jornada y ordená la salida. Sin comparsas programadas, la votación abre planillas vacías. No abre votacion ni crea planillas.</p>
       </div>
       <p className="feedback" role="status">{message}</p>
       {nights.length === 0 && <p>Cargando jornadas...</p>}
@@ -392,6 +567,42 @@ function TroupeScheduleSection({ event }) {
         <label>Jornada<select value={nightId} onChange={(e) => setNightId(e.target.value)} aria-label="Jornada para el orden de pasada">
           {nights.map((night) => <option key={night.id} value={night.id}>{night.name}</option>)}
         </select></label>
+      )}
+      {!locked && nightId && unprogrammed.length > 0 && (
+        <form
+          className="inline-item-form"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (writing.current || !troupeToAdd) return;
+            writing.current = true;
+            setPending(true);
+            try {
+              const saved = await apiRequest(`/api/v1/events/${event.id}/schedule`, {
+                method: "POST",
+                body: JSON.stringify({ nightId, troupeId: troupeToAdd }),
+              });
+              const troupe = troupes.find((t) => t.id === troupeToAdd);
+              setSchedule((prev) => [...prev, { ...saved, troupeName: troupe?.name ?? "", troupeBrandColor: troupe?.brandColor ?? null }]);
+              setTroupeToAdd("");
+              setMessage("Comparsa programada en la jornada.");
+            } catch (error) {
+              setMessage(error.code === "SCHEDULE_CONFLICT"
+                ? "Esa comparsa ya está programada en la jornada."
+                : error.code === "EVENT_LOCKED"
+                  ? "El evento ya no permite modificar su configuracion."
+                  : "No se pudo programar la comparsa.");
+            } finally {
+              writing.current = false;
+              setPending(false);
+            }
+          }}
+        >
+          <select value={troupeToAdd} onChange={(e) => setTroupeToAdd(e.target.value)} aria-label="Comparsa para programar en la jornada" required>
+            <option value="">Comparsa para programar…</option>
+            {unprogrammed.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+          <button type="submit">Programar comparsa</button>
+        </form>
       )}
       <ol className="schedule-list">
         {ordered.map((entry, index) => (
@@ -402,11 +613,46 @@ function TroupeScheduleSection({ event }) {
             {!locked && <>
               <button className="secondary" type="button" aria-label={`Subir ${entry.troupeName} en ${nightName}`} disabled={index === 0} onClick={() => reorder(entry, ordered[index - 1], "UP")}>Subir</button>
               <button className="secondary" type="button" aria-label={`Bajar ${entry.troupeName} en ${nightName}`} disabled={index === ordered.length - 1} onClick={() => reorder(entry, ordered[index + 1], "DOWN")}>Bajar</button>
+              <button className="secondary" type="button" aria-label={`Quitar ${entry.troupeName} de ${nightName}`} onClick={() => setQuitTarget(entry)}>Quitar</button>
             </>}
           </li>
         ))}
       </ol>
-      {nightId && ordered.length === 0 && <p>Sin comparsas programadas en esta jornada.</p>}
+      {nightId && ordered.length === 0 && <p>Sin comparsas programadas en esta jornada. Programá al menos una para poder abrir la votación.</p>}
+      {quitTarget && (
+        <Dialog
+          isOpen={Boolean(quitTarget)}
+          onClose={() => setQuitTarget(null)}
+          title={`Quitar ${quitTarget.troupeName} de ${nightName}`}
+          description="La comparsa sale del orden de pasada pero no se elimina del evento."
+        >
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setQuitTarget(null)}>Cancelar</Button>
+            <Button
+              variant="danger"
+              onClick={async () => {
+                const target = quitTarget;
+                setQuitTarget(null);
+                if (writing.current) return;
+                writing.current = true;
+                setPending(true);
+                try {
+                  await apiRequest(`/api/v1/schedule/${target.id}`, { method: "DELETE" });
+                  setSchedule((prev) => prev.filter((s) => s.id !== target.id));
+                  setMessage("Comparsa quitada de la jornada.");
+                } catch {
+                  setMessage("No se pudo quitar la comparsa de la jornada.");
+                } finally {
+                  writing.current = false;
+                  setPending(false);
+                }
+              }}
+            >
+              Quitar de la jornada
+            </Button>
+          </DialogFooter>
+        </Dialog>
+      )}
     </section>
   );
 }
@@ -425,7 +671,9 @@ function AdminCategoriesSection({ event }) {
   const save = async (path, body, method = "POST") => {
     try {
       const saved = await apiRequest(path, { method, body: JSON.stringify(body) });
-      setCategories((prev) => method === "POST" ? [...prev, saved] : prev.map((category) => category.id === saved.id ? { ...category, ...saved } : category));
+      const fresh = await apiRequest(`/api/v1/events/${event.id}/categories`).catch(() => null);
+      if (fresh) setCategories(fresh);
+      else setCategories((prev) => method === "POST" ? [...prev, saved] : prev.map((category) => category.id === saved.id ? { ...category, ...saved } : category));
       setMessage("Guardado.");
       setDrawerMode(null);
       return true;
@@ -459,7 +707,7 @@ function AdminCategoriesSection({ event }) {
 
   return (
     <section className="config-section">
-      <div className="section-heading"><h2>Tipos de participacion</h2><p>Categorias de participacion configurables por evento.</p></div>
+      <div className="section-heading"><h2>Tipos de participacion</h2><p>Cada comparsa elige uno de estos tipos al darse de alta: crealos antes de cargar comparsas.</p></div>
       <p className="feedback" role="status">{message}</p>
       {!locked && <button type="button" onClick={(event) => { drawerTriggerRef.current = event.currentTarget; setDrawerMode({ mode: "create" }); }}>+ Nuevo tipo</button>}
       {ordered.length === 0 ? (
@@ -507,6 +755,7 @@ function AdminCategoriesSection({ event }) {
           key={drawerMode?.mode === "edit" ? `edit-${drawerMode.categoryId}` : "create"}
           initialValue={editingCategory ?? {}}
           defaultOrder={nextOrder}
+          showOrder={drawerMode?.mode === "edit"}
           submitting={saving}
           submitLabel={drawerMode?.mode === "edit" ? "Guardar" : "Agregar tipo"}
           showActive={drawerMode?.mode === "edit"}
@@ -535,7 +784,9 @@ function AdminSpecialtiesSection({ event }) {
   const save = async (path, body, method = "POST") => {
     try {
       const saved = await apiRequest(path, { method, body: JSON.stringify(body) });
-      setSpecialties((prev) => method === "POST" ? [...prev, saved] : prev.map((s) => s.id === saved.id ? { ...s, ...saved } : s));
+      const fresh = await apiRequest(`/api/v1/events/${event.id}/specialties`).catch(() => null);
+      if (fresh) setSpecialties(fresh);
+      else setSpecialties((prev) => method === "POST" ? [...prev, saved] : prev.map((s) => s.id === saved.id ? { ...s, ...saved } : s));
       setMessage("Guardado.");
       setDrawerMode(null);
       return true;
@@ -569,7 +820,7 @@ function AdminSpecialtiesSection({ event }) {
 
   return (
     <section className="config-section">
-      <div className="section-heading"><h2>Especialidades</h2><p>Responsabilidades configurables de los jurados.</p></div>
+      <div className="section-heading"><h2>Especialidades</h2><p>Cada ítem puntuable pertenece a una especialidad activa: creá al menos una antes de cargar ítems en el paso 3.</p></div>
       <p className="feedback" role="status">{message}</p>
       {!locked && <button type="button" onClick={(event) => { drawerTriggerRef.current = event.currentTarget; setDrawerMode({ mode: "create" }); }}>+ Nueva especialidad</button>}
       {ordered.length === 0 ? (
@@ -617,6 +868,7 @@ function AdminSpecialtiesSection({ event }) {
           key={drawerMode?.mode === "edit" ? `edit-${drawerMode.specialtyId}` : "create"}
           initialValue={editingSpecialty ?? {}}
           defaultOrder={nextOrder}
+          showOrder={drawerMode?.mode === "edit"}
           submitting={saving}
           submitLabel={drawerMode?.mode === "edit" ? "Guardar" : "Agregar especialidad"}
           showActive={drawerMode?.mode === "edit"}
@@ -635,10 +887,17 @@ function AdminRubricsSection({ event, focusRubricId = null }) {
   const [rubrics, setRubrics] = useState([]);
   const [specialties, setSpecialties] = useState([]);
   const [expanded, setExpanded] = useState(null);
+  const [highlightItemId, setHighlightItemId] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
   const [editingCriterion, setEditingCriterion] = useState(null);
   const [message, setMessage] = useState("");
   const { writing, setPending } = useContext(WriteContext);
+
+  const scrollToSelector = (selector) => {
+    requestAnimationFrame(() => {
+      document.querySelector(selector)?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    });
+  };
 
   useEffect(() => {
     apiRequest(`/api/v1/events/${event.id}/rubrics`).then(setRubrics).catch(() => {});
@@ -646,7 +905,11 @@ function AdminRubricsSection({ event, focusRubricId = null }) {
   }, [event.id]);
 
   useEffect(() => {
-    if (focusRubricId) setExpanded(focusRubricId);
+    if (focusRubricId) {
+      setExpanded(focusRubricId);
+      setHighlightItemId(null);
+      scrollToSelector(`[data-rubric-id="${focusRubricId}"]`);
+    }
   }, [focusRubricId]);
 
   const locked = event.status === "OPEN";
@@ -677,8 +940,16 @@ function AdminRubricsSection({ event, focusRubricId = null }) {
   const saveRubric = async (path, body, method = "POST") => {
     try {
       const saved = await apiRequest(path, { method, body: JSON.stringify(body) });
-      setRubrics((prev) => method === "POST" ? [...prev, { ...saved, items: [], criteria: [], specialties: [] }] : prev.map((r) => r.id === saved.id ? { ...r, ...saved } : r));
+      const fresh = await apiRequest(`/api/v1/events/${event.id}/rubrics`).catch(() => null);
+      if (fresh) setRubrics(fresh);
+      else setRubrics((prev) => method === "POST" ? [...prev, { ...saved, items: [], criteria: [], specialties: [] }] : prev.map((r) => r.id === saved.id ? { ...r, ...saved } : r));
       setMessage("Rubro guardado.");
+      if (method === "POST" && saved?.id) {
+        // El rubro recién creado se abre solo para seguir cargando ítems.
+        setExpanded(saved.id);
+        setHighlightItemId(null);
+        scrollToSelector(`[data-rubric-id="${saved.id}"]`);
+      }
       return true;
     } catch (e) {
       setMessage(e.code === "RESOURCE_CONFLICT" ? "El codigo ya esta en uso." : "No se pudo guardar.");
@@ -696,6 +967,10 @@ function AdminRubricsSection({ event, focusRubricId = null }) {
       }));
       setMessage("Item guardado.");
       setEditingItem(null);
+      if (method === "POST" && saved?.id) {
+        setHighlightItemId(saved.id);
+        scrollToSelector(`[data-item-id="${saved.id}"]`);
+      }
       return true;
     } catch (e) {
       setMessage(e.code === "SPECIALTY_INACTIVE" ? "La especialidad seleccionada esta inactiva." : "No se pudo guardar.");
@@ -769,9 +1044,9 @@ function AdminRubricsSection({ event, focusRubricId = null }) {
         <SaveForm resetOnSuccess className="config-card" onSubmit={(e) => { const fd = new FormData(e.currentTarget); return saveRubric(`/api/v1/events/${event.id}/rubrics`, { name: fd.get("name"), evaluationTarget: fd.get("evaluationTarget"), rubricType: fd.get("rubricType"), resolutionMethod: fd.get("resolutionMethod"), evaluationObjective: fd.get("evaluationObjective") || null, expectedSubjectType: fd.get("evaluationTarget") === "NOMINATION" ? fd.get("expectedSubjectType") : null }); }}>
           <h3>Nuevo rubro</h3>
           <label>Nombre<input name="name" required /></label>
-          <label>Objetivo evaluado<select name="evaluationTarget"><option value="TROUPE">Comparsa</option><option value="NOMINATION">Nominacion</option></select></label>
+          <label>A quién se evalúa<select name="evaluationTarget"><option value="TROUPE">Comparsa</option><option value="NOMINATION">Nominacion</option></select></label>
           <label>Tipo de rubro<select name="rubricType">{RUBRIC_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</select></label>
-          <label>Objetivo evaluado (texto)<input name="evaluationObjective" placeholder="Ej: Figura / participante" /></label>
+          <label>Detalle del objetivo (texto libre, opcional)<input name="evaluationObjective" placeholder="Ej: Figura / participante" /></label>
           <details className="advanced-options">
             <summary>Opciones avanzadas (sin efecto operativo)</summary>
             <label>Tipo de sujeto<select name="expectedSubjectType" aria-describedby="subject-type-help">{SUBJECT_TYPES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}</select></label>
@@ -789,7 +1064,7 @@ function AdminRubricsSection({ event, focusRubricId = null }) {
           const rubricTypeLabel = RUBRIC_TYPES.find((t) => t.value === rubric.rubricType)?.label ?? rubric.rubricType;
           const resolutionLabel = RESOLUTION_METHODS.find((m) => m.value === rubric.resolutionMethod)?.label ?? rubric.resolutionMethod;
           return (
-            <article className="rubric-card" key={rubric.id}>
+            <article className="rubric-card" key={rubric.id} data-rubric-id={rubric.id}>
               <div className="rubric-card-header">
                 <div>
                   <h3>{rubric.name}</h3>
@@ -797,7 +1072,7 @@ function AdminRubricsSection({ event, focusRubricId = null }) {
                   {rubric.evaluationObjective && <span className="rubric-meta">{rubric.evaluationObjective}</span>}
                   <span className="rubric-meta">{derived.map((s) => s.name).join(", ") || "Sin items activos"}</span>
                 </div>
-                <button className="secondary" type="button" aria-label={`${isExpanded ? "Contraer" : "Expandir"} ${rubric.name}`} aria-expanded={isExpanded} onClick={() => setExpanded(isExpanded ? null : rubric.id)}>
+                <button className="secondary" type="button" aria-label={`${isExpanded ? "Contraer" : "Expandir"} ${rubric.name}`} aria-expanded={isExpanded} onClick={() => { setHighlightItemId(null); setExpanded(isExpanded ? null : rubric.id); }}>
                   {isExpanded ? "Contraer" : "Expandir"}
                 </button>
               </div>
@@ -807,9 +1082,9 @@ function AdminRubricsSection({ event, focusRubricId = null }) {
                   {!locked && (
                     <SaveForm className="rubric-edit-form" onSubmit={(e) => { const fd = new FormData(e.currentTarget); return saveRubric(`/api/v1/rubrics/${rubric.id}`, { name: fd.get("name"), evaluationTarget: fd.get("evaluationTarget"), expectedSubjectType: fd.get("evaluationTarget") === "NOMINATION" ? fd.get("expectedSubjectType") : null, rubricType: fd.get("rubricType"), resolutionMethod: fd.get("resolutionMethod"), evaluationObjective: fd.get("evaluationObjective") || null, active: fd.get("active") === "on" }, "PATCH"); }}>
                       <label>Nombre<input name="name" defaultValue={rubric.name} required /></label>
-                      <label>Objetivo<select name="evaluationTarget" defaultValue={rubric.evaluationTarget}><option value="TROUPE">Comparsa</option><option value="NOMINATION">Nominacion</option></select></label>
+                      <label>A quién se evalúa<select name="evaluationTarget" defaultValue={rubric.evaluationTarget}><option value="TROUPE">Comparsa</option><option value="NOMINATION">Nominacion</option></select></label>
                       <label>Tipo<select name="rubricType" defaultValue={rubric.rubricType}>{RUBRIC_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</select></label>
-                      <label>Objetivo (texto)<input name="evaluationObjective" defaultValue={rubric.evaluationObjective ?? ""} /></label>
+                      <label>Detalle del objetivo (texto libre, opcional)<input name="evaluationObjective" defaultValue={rubric.evaluationObjective ?? ""} /></label>
                       <details className="advanced-options">
                         <summary>Opciones avanzadas (sin efecto operativo)</summary>
                         <label>Tipo de sujeto<select name="expectedSubjectType" defaultValue={rubric.expectedSubjectType ?? "PERSON"} aria-describedby="subject-type-help">{SUBJECT_TYPES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}</select></label>
@@ -822,7 +1097,7 @@ function AdminRubricsSection({ event, focusRubricId = null }) {
 
                   <h4>Items puntuables</h4>
                   {orderedItems.map((item, itemIndex) => (
-                    <article className="subrecord" key={item.id}>
+                    <article className={`subrecord${highlightItemId === item.id ? " is-target" : ""}`} key={item.id} data-item-id={item.id}>
                       {editingItem === item.id ? (
                         <SaveForm onSubmit={(e) => { const fd = new FormData(e.currentTarget); return saveItem(rubric.id, { name: fd.get("name"), specialtyId: fd.get("specialtyId"), displayOrder: Number(fd.get("displayOrder")), required: fd.get("required") === "on", allowNotPresented: fd.get("allowNotPresented") === "on", active: fd.get("active") === "on" }, "PATCH", item.id); }}>
                           <label>Nombre<input name="name" defaultValue={item.name} required /></label>
@@ -931,7 +1206,7 @@ function MatrizPlanillasSection({ event, onResolveRubric }) {
       <div className="section-heading"><h2>Planillas de evaluación</h2><p>Qué especialidad evalúa qué rubro. Se genera automaticamente desde la configuracion.</p></div>
       {(missingRubrics.length > 0 || uncoveredSpecialties.length > 0) && (
         <div className="overview-alert" role="alert">
-          <strong>⚠ {missingRubrics.length + uncoveredSpecialties.length} relación(es) todavía necesitan una asignación.</strong>
+          <strong>⚠ Te faltan {missingRubrics.length + uncoveredSpecialties.length} asignaciones para completar la matriz.</strong>
           <ul>
             {missingRubrics.map((r) => (
               <li key={r.id}>

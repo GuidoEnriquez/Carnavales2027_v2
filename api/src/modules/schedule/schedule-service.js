@@ -54,6 +54,126 @@ export function reorderScheduleEntry({ scheduleId, ...input }) {
   return reorderSchedule(scheduleId, input);
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function uuid(value, name) {
+  if (typeof value !== "string" || !UUID_RE.test(value)) throw new TypeError(`${name} invalido.`);
+  return value.toLowerCase();
+}
+
+// Spec 017 T09c (RF-153..RF-155, RF-157): reorden total de la jornada por lista
+// ordenada. En CONFIGURING mantiene las reglas vigentes (motivo opcional). En
+// OPEN exige motivo obligatorio (422) y cero ballots en la jornada (409).
+export async function reorderEventSchedule({ client = null, eventId, nightId, orderedIds, reason = null, actorUserId = null }) {
+  if (!client) {
+    return inTransaction((client) => reorderEventSchedule({ client, eventId, nightId, orderedIds, reason, actorUserId }));
+  }
+  eventId = uuid(eventId, "eventId");
+  nightId = uuid(nightId, "nightId");
+  if (!Array.isArray(orderedIds) || orderedIds.length === 0) throw new TypeError("orderedIds debe ser una lista no vacia.");
+  const ids = orderedIds.map((id) => uuid(id, "orderedId"));
+  if (new Set(ids).size !== ids.length) throw new TypeError("orderedIds contiene duplicados.");
+
+  const { rows: events } = await client.query("SELECT status FROM carnival_event WHERE id=$1 FOR UPDATE", [eventId]);
+  if (!events[0]) throw new Error("EVENT_NOT_FOUND");
+  const status = events[0].status;
+  if (status !== "CONFIGURING" && status !== "OPEN") throw new Error("EVENT_LOCKED");
+
+  const { rows: nights } = await client.query("SELECT id FROM night WHERE id=$1 AND event_id=$2", [nightId, eventId]);
+  if (!nights[0]) throw new Error("NIGHT_NOT_FOUND");
+
+  if (status === "OPEN") {
+    const motive = typeof reason === "string" ? reason.trim() : "";
+    if (!motive) {
+      const error = new Error("REORDER_REASON_REQUIRED");
+      error.status = 422;
+      throw error;
+    }
+    reason = motive;
+    const { rows: [{ n }] } = await client.query(
+      "SELECT COUNT(*)::int AS n FROM ballot WHERE event_id=$1 AND night_id=$2",
+      [eventId, nightId],
+    );
+    if (n > 0) throw new Error("NIGHT_VOTING_STARTED");
+  } else if (typeof reason === "string" && reason.trim()) {
+    reason = reason.trim();
+  } else {
+    reason = null;
+  }
+
+  const { rows: current } = await client.query(
+    `SELECT id FROM night_troupe_schedule WHERE event_id=$1 AND night_id=$2 ORDER BY presentation_order FOR UPDATE`,
+    [eventId, nightId],
+  );
+  if (current.length === 0) throw new Error("NIGHT_SCHEDULE_EMPTY");
+  const currentIds = current.map((row) => row.id);
+  if (currentIds.length !== ids.length || !currentIds.every((id) => ids.includes(id))) {
+    throw new Error("ORDER_CONFLICT");
+  }
+
+  const before = currentIds.map((id, index) => ({ id, presentationOrder: index + 1 }));
+  const after = ids.map((id, index) => ({ id, presentationOrder: index + 1 }));
+  await client.query("SET CONSTRAINTS schedule_night_order_unique DEFERRED");
+  for (const entry of after) {
+    await client.query(
+      "UPDATE night_troupe_schedule SET presentation_order=$2::integer, updated_at=CURRENT_TIMESTAMP WHERE id=$1",
+      [entry.id, entry.presentationOrder],
+    );
+  }
+  await client.query("SET CONSTRAINTS schedule_night_order_unique IMMEDIATE");
+  await auditEvent(client, {
+    actorUserId, action: "NIGHT_TROUPE_SCHEDULE_REORDERED", entityType: "night_troupe_schedule", entityId: nightId,
+    before: { eventId, nightId, eventStatus: status, changes: before },
+    after: { eventId, nightId, eventStatus: status, reason, changes: after },
+  });
+  return { changes: after };
+}
+
+export async function addTroupeToSchedule({ client = null, eventId, nightId, troupeId, actorUserId = null }) {
+  if (!client) return inTransaction((client) => addTroupeToSchedule({ client, eventId, nightId, troupeId, actorUserId }));
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  eventId = text(eventId, "eventId"); nightId = text(nightId, "nightId"); troupeId = text(troupeId, "troupeId");
+  if (!uuid.test(eventId) || !uuid.test(nightId) || !uuid.test(troupeId)) throw new TypeError("IDs invalidos.");
+  const { rows: events } = await client.query("SELECT status FROM carnival_event WHERE id=$1 FOR UPDATE", [eventId]);
+  if (!events[0]) throw new Error("EVENT_NOT_FOUND");
+  if (events[0].status !== "CONFIGURING") throw new Error("EVENT_LOCKED");
+  const { rows: nights } = await client.query("SELECT id FROM night WHERE id=$1 AND event_id=$2", [nightId, eventId]);
+  if (!nights[0]) throw new Error("NIGHT_NOT_FOUND");
+  const { rows: troupes } = await client.query("SELECT id FROM event_troupe WHERE id=$1 AND event_id=$2 AND active", [troupeId, eventId]);
+  if (!troupes[0]) throw new Error("TROUPE_NOT_FOUND");
+  const { rows: existing } = await client.query(
+    "SELECT id FROM night_troupe_schedule WHERE night_id=$1 AND event_troupe_id=$2", [nightId, troupeId],
+  );
+  if (existing[0]) throw new Error("SCHEDULE_CONFLICT");
+  const { rows } = await client.query(
+    `INSERT INTO night_troupe_schedule (event_id, night_id, event_troupe_id, presentation_order, status)
+     VALUES ($1, $2, $3, COALESCE((SELECT MAX(presentation_order) FROM night_troupe_schedule WHERE night_id=$2 AND event_id=$1), 0) + 1, 'SCHEDULED')
+     RETURNING id, event_id AS "eventId", night_id AS "nightId", event_troupe_id AS "troupeId",
+               presentation_order AS "presentationOrder", status`,
+    [eventId, nightId, troupeId],
+  );
+  await auditEvent(client, {
+    actorUserId, action: "NIGHT_TROUPE_SCHEDULED", entityType: "night_troupe_schedule", entityId: rows[0].id,
+    after: { eventId, nightId, troupeId, presentationOrder: rows[0].presentationOrder },
+  });
+  return rows[0];
+}
+
+export async function removeScheduleEntry({ client = null, scheduleId, actorUserId = null }) {
+  if (!client) return inTransaction((client) => removeScheduleEntry({ client, scheduleId, actorUserId }));
+  const { rows: current } = await client.query("SELECT * FROM night_troupe_schedule WHERE id=$1", [text(scheduleId, "scheduleId")]);
+  if (!current[0]) throw new Error("NIGHT_TROUPE_SCHEDULE_NOT_FOUND");
+  const { rows: events } = await client.query("SELECT status FROM carnival_event WHERE id=$1 FOR UPDATE", [current[0].event_id]);
+  if (!events[0]) throw new Error("EVENT_NOT_FOUND");
+  if (events[0].status !== "CONFIGURING") throw new Error("EVENT_LOCKED");
+  await client.query("DELETE FROM night_troupe_schedule WHERE id=$1", [current[0].id]);
+  await auditEvent(client, {
+    actorUserId, action: "NIGHT_TROUPE_UNSCHEDULED", entityType: "night_troupe_schedule", entityId: current[0].id,
+    before: { eventId: current[0].event_id, nightId: current[0].night_id, troupeId: current[0].event_troupe_id },
+  });
+  return { id: current[0].id };
+}
+
 async function reorderSchedule(id, { client = null, actorUserId = null, direction, neighborId, expectedOrder, expectedNeighborOrder }) {
   if (!["UP", "DOWN"].includes(direction)) throw new TypeError("direction debe ser UP o DOWN.");
   const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

@@ -3,7 +3,7 @@ import { auditEvent } from "../audit/audit-service.js";
 import { requireAdmin } from "../auth/require-admin.js";
 import { requireTwoFactor } from "../auth/two-factor.js";
 import { getPool } from "../db/pool.js";
-import { createEvent, createNight, getEvent, listEvents, listNights, updateEvent, updateNight } from "../modules/events/event-service.js";
+import { createEvent, createNight, deleteEvent, getEvent, listEvents, listNights, updateEvent, updateNight } from "../modules/events/event-service.js";
 import {
   createCategory,
   createTroupe,
@@ -13,7 +13,7 @@ import {
   updateTroupe,
 } from "../modules/troupes/category-service.js";
 import { createSpecialty, listSpecialties, updateSpecialty } from "../modules/specialties/specialty-service.js";
-import { listSchedule, reorderScheduleEntry } from "../modules/schedule/schedule-service.js";
+import { listSchedule, reorderEventSchedule, reorderScheduleEntry, addTroupeToSchedule, removeScheduleEntry } from "../modules/schedule/schedule-service.js";
 import {
   createCriterion,
   createItem,
@@ -115,6 +115,14 @@ export function createEventsRouter({ requireSession }) {
   });
   router.post("/events", createWriteHandler("EVENT_CREATED", "carnival_event", (client, request) => createEvent({ client, ...request.body })));
   router.patch("/events/:eventId", createWriteHandler("EVENT_UPDATED", "carnival_event", (client, request) => updateEvent({ client, eventId: request.params.eventId, ...request.body })));
+  router.delete("/events/:eventId", async (request, response, next) => {
+    try {
+      response.json(await deleteEvent({ eventId: request.params.eventId, actorUserId: request.user.id }));
+    } catch (error) {
+      if (error.message === "EVENT_NOT_FOUND") return response.status(404).json({ code: error.message });
+      if (!sendKnownError(response, error)) next(error);
+    }
+  });
   router.post("/events/:eventId/nights", createWriteHandler("NIGHT_CREATED", "night", (client, request) => createNight({ client, eventId: request.params.eventId, ...request.body })));
   router.patch("/nights/:nightId", createWriteHandler("NIGHT_UPDATED", "night", (client, request) => updateNight({ client, nightId: request.params.nightId, ...request.body })));
 
@@ -227,6 +235,41 @@ export function createEventsRouter({ requireSession }) {
         direction, neighborId, expectedOrder, expectedNeighborOrder,
       }));
     } catch (error) {
+      if (!sendKnownError(response, error)) next(error);
+    }
+  });
+  router.patch("/events/:eventId/schedule/reorder", async (request, response, next) => {
+    try {
+      const { nightId, orderedIds, reason } = request.body ?? {};
+      response.json(await reorderEventSchedule({
+        eventId: request.params.eventId, nightId, orderedIds, reason,
+        actorUserId: request.user.id,
+      }));
+    } catch (error) {
+      if (!sendKnownError(response, error)) next(error);
+    }
+  });
+  router.post("/events/:eventId/schedule", async (request, response, next) => {
+    try {
+      const { nightId, troupeId } = request.body ?? {};
+      response.status(201).json(await addTroupeToSchedule({
+        eventId: request.params.eventId, nightId, troupeId, actorUserId: request.user.id,
+      }));
+    } catch (error) {
+      if (error.message === "SCHEDULE_CONFLICT") return response.status(409).json({ code: error.message });
+      if (error.message === "NIGHT_NOT_FOUND" || error.message === "TROUPE_NOT_FOUND") {
+        return response.status(404).json({ code: error.message });
+      }
+      if (!sendKnownError(response, error)) next(error);
+    }
+  });
+  router.delete("/schedule/:scheduleId", async (request, response, next) => {
+    try {
+      response.json(await removeScheduleEntry({ scheduleId: request.params.scheduleId, actorUserId: request.user.id }));
+    } catch (error) {
+      if (error.message === "NIGHT_TROUPE_SCHEDULE_NOT_FOUND") {
+        return response.status(404).json({ code: error.message });
+      }
       if (!sendKnownError(response, error)) next(error);
     }
   });

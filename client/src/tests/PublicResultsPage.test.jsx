@@ -239,11 +239,11 @@ describe("PublicResultsPage (Spec 024)", () => {
       expect(MockEventSource.latestInstance).toBeTruthy();
     });
 
-    // Simular evento "connected"
+    // Simular evento "connected" — el canal sigue vivo pero sin insignia visual
     MockEventSource.latestInstance.dispatch("connected", { status: "connected" });
 
     await waitFor(() => {
-      expect(screen.getByText("En vivo")).toBeInTheDocument();
+      expect(screen.queryByText("En vivo")).not.toBeInTheDocument();
     });
 
     const initialFetchCalls = fetchMock.mock.calls.length;
@@ -259,7 +259,7 @@ describe("PublicResultsPage (Spec 024)", () => {
     });
   });
 
-  it("conmuta a 'Respaldo (30s)' si el canal SSE emite error", async () => {
+  it("conmuta a respaldo silencioso si el canal SSE emite error", async () => {
     vi.stubGlobal("fetch", vi.fn(async (url) => {
       if (url === "/api/v1/public/events") {
         return { ok: true, json: async () => mockEventsList };
@@ -283,7 +283,7 @@ describe("PublicResultsPage (Spec 024)", () => {
     MockEventSource.latestInstance.simulateError();
 
     await waitFor(() => {
-      expect(screen.getByText("Respaldo (30s)")).toBeInTheDocument();
+      expect(screen.queryByText("Respaldo (30s)")).not.toBeInTheDocument();
     });
   });
 });
