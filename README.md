@@ -500,6 +500,17 @@ El bootstrap requiere `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_NAME` y `BOOTSTR
 
 El cliente no es servido por la API. En producción se necesita un reverse proxy o servidor same-origin que sirva el cliente y reenvíe `/api` a la API; el proxy de Vite es solo para desarrollo.
 
+### Piloto: backup, restore y runbook
+
+```bash
+cd api
+DATABASE_URL="<prod>" npm run db:backup -- backups/carnavales-$(date +%Y%m%d-%H%M).dump
+bash scripts/restore.sh <dump> "<DATABASE_URL destino>"   # rollback en ventana de corte
+```
+
+Procedimiento completo (arranque, env prod, rotación de secretos, operación
+de jornada, guardia): [`docs/runbook-piloto.md`](docs/runbook-piloto.md).
+
 ### IP del cliente y límites de autenticación (Spec 019/T08)
 
 Para acceso local directo a Node, configurar `TRUST_PROXY=0` en `api/.env` (también se acepta `false`): la API ignora `X-Forwarded-For`. Con Vite como proxy, Node verá la IP del proxy local; esta configuración local no representa varios clientes reales.
