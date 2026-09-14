@@ -295,7 +295,6 @@ export function LoginPage({ onAuthenticated }) {
             <button className="primary-action" disabled={loading}>
               {loading ? "Verificando…" : "Ingresar"}
             </button>
-            <p className="login-forgot"><a href="#/forgot-password">Olvidé mi contraseña</a></p>
           </form>
         ) : step === "otp" ? (
           <form onSubmit={submitOtp}>
