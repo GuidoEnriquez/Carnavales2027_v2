@@ -240,6 +240,7 @@ function AdminCategoriesSection({ event }) {
   const [categories, setCategories] = useState([]);
   const [editing, setEditing] = useState(null);
   const [message, setMessage] = useState("");
+  const { writing, setPending } = useContext(WriteContext);
 
   useEffect(() => { apiRequest(`/api/v1/events/${event.id}/categories`).then(setCategories).catch(() => {}); }, [event.id]);
   const locked = event.status === "OPEN";
@@ -256,24 +257,51 @@ function AdminCategoriesSection({ event }) {
     }
   };
 
+  const reorderCategory = async (current, neighbor, direction) => {
+    if (writing.current || locked || !neighbor) return;
+    writing.current = true;
+    setPending(true);
+    try {
+      const { changes } = await apiRequest(`/api/v1/categories/${current.id}/reorder`, {
+        method: "POST",
+        body: JSON.stringify({ direction, neighborId: neighbor.id, expectedOrder: current.displayOrder, expectedNeighborOrder: neighbor.displayOrder }),
+      });
+      setCategories((prev) => prev.map((entry) => ({ ...entry, ...changes.find((c) => c.id === entry.id) })));
+      setMessage("Orden actualizado.");
+    } catch (error) {
+      if (["ORDER_CONFLICT", "ORDER_BOUNDARY"].includes(error.code)) {
+        try {
+          const fresh = await apiRequest(`/api/v1/events/${event.id}/categories`);
+          setCategories(fresh);
+          setMessage("La configuracion cambio. Recargamos los tipos; volve a revisar antes de editar.");
+        } catch { setMessage("No se pudo actualizar la lista. Recarga antes de reintentar."); }
+      } else {
+        setMessage(error.code === "EVENT_LOCKED" ? "El evento ya no permite modificar su configuracion." : "No se pudo cambiar el orden.");
+      }
+    } finally {
+      writing.current = false;
+      setPending(false);
+    }
+  };
+
+  const orderedCategories = [...categories].sort((a, b) => a.displayOrder - b.displayOrder);
+
   return (
     <section className="config-section">
       <div className="section-heading"><h2>Tipos de participacion</h2><p>Categorias de participacion configurables por evento.</p></div>
       <p className="feedback" role="status">{message}</p>
       {!locked && (
-        <SaveForm resetOnSuccess className="inline-form" onSubmit={(e) => { const fd = new FormData(e.currentTarget); return save(`/api/v1/events/${event.id}/categories`, { name: fd.get("name"), displayOrder: Number(fd.get("displayOrder")) }); }}>
+        <SaveForm resetOnSuccess className="inline-form" onSubmit={(e) => { const fd = new FormData(e.currentTarget); return save(`/api/v1/events/${event.id}/categories`, { name: fd.get("name") }); }}>
           <label>Nombre<input name="name" required /></label>
-          <label>Orden<input name="displayOrder" type="number" min="1" defaultValue="1" required /></label>
           <button type="submit">Agregar tipo</button>
         </SaveForm>
       )}
       <div className="records-grid">
-        {categories.map((category) => (
+        {orderedCategories.map((category, categoryIndex) => (
           <article className="record" key={category.id}>
             {editing === category.id ? (
-              <SaveForm onSubmit={(e) => { const fd = new FormData(e.currentTarget); return save(`/api/v1/categories/${category.id}`, { name: fd.get("name"), displayOrder: Number(fd.get("displayOrder")), active: fd.get("active") === "on" }, "PATCH"); }}>
+              <SaveForm onSubmit={(e) => { const fd = new FormData(e.currentTarget); return save(`/api/v1/categories/${category.id}`, { name: fd.get("name"), active: fd.get("active") === "on" }, "PATCH"); }}>
                 <label>Nombre<input name="name" defaultValue={category.name} required /></label>
-                <label>Orden<input name="displayOrder" type="number" min="1" defaultValue={category.displayOrder} required /></label>
                 <label className="check"><input name="active" type="checkbox" defaultChecked={category.active} /> Activa</label>
                 <button type="submit">Guardar</button>
                 <button type="button" className="secondary" onClick={() => setEditing(null)}>Cancelar</button>
@@ -283,7 +311,11 @@ function AdminCategoriesSection({ event }) {
                 <strong>{category.name}</strong>
                 <span className="mono-text">{category.code}</span>
                 <span className={category.active ? "status-active" : "status-inactive"}>{category.active ? "Activa" : "Inactiva"}</span>
-                {!locked && <button className="secondary" type="button" aria-label={`Editar tipo ${category.name}`} onClick={() => setEditing(category.id)}>Editar</button>}
+                {!locked && <>
+                  <button className="secondary" type="button" aria-label={`Editar tipo ${category.name}`} onClick={() => setEditing(category.id)}>Editar</button>
+                  <button className="secondary" type="button" aria-label={`Subir tipo ${category.name}`} disabled={categoryIndex === 0} onClick={() => reorderCategory(category, orderedCategories[categoryIndex - 1], "UP")}>Subir</button>
+                  <button className="secondary" type="button" aria-label={`Bajar tipo ${category.name}`} disabled={categoryIndex === orderedCategories.length - 1} onClick={() => reorderCategory(category, orderedCategories[categoryIndex + 1], "DOWN")}>Bajar</button>
+                </>}
               </div>
             )}
           </article>
@@ -297,6 +329,7 @@ function AdminSpecialtiesSection({ event }) {
   const [specialties, setSpecialties] = useState([]);
   const [editing, setEditing] = useState(null);
   const [message, setMessage] = useState("");
+  const { writing, setPending } = useContext(WriteContext);
 
   useEffect(() => { apiRequest(`/api/v1/events/${event.id}/specialties`).then(setSpecialties).catch(() => {}); }, [event.id]);
   const locked = event.status === "OPEN";
@@ -309,28 +342,55 @@ function AdminSpecialtiesSection({ event }) {
       setEditing(null);
       return true;
     } catch (e) {
-      setMessage(e.code === "RESOURCE_CONFLICT" ? "El codigo o el orden ya esta en uso." : "No se pudo guardar.");
+      setMessage(e.code === "RESOURCE_CONFLICT" ? "El codigo ya esta en uso." : "No se pudo guardar.");
     }
   };
+
+  const reorderSpecialty = async (current, neighbor, direction) => {
+    if (writing.current || locked || !neighbor) return;
+    writing.current = true;
+    setPending(true);
+    try {
+      const { changes } = await apiRequest(`/api/v1/specialties/${current.id}/reorder`, {
+        method: "POST",
+        body: JSON.stringify({ direction, neighborId: neighbor.id, expectedOrder: current.displayOrder, expectedNeighborOrder: neighbor.displayOrder }),
+      });
+      setSpecialties((prev) => prev.map((entry) => ({ ...entry, ...changes.find((c) => c.id === entry.id) })));
+      setMessage("Orden actualizado.");
+    } catch (error) {
+      if (["ORDER_CONFLICT", "ORDER_BOUNDARY"].includes(error.code)) {
+        try {
+          const fresh = await apiRequest(`/api/v1/events/${event.id}/specialties`);
+          setSpecialties(fresh);
+          setMessage("La configuracion cambio. Recargamos las especialidades; volve a revisar antes de editar.");
+        } catch { setMessage("No se pudo actualizar la lista. Recarga antes de reintentar."); }
+      } else {
+        setMessage(error.code === "EVENT_LOCKED" ? "El evento ya no permite modificar su configuracion." : "No se pudo cambiar el orden.");
+      }
+    } finally {
+      writing.current = false;
+      setPending(false);
+    }
+  };
+
+  const orderedSpecialties = [...specialties].sort((a, b) => a.displayOrder - b.displayOrder);
 
   return (
     <section className="config-section">
       <div className="section-heading"><h2>Especialidades</h2><p>Responsabilidades configurables de los jurados.</p></div>
       <p className="feedback" role="status">{message}</p>
       {!locked && (
-        <SaveForm resetOnSuccess className="inline-form" onSubmit={(e) => { const fd = new FormData(e.currentTarget); return save(`/api/v1/events/${event.id}/specialties`, { name: fd.get("name"), displayOrder: Number(fd.get("displayOrder")) }); }}>
+        <SaveForm resetOnSuccess className="inline-form" onSubmit={(e) => { const fd = new FormData(e.currentTarget); return save(`/api/v1/events/${event.id}/specialties`, { name: fd.get("name") }); }}>
           <label>Nombre<input name="name" required /></label>
-          <label>Orden<input name="displayOrder" type="number" min="1" defaultValue="1" required /></label>
           <button type="submit">Agregar especialidad</button>
         </SaveForm>
       )}
       <div className="records-grid">
-        {specialties.map((spec) => (
+        {orderedSpecialties.map((spec, specialtyIndex) => (
           <article className="record" key={spec.id}>
             {editing === spec.id ? (
-              <SaveForm onSubmit={(e) => { const fd = new FormData(e.currentTarget); return save(`/api/v1/specialties/${spec.id}`, { name: fd.get("name"), displayOrder: Number(fd.get("displayOrder")), active: fd.get("active") === "on" }, "PATCH"); }}>
+              <SaveForm onSubmit={(e) => { const fd = new FormData(e.currentTarget); return save(`/api/v1/specialties/${spec.id}`, { name: fd.get("name"), active: fd.get("active") === "on" }, "PATCH"); }}>
                 <label>Nombre<input name="name" defaultValue={spec.name} required /></label>
-                <label>Orden<input name="displayOrder" type="number" min="1" defaultValue={spec.displayOrder} required /></label>
                 <label className="check"><input name="active" type="checkbox" defaultChecked={spec.active} /> Activa</label>
                 <button type="submit">Guardar</button>
                 <button type="button" className="secondary" onClick={() => setEditing(null)}>Cancelar</button>
@@ -340,7 +400,11 @@ function AdminSpecialtiesSection({ event }) {
                 <strong>{spec.name}</strong>
                 <span className="mono-text">{spec.code}</span>
                 <span className={spec.active ? "status-active" : "status-inactive"}>{spec.active ? "Activa" : "Inactiva"}</span>
-                {!locked && <button className="secondary" type="button" aria-label={`Editar especialidad ${spec.name}`} onClick={() => setEditing(spec.id)}>Editar</button>}
+                {!locked && <>
+                  <button className="secondary" type="button" aria-label={`Editar especialidad ${spec.name}`} onClick={() => setEditing(spec.id)}>Editar</button>
+                  <button className="secondary" type="button" aria-label={`Subir especialidad ${spec.name}`} disabled={specialtyIndex === 0} onClick={() => reorderSpecialty(spec, orderedSpecialties[specialtyIndex - 1], "UP")}>Subir</button>
+                  <button className="secondary" type="button" aria-label={`Bajar especialidad ${spec.name}`} disabled={specialtyIndex === orderedSpecialties.length - 1} onClick={() => reorderSpecialty(spec, orderedSpecialties[specialtyIndex + 1], "DOWN")}>Bajar</button>
+                </>}
               </div>
             )}
           </article>

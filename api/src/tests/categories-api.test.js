@@ -24,9 +24,10 @@ test("API ADMIN administra categorías y participaciones sin texto libre", { ski
     const headers = { "content-type": "application/json", "x-test-session": "admin" };
     const eventResponse = await fetch(`${baseUrl}/api/v1/events`, { method: "POST", headers, body: JSON.stringify({ name: "Evento categorías API" }) });
     const event = await eventResponse.json();
-    const categoryResponse = await fetch(`${baseUrl}/api/v1/events/${event.id}/categories`, { method: "POST", headers, body: JSON.stringify({ name: "Primera", code: "PRIMERA", displayOrder: 1 }) });
+    const categoryResponse = await fetch(`${baseUrl}/api/v1/events/${event.id}/categories`, { method: "POST", headers, body: JSON.stringify({ name: "Primera", code: "PRIMERA" }) });
     assert.equal(categoryResponse.status, 201);
     const category = await categoryResponse.json();
+    assert.equal(category.displayOrder, 1);
     const troupeResponse = await fetch(`${baseUrl}/api/v1/events/${event.id}/troupes`, { method: "POST", headers, body: JSON.stringify({ name: "Comparsa API", categoryId: category.id }) });
     assert.equal(troupeResponse.status, 201);
     const troupe = await troupeResponse.json();
@@ -45,17 +46,19 @@ test("API ADMIN administra categorías y participaciones sin texto libre", { ski
     const updatedCategory = await fetch(`${baseUrl}/api/v1/categories/${category.id}`, {
       method: "PATCH",
       headers,
-      body: JSON.stringify({ name: "Primera editada", code: "PRIMERA_EDITADA", displayOrder: 2, active: false }),
+      body: JSON.stringify({ name: "Primera editada", code: "PRIMERA_EDITADA", active: false }),
     });
     assert.equal(updatedCategory.status, 200);
     assert.equal((await updatedCategory.json()).name, "Primera editada");
     const generatedCategoryResponse = await fetch(`${baseUrl}/api/v1/events/${event.id}/categories`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ name: "Categoría juvenil", displayOrder: 3 }),
+      body: JSON.stringify({ name: "Categoría juvenil" }),
     });
     assert.equal(generatedCategoryResponse.status, 201);
-    assert.equal((await generatedCategoryResponse.json()).code, "CATEGORIA_JUVENIL");
+    const generatedCategory = await generatedCategoryResponse.json();
+    assert.equal(generatedCategory.code, "CATEGORIA_JUVENIL");
+    assert.equal(generatedCategory.displayOrder, 2);
     const deactivateWithInactiveCategory = await fetch(`${baseUrl}/api/v1/troupes/${troupe.id}`, {
       method: "PATCH",
       headers,
@@ -75,7 +78,7 @@ test("API ADMIN administra categorías y participaciones sin texto libre", { ski
     const duplicate = await fetch(`${baseUrl}/api/v1/events/${event.id}/categories`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ name: "Duplicada", code: "PRIMERA_EDITADA", displayOrder: 4 }),
+      body: JSON.stringify({ name: "Duplicada", code: "PRIMERA_EDITADA" }),
     });
     assert.equal(duplicate.status, 409);
     assert.equal((await duplicate.json()).code, "RESOURCE_CONFLICT");

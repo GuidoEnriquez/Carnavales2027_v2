@@ -32,6 +32,8 @@
 | Spec 024 | Portal Público de Resultados (Fase 6 del Plan Maestro): solo lectura post-liberación, snapshot inmutable `results_snapshot` (migración 070, triggers NO UPDATE/DELETE), materialización automática determinística JCS/SHA-256 en liberación/acta/sorteo, verificación de hash de acta oficial, endpoints públicos `/api/v1/public/events` y `/:eventId/results` con ETag/HTTP 304, canal SSE público en `/api/v1/public/stream` con fallback a polling (30s), secreto estricto de voto (RF-214) y vista `PublicResultsPage.jsx` bajo Capa de Marca. Validada automáticamente (141 API, 72 DB, 200 cliente, build limpio). | `specs/024-portal-publico/validation.md` |
 | Spec 025 | Votación secuencial por orden de pasada: bloqueo por `presentation_order`, guardia anti-URL directa, banner de continuidad, defensa backend `TROUPE_PRECEDENCE_REQUIRED` (409) y control de pista en vivo. **[NECESITA ACLARACIÓN]:** `spec.md` la declara "propuesta / pendiente de aprobación" mientras `tasks.md` marca las 4 fases `[x]` y `validation.md` la declara "100% Cerrada". Hasta resolver la contradicción, se registra como propuesta con evidencia no aprobada. | `specs/025-votacion-secuencial-pasadas/validation.md` |
 | Spec 026 | Optimización de diseño sin framework (deuda técnica): inventario, CSS muerto, fuente única `.ballot-status-*`, badges monitor/workflow a tokens, resultados/portal a tokens, `utilities.css`, `PageShell` + `DialogFooter` con adopción 100%, test `EventCard`, veredicto fundado de no-aplica para `useApiResource`. T01–T10 validadas (T11 pendiente: reconciliación de `judge.css` huérfana, requiere navegador). | `specs/026-optimizacion-diseno/validation.md` |
+| Spec 027 | Jornadas con orden cronológico automático: `display_order` derivado de `event_date` (obligatoria), duplicados rechazados y reordenamiento del conjunto al crear/editar. Migración 071 + service + panel de Jornadas sin Orden. Validada automáticamente (141 API/BD, 258 cliente, build limpio); comprobación manual responsive recomendada antes del cierre operativo. | `specs/027-jornadas-orden-cronologico/validation.md` |
+| Spec 028 | Competencia con jerarquía de cabecera y orden automático: Tipos de participación y Especialidades con `display_order` automático al crear (`MAX+1` bajo advisory lock), reordenamiento exclusivo por Subir/Bajar (concurrencia optimista `ORDER_CONFLICT`/`ORDER_BOUNDARY`, swap transaccional con offset), desactivación con huecos preservados, formularios sin campo de orden y cabecera verificada (eyebrow + `event.name` + Volver + pestañas). T01–T05 completadas el 2026-09-15; validada automáticamente (149 API, 261 cliente, build limpio); comprobación manual responsive pendiente. | `specs/028-competencia-jerarquia-orden/validation.md` |
 
 ## Cambios en working tree pendientes de spec (2026-09-08, sin commitear)
 
@@ -42,8 +44,10 @@
 
 ## Incremento activo
 
+- Spec 028 — Competencia: jerarquía de cabecera y orden automático de Tipos de participación y Especialidades. T01–T05 completadas y validadas automáticamente; comprobación manual responsive pendiente.
 - Fase 6 del Plan Maestro completada (Specs 019–024 cerradas según `source-map.md` y log de commits).
 - Spec 026 — Optimización de diseño: T01–T10 validadas; T11 pendiente (requiere navegador).
+- Spec 027 — Jornadas con orden cronológico automático: T01–T05 completadas y validadas automáticamente; comprobación manual responsive pendiente.
 - Spec 016 — Supervisión de votación por VEEDOR. La implementación y validación automatizada están completas; falta comprobación manual en los viewports operativos.
 - Spec 017 — Configuración de competencia. T01-T03 con evidencia del alcance original; T04 en curso, con validación responsive y hallazgos pendientes.
 - Spec 025 — Propuesta pendiente de aprobación (ver contradicción arriba); no es incremento activo hasta su aprobación.

@@ -9,10 +9,11 @@ import {
   createTroupe,
   listCategories,
   listTroupes,
+  reorderCategory,
   updateCategory,
   updateTroupe,
 } from "../modules/troupes/category-service.js";
-import { createSpecialty, listSpecialties, updateSpecialty } from "../modules/specialties/specialty-service.js";
+import { createSpecialty, listSpecialties, reorderSpecialty, updateSpecialty } from "../modules/specialties/specialty-service.js";
 import {
   createCriterion,
   createItem,
@@ -189,6 +190,8 @@ export function createEventsRouter({ requireSession }) {
   for (const [path, idKey, operation] of [
     ["/evaluation-items/:itemId/reorder", "itemId", reorderItem],
     ["/rubric-criteria/:criterionId/reorder", "criterionId", reorderCriterion],
+    ["/categories/:categoryId/reorder", "categoryId", reorderCategory],
+    ["/specialties/:specialtyId/reorder", "specialtyId", reorderSpecialty],
   ]) {
     router.post(path, async (request, response, next) => {
       try {

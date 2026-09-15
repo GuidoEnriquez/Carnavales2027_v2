@@ -18,20 +18,20 @@ test("API ADMIN mantiene especialidades independientes por evento sin defaults g
     const base = `http://127.0.0.1:${server.address().port}`; const headers = { "content-type": "application/json", "x-test-session": "admin" };
     const createEvent = async (name) => (await fetch(`${base}/api/v1/events`, { method: "POST", headers, body: JSON.stringify({ name }) })).json();
     const eventA = await createEvent("Especialidades A"); const eventB = await createEvent("Especialidades B");
-    const specialty = await fetch(`${base}/api/v1/events/${eventA.id}/specialties`, { method: "POST", headers, body: JSON.stringify({ name: "Especialidad propia", code: "PROPIA", displayOrder: 1 }) });
+    const specialty = await fetch(`${base}/api/v1/events/${eventA.id}/specialties`, { method: "POST", headers, body: JSON.stringify({ name: "Especialidad propia", code: "PROPIA" }) });
     assert.equal(specialty.status, 201);
     const createdSpecialty = await specialty.json();
+    assert.equal(createdSpecialty.displayOrder, 1);
     const edited = await fetch(`${base}/api/v1/specialties/${createdSpecialty.id}`, {
       method: "PATCH",
       headers,
-      body: JSON.stringify({ name: "Baile editado", code: "BAILE_EDITADO", displayOrder: 2, active: false }),
+      body: JSON.stringify({ name: "Baile editado", code: "BAILE_EDITADO", active: false }),
     });
     assert.equal(edited.status, 200);
     assert.deepEqual(await edited.json(), {
       ...createdSpecialty,
       name: "Baile editado",
       code: "BAILE_EDITADO",
-      displayOrder: 2,
       active: false,
     });
     const partiallyEdited = await fetch(`${base}/api/v1/specialties/${createdSpecialty.id}`, {
@@ -44,8 +44,20 @@ test("API ADMIN mantiene especialidades independientes por evento sin defaults g
       ...createdSpecialty,
       name: "Baile editado",
       code: "BAILE_EDITADO",
-      displayOrder: 2,
       active: true,
+    });
+    const orderIgnored = await fetch(`${base}/api/v1/specialties/${createdSpecialty.id}`, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ displayOrder: 9, name: "Baile editado 2" }),
+    });
+    assert.equal(orderIgnored.status, 200);
+    assert.deepEqual(await orderIgnored.json(), {
+      ...createdSpecialty,
+      name: "Baile editado 2",
+      code: "BAILE_EDITADO",
+      active: true,
+      displayOrder: 1,
     });
     const listA = await fetch(`${base}/api/v1/events/${eventA.id}/specialties`, { headers });
     const listB = await fetch(`${base}/api/v1/events/${eventB.id}/specialties`, { headers });

@@ -29,7 +29,7 @@ test("readiness exige que todos los ítems activos usen especialidades activas a
     );
     await client.query("ROLLBACK TO SAVEPOINT direct_incomplete_open");
 
-    await createNight({ client, eventId: event.id, name: "Noche", displayOrder: 1, kind: "COMPETITION" });
+    await createNight({ client, eventId: event.id, name: "Noche", kind: "COMPETITION", eventDate: "2027-02-06" });
     const { rows: categories } = await client.query(
       `INSERT INTO event_category(event_id, name, code, display_order)
        VALUES($1, 'Cat', 'CAT', 1) RETURNING id`,
@@ -117,7 +117,7 @@ test("apertura y escrituras de configuración se serializan con el mismo bloqueo
 
   const pool = getPool();
   const event = await createEvent({ name: "Ready concurrente" });
-  await createNight({ eventId: event.id, name: "Noche", displayOrder: 1, kind: "COMPETITION" });
+  await createNight({ eventId: event.id, name: "Noche", kind: "COMPETITION", eventDate: "2027-02-06" });
   const { rows: categories } = await pool.query(
     "INSERT INTO event_category(event_id,name,code,display_order) VALUES($1,'Cat','CAT_CONCURRENT',1) RETURNING id",
     [event.id],

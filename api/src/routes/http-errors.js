@@ -80,6 +80,18 @@ export function sendKnownError(response, error) {
     response.status(409).json({ code: error.message });
     return true;
   }
+  if (error.message === "NIGHT_DATE_REQUIRED") {
+    response.status(400).json({ code: error.message });
+    return true;
+  }
+  if (error.message === "NIGHT_DATE_INVALID") {
+    response.status(400).json({ code: "VALIDATION_ERROR" });
+    return true;
+  }
+  if (error.message === "NIGHT_DATE_DUPLICATE") {
+    response.status(409).json({ code: error.message });
+    return true;
+  }
   if (["CATEGORY_INACTIVE", "SPECIALTY_INACTIVE"].includes(error.message)) {
     response.status(409).json({ code: error.message });
     return true;

@@ -3,10 +3,10 @@ import { getPool } from "../pool.js";
 const DEFAULT_EVENT_NAME = "Carnavales de Goya 2027";
 const DEFAULT_SEED_KEY = "goya-2027";
 const NIGHTS = [
-  [1, "Noche 1", "COMPETITION"],
-  [2, "Noche 2", "COMPETITION"],
-  [3, "Noche 3", "COMPETITION"],
-  [4, "Noche de premios", "AWARDS"],
+  [1, "Noche 1", "COMPETITION", "2027-02-05"],
+  [2, "Noche 2", "COMPETITION", "2027-02-06"],
+  [3, "Noche 3", "COMPETITION", "2027-02-07"],
+  [4, "Noche de premios", "AWARDS", "2027-02-12"],
 ];
 const SPECIALTIES = [
   [1, "Baile", "BAILE"],
@@ -48,12 +48,13 @@ export async function seedGoya2027({ eventName = DEFAULT_EVENT_NAME, seedKey = D
     }
     await client.query("INSERT INTO configuration_seed(seed_key,event_id) VALUES($1,$2)", [seedKey, eventId]);
 
-    for (const [displayOrder, name, kind] of NIGHTS) {
+    for (const [displayOrder, name, kind, eventDate] of NIGHTS) {
       await client.query(
-        `INSERT INTO night(event_id, name, display_order, kind)
-         VALUES($1, $2, $3, $4)
-         ON CONFLICT(event_id, display_order) DO NOTHING`,
-        [eventId, name, displayOrder, kind],
+        `INSERT INTO night(event_id, name, display_order, kind, event_date)
+         VALUES($1, $2, $3, $4, $5)
+         ON CONFLICT(event_id, display_order)
+         DO UPDATE SET name = EXCLUDED.name, event_date = EXCLUDED.event_date`,
+        [eventId, name, displayOrder, kind, eventDate],
       );
     }
 

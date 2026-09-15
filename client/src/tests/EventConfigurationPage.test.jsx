@@ -33,19 +33,22 @@ describe("EventConfigurationPage", () => {
     expect(screen.getByRole("button", { name: "Competencia" })).toBeInTheDocument();
   });
 
-  it("permite crear una jornada", async () => {
+  it("permite crear una jornada con fecha y sin orden manual", async () => {
     apiRequest.mockResolvedValueOnce({ ready: false, missing: [], incompleteTroupes: [], incompleteRubrics: [], orphanedCriteria: [] });
-    apiRequest.mockResolvedValueOnce({ id: "n1", name: "Noche 1", displayOrder: 1, kind: "COMPETITION", eventDate: null });
+    apiRequest.mockResolvedValueOnce({ id: "n1", name: "Noche 1", displayOrder: 1, kind: "COMPETITION", eventDate: "2027-02-06" });
+    apiRequest.mockResolvedValueOnce([{ id: "n1", name: "Noche 1", displayOrder: 1, kind: "COMPETITION", eventDate: "2027-02-06" }]);
     apiRequest.mockResolvedValueOnce({ ready: false, missing: [], incompleteTroupes: [], incompleteRubrics: [], orphanedCriteria: [] });
     render(<EventConfigurationPage event={{ id: "event-1", status: "CONFIGURING" }} />);
 
     fireEvent.change(screen.getByLabelText("Nombre de jornada"), { target: { value: "Noche 1" } });
+    fireEvent.change(screen.getByLabelText("Fecha"), { target: { value: "2027-02-06" } });
     fireEvent.click(screen.getByRole("button", { name: "Agregar jornada" }));
 
     await waitFor(() => expect(apiRequest).toHaveBeenCalledWith(
       "/api/v1/events/event-1/nights",
-      expect.objectContaining({ body: JSON.stringify({ name: "Noche 1", displayOrder: 1, kind: "COMPETITION", eventDate: null }) }),
+      expect.objectContaining({ body: JSON.stringify({ name: "Noche 1", kind: "COMPETITION", eventDate: "2027-02-06" }) }),
     ));
+    await waitFor(() => expect(apiRequest).toHaveBeenCalledWith("/api/v1/events/event-1/nights"));
   });
 
   it("permite editar el nombre del evento", async () => {

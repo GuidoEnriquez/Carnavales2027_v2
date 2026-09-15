@@ -24,6 +24,8 @@
 - Spec 024: portal público de resultados (Fase 6 del Plan Maestro). Solo lectura post-liberación, snapshot inmutable `results_snapshot` (migración 070, triggers NO UPDATE/DELETE), materialización determinística JCS/SHA-256 en liberación/acta/sorteo, ETag/HTTP 304, SSE con fallback polling (30s) y vista `PublicResultsPage.jsx`. Validada y cerrada el 2026-09-08.
 - Spec 025: votación secuencial por orden de pasada (propuesta del 2026-09-08; RF-189 a RF-194). **[NECESITA ACLARACIÓN]:** `spec.md` la declara propuesta/pendiente de aprobación mientras `tasks.md` y `validation.md` la registran como implementada y cerrada. No cuenta como incremento cerrado hasta resolver la contradicción.
 - Spec 026: optimización de diseño sin framework (2026-09-08). Regulariza el refactor del working tree: T01–T10 validadas (T09 con veredicto fundado de no-aplica); T11 pendiente (reconciliación de `judge.css` huérfana, requiere navegador). Los borrados staged en `.hermes/plans/` siguen fuera de alcance y requieren autorización aparte.
+- Spec 027: jornadas con orden cronológico automático (2026-09-14). `display_order` pasa a ser derivado de `event_date`: fecha obligatoria en servicio/UI, duplicados rechazados (409 `NIGHT_DATE_DUPLICATE`), reordenamiento de todo el conjunto al crear/editar, migración 071 (índice único parcial + renumeración). Backend 141/141, cliente 258/258, build limpio. Pendiente solo comprobación manual responsive.
+- Spec 028: competencia con jerarquía de cabecera y orden automático (2026-09-15). Tipos de participación y Especialidades reciben `display_order` automático al crear (`MAX+1`, advisory lock `category_order:{eventId}`/`specialty_order:{eventId}`), reordenamiento exclusivo por Subir/Bajar (`POST /categories/:id/reorder`, `/specialties/:id/reorder`, swap transaccional con offset +1000000, concurrencia optimista 409 `ORDER_CONFLICT`/`ORDER_BOUNDARY`, auditoría `CATEGORY_REORDERED`/`SPECIALTY_REORDERED`), desactivación con huecos preservados, formularios sin campo de orden y cabecera verificada (eyebrow COMPETENCIA + `event.name` + Volver + pestañas). Backend 149/149, cliente 261/261, build limpio. Pendiente solo comprobación manual responsive.
 - Diferido: Offline-First operativo. Spec 005 conserva compatibilidad exploratoria, no capacidad aceptada.
 - Ampliacion Spec 017 solicitada en esta sesion: plan integral registrado para ejecucion por unidades; T07 cubre RF-145/RF-146 y RNF-34. RF-147 a RF-152 corresponden al alcance restante; las decisiones pendientes de apertura, versiones y fechas no se consideran aprobadas implicitamente.
 - Spec 017 / T08: RF-132/RF-139/RF-149 implementados para items/criterios; migracion 067 preserva NULL historicos e impide nuevos. Reordenamiento conserva unicidad por rubro y no cambia readiness ni apertura. Evidencia detallada en validation.md.
@@ -207,4 +209,30 @@ Por decisión de producto del 2026-09-01, la regla de subsanación conocida como
 | API Tests | `api/src/tests/public-results-api.test.js` | Tests de integración API pública y secreto de voto |
 | Client Page | `client/src/pages/PublicResultsPage.jsx` | Portal Web de Resultados bajo Capa de Marca |
 | Client Tests | `client/src/tests/PublicResultsPage.test.jsx` | Tests de UI pública, SSE y copiado de sello |
+
+## Artefactos Jornadas con Orden Cronológico — Spec 027 (2026-09-14)
+
+| Artefacto | Ubicación | Descripción |
+|---|---|---|
+| Spec & Clarifications | `specs/027-jornadas-orden-cronologico/` | Contrato SDD: spec, clarificaciones, plan, tareas, validación |
+| Migración 071 | `api/src/db/migrations/071_night_chronological_order.sql` | Índice único parcial `(event_id, event_date)` + renumeración (`display_order + 1000000`, luego `row_number()`); trigger operativo 029 suspendido durante el ciclo |
+| Service | `api/src/modules/events/event-service.js` | `createNight`/`updateNight` sin `displayOrder` de cliente, `normalizeNightOrder` (advisory lock), `requireNightDate`, `runWithTransaction` |
+| Errors | `api/src/routes/http-errors.js` | `NIGHT_DATE_REQUIRED` (400), `NIGHT_DATE_INVALID` (400), `NIGHT_DATE_DUPLICATE` (409) |
+| Seed | `api/src/db/seeds/goya-2027.js` | Jornadas con fechas y `ON CONFLICT ... DO UPDATE` |
+| Client Page | `client/src/pages/EventConfigurationPage.jsx` | Formularios de jornada sin Orden, fecha obligatoria, refresh tras guardar |
+| DB Tests | `api/src/db/tests/events.test.js` | Orden cronológico, reordenamiento al editar, duplicados, fecha inválida/fallante |
+| API Tests | `api/src/tests/events-api.test.js` | Contrato HTTP de jornadas (POST/PATCH/GET con fechas) |
+| Client Tests | `client/src/tests/EventConfigurationPage.test.jsx` | Creación de jornada con fecha y refresh de noches |
+
+## Artefactos Competencia: Cabecera y Orden — Spec 028 (2026-09-15)
+
+| Artefacto | Ubicación | Descripción |
+|---|---|---|
+| Spec & Clarifications | `specs/028-competencia-jerarquia-orden/` | Contrato SDD: spec, clarificaciones, plan, tareas, validación |
+| Service | `api/src/modules/troupes/category-service.js` | `createCategory` sin `displayOrder` (MAX+1), `reorderCategory`, PATCH sin orden |
+| Service | `api/src/modules/specialties/specialty-service.js` | `createSpecialty` sin `displayOrder` (MAX+1), `reorderSpecialty`, PATCH sin orden |
+| Routes | `api/src/routes/events.routes.js` | `POST /categories/:id/reorder` y `POST /specialties/:id/reorder` |
+| API Tests | `api/src/tests/competencia-order-api.test.js` | Auto-orden, huecos, reorder, conflicto/boundary, auditoría, EVENT_LOCKED |
+| Client Page | `client/src/pages/AdminCompetenciaPage.jsx` | Formularios sin Orden y botones Subir/Bajar para categorías y especialidades |
+| Client Tests | `client/src/tests/AdminCompetenciaPage.test.jsx` | Sin campo de orden, Subir/Bajar, boundary states, OPEN oculta reorder |
 

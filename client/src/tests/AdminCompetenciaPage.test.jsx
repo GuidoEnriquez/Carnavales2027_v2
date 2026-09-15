@@ -347,4 +347,96 @@ describe("AdminCompetenciaPage", () => {
     expect(screen.queryByRole("button", { name: /Subir|Bajar/ })).not.toBeInTheDocument();
     expect(apiRequest.mock.calls.every(([, options]) => !options?.method)).toBe(true);
   });
+
+  it("crea tipo de participacion sin displayOrder (RF-172)", async () => {
+    const write = vi.fn().mockResolvedValueOnce({ id: "new-category", name: "Danzas", code: "DANZAS", active: true });
+    mockCompetitionData({ write });
+    render(<AdminCompetenciaPage event={{ id: "event-1", status: "CONFIGURING" }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Tipos de participacion" }));
+    await screen.findByText("COMPARSA");
+    const form = screen.getByRole("button", { name: "Agregar tipo" }).closest("form");
+    fireEvent.change(within(form).getByLabelText("Nombre"), { target: { value: "Danzas" } });
+    fireEvent.submit(form);
+    await waitFor(() => expect(write).toHaveBeenCalledExactlyOnceWith(
+      "/api/v1/events/event-1/categories",
+      { method: "POST", body: JSON.stringify({ name: "Danzas" }) },
+    ));
+    expect(await screen.findByText("Guardado.")).toBeInTheDocument();
+  });
+
+  it("reordena tipos de participacion con Subir/Bajar (RF-175)", async () => {
+    const categories = [
+      { id: "category-1", name: "Comparsa", code: "COMPARSA", displayOrder: 1, active: true },
+      { id: "category-2", name: "Murga", code: "MURGA", displayOrder: 2, active: true },
+    ];
+    let resolveWrite;
+    const write = vi.fn(() => new Promise((resolve) => { resolveWrite = resolve; }));
+    apiRequest.mockImplementation(async (path, options) => {
+      if (options?.method) return write(path, options);
+      if (path.endsWith("/troupes")) return [{ id: "troupe-1", name: "Estrella", categoryId: "category-1", active: true }];
+      if (path.endsWith("/categories")) return categories;
+      if (path.endsWith("/specialties")) return [{ id: "specialty-1", name: "Danza", code: "DANZA", displayOrder: 1, active: true }];
+      if (path.endsWith("/rubrics")) return [rubric];
+      if (path.startsWith("/api/v1/rubrics/")) return rubric;
+      if (path.endsWith("/orphaned-criteria")) return [];
+      throw new Error(`Solicitud inesperada: ${path}`);
+    });
+    render(<AdminCompetenciaPage event={{ id: "event-1", status: "CONFIGURING" }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Tipos de participacion" }));
+    await screen.findByText("MURGA");
+
+    expect(screen.getByRole("button", { name: "Subir tipo Comparsa" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Bajar tipo Murga" })).toBeDisabled();
+
+    const moveDown = screen.getByRole("button", { name: "Bajar tipo Comparsa" });
+    act(() => { fireEvent.click(moveDown); fireEvent.click(moveDown); });
+    expect(write).toHaveBeenCalledExactlyOnceWith("/api/v1/categories/category-1/reorder", {
+      method: "POST",
+      body: JSON.stringify({ direction: "DOWN", neighborId: "category-2", expectedOrder: 1, expectedNeighborOrder: 2 }),
+    });
+    expect(moveDown).toBeDisabled();
+
+    await act(async () => { resolveWrite({ changes: [{ id: "category-1", displayOrder: 2 }, { id: "category-2", displayOrder: 1 }] }); });
+    expect(await screen.findByText("Orden actualizado.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Subir tipo Murga" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Bajar tipo Comparsa" })).toBeDisabled();
+  });
+
+  it("reordena especialidades con Subir/Bajar (RF-175)", async () => {
+    const specialties = [
+      { id: "specialty-1", name: "Danza", code: "DANZA", displayOrder: 1, active: true },
+      { id: "specialty-2", name: "Musica", code: "MUSICA", displayOrder: 2, active: true },
+    ];
+    let resolveWrite;
+    const write = vi.fn(() => new Promise((resolve) => { resolveWrite = resolve; }));
+    apiRequest.mockImplementation(async (path, options) => {
+      if (options?.method) return write(path, options);
+      if (path.endsWith("/troupes")) return [{ id: "troupe-1", name: "Estrella", categoryId: "category-1", active: true }];
+      if (path.endsWith("/categories")) return [{ id: "category-1", name: "Comparsa", code: "COMPARSA", displayOrder: 1, active: true }];
+      if (path.endsWith("/specialties")) return specialties;
+      if (path.endsWith("/rubrics")) return [rubric];
+      if (path.startsWith("/api/v1/rubrics/")) return rubric;
+      if (path.endsWith("/orphaned-criteria")) return [];
+      throw new Error(`Solicitud inesperada: ${path}`);
+    });
+    render(<AdminCompetenciaPage event={{ id: "event-1", status: "CONFIGURING" }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Especialidades" }));
+    await screen.findByText("MUSICA");
+
+    expect(screen.getByRole("button", { name: "Subir especialidad Danza" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Bajar especialidad Musica" })).toBeDisabled();
+
+    const moveDown = screen.getByRole("button", { name: "Bajar especialidad Danza" });
+    act(() => { fireEvent.click(moveDown); fireEvent.click(moveDown); });
+    expect(write).toHaveBeenCalledExactlyOnceWith("/api/v1/specialties/specialty-1/reorder", {
+      method: "POST",
+      body: JSON.stringify({ direction: "DOWN", neighborId: "specialty-2", expectedOrder: 1, expectedNeighborOrder: 2 }),
+    });
+    expect(moveDown).toBeDisabled();
+
+    await act(async () => { resolveWrite({ changes: [{ id: "specialty-1", displayOrder: 2 }, { id: "specialty-2", displayOrder: 1 }] }); });
+    expect(await screen.findByText("Orden actualizado.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Subir especialidad Musica" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Bajar especialidad Danza" })).toBeDisabled();
+  });
 });

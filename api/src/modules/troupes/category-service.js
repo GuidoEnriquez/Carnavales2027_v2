@@ -1,14 +1,10 @@
 import { getPool } from "../../db/pool.js";
 import { requireConfiguringEvent, requireEventExists } from "../events/event-service.js";
+import { nextDisplayOrder, reorderAdjacentEntity } from "../competition/order-utils.js";
 
 function text(value, name) {
   if (typeof value !== "string" || !value.trim()) throw new TypeError(`${name} debe ser texto no vacío.`);
   return value.trim();
-}
-
-function order(value) {
-  if (!Number.isInteger(value) || value <= 0) throw new TypeError("displayOrder debe ser entero positivo.");
-  return value;
 }
 
 function optionalBoolean(value, name) {
@@ -17,12 +13,15 @@ function optionalBoolean(value, name) {
   return value;
 }
 
-export async function createCategory({ client = getPool(), eventId, name, code, displayOrder }) {
+export async function createCategory({ client = getPool(), eventId, name, code }) {
   await requireConfiguringEvent({ client, eventId });
+  const normalizedEventId = text(eventId, "eventId");
+  await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`category_order:${normalizedEventId}`]);
+  const displayOrder = await nextDisplayOrder({ client, table: "event_category", eventId: normalizedEventId });
   const { rows } = await client.query(
     `INSERT INTO event_category (event_id, name, code, display_order) VALUES ($1, $2, $3, $4)
      RETURNING id, event_id AS "eventId", name, code, display_order AS "displayOrder", active`,
-    [text(eventId, "eventId"), text(name, "name"), text(code, "code"), order(displayOrder)],
+    [normalizedEventId, text(name, "name"), text(code, "code"), displayOrder],
   );
   return rows[0];
 }
@@ -39,13 +38,12 @@ export async function listCategories({ client = getPool(), eventId, eligible = f
   return rows;
 }
 
-export async function updateCategory({ client = getPool(), categoryId, name, code, displayOrder, active }) {
+export async function updateCategory({ client = getPool(), categoryId, name, code, active }) {
   const { rows } = await client.query(
     `UPDATE event_category
         SET name = COALESCE($2, name),
             code = COALESCE($3, code),
-            display_order = COALESCE($4, display_order),
-            active = COALESCE($5, active),
+            active = COALESCE($4, active),
             updated_at = CURRENT_TIMESTAMP
       WHERE id = $1
       RETURNING id, event_id AS "eventId", name, code, display_order AS "displayOrder", active`,
@@ -53,12 +51,22 @@ export async function updateCategory({ client = getPool(), categoryId, name, cod
       text(categoryId, "categoryId"),
       name === undefined ? null : text(name, "name"),
       code === undefined ? null : text(code, "code"),
-      displayOrder === undefined ? null : order(displayOrder),
       optionalBoolean(active, "active"),
     ],
   );
   if (!rows[0]) throw new Error("CATEGORY_NOT_FOUND");
   return rows[0];
+}
+
+export function reorderCategory({ client = null, categoryId, ...input }) {
+  return reorderAdjacentEntity({
+    table: "event_category",
+    entityLabel: "CATEGORY",
+    advisoryKey: "category_order:",
+    client,
+    id: categoryId,
+    ...input,
+  });
 }
 
 export async function createTroupe({ client = getPool(), eventId, categoryId, name }) {

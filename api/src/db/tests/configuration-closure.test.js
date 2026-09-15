@@ -25,8 +25,8 @@ test("criterios, nominaciones y programación quedan bloqueados al abrir", {
       client,
       eventId: event.id,
       name: "Noche competitiva",
-      displayOrder: 1,
       kind: "COMPETITION",
+      eventDate: "2027-02-06",
     });
     const { rows: categories } = await client.query(
       "INSERT INTO event_category(event_id,name,code,display_order) VALUES($1,'Primera','PRIMERA',1) RETURNING id",

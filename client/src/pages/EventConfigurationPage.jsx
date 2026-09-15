@@ -8,6 +8,8 @@ const errorMessages = {
   EVENT_LOCKED: "El evento esta abierto y su configuracion ya no puede modificarse.",
   RESOURCE_CONFLICT: "El codigo o el orden ya esta en uso.",
   VALIDATION_ERROR: "Revisa los datos ingresados.",
+  NIGHT_DATE_REQUIRED: "La jornada debe tener una fecha.",
+  NIGHT_DATE_DUPLICATE: "Ya existe una jornada con esa fecha en este evento.",
 };
 
 export function EventConfigurationPage({
@@ -27,7 +29,7 @@ export function EventConfigurationPage({
   const save = async (path, body, { form, method = "POST", onSaved, reset = method === "POST" } = {}) => {
     try {
       const saved = await apiRequest(path, { method, body: JSON.stringify(body) });
-      onSaved?.(saved);
+      await onSaved?.(saved);
       setReadinessRevision((revision) => revision + 1);
       setMessage("Cambios guardados.");
       if (reset) form?.reset();
@@ -38,13 +40,20 @@ export function EventConfigurationPage({
     }
   };
 
+  const refreshNights = async () => {
+    try {
+      const data = await apiRequest(`/api/v1/events/${event.id}/nights`);
+      setNights(data);
+    } catch {
+      setMessage("No se pudieron recargar las jornadas.");
+    }
+  };
+
   const submit = (path, toBody, onSaved, method = "POST") => async (formEvent) => {
     formEvent.preventDefault();
     const form = formEvent.currentTarget;
     await save(path, toBody(new FormData(form)), { form, method, onSaved });
   };
-
-  const replace = (setter) => (saved) => setter((current) => current.map((entry) => entry.id === saved.id ? { ...entry, ...saved } : entry));
 
   return (
     <PageShell layer="instrument" className="admin-shell">
@@ -72,22 +81,20 @@ export function EventConfigurationPage({
       <section className="config-section">
         <div className="section-heading"><h2>Jornadas</h2><p>Calendario de la competencia.</p></div>
         <form className="config-card" onSubmit={submit(`/api/v1/events/${event.id}/nights`, (data) => ({
-          name: data.get("name"), displayOrder: Number(data.get("displayOrder")), kind: data.get("kind"), eventDate: data.get("eventDate") || null,
-        }), (saved) => setNights((current) => [...current, saved]))}>
+          name: data.get("name"), kind: data.get("kind"), eventDate: data.get("eventDate") || null,
+        }), refreshNights)}>
           <h3>Nueva jornada</h3>
           <label>Nombre de jornada<input name="name" disabled={locked} required /></label>
-          <label>Orden<input name="displayOrder" type="number" min="1" defaultValue="1" disabled={locked} required /></label>
-          <label>Fecha<input name="eventDate" type="date" disabled={locked} /></label>
+          <label>Fecha<input name="eventDate" type="date" disabled={locked} required /></label>
           <label>Tipo<select name="kind" disabled={locked}><option value="COMPETITION">Competencia</option><option value="AWARDS">Premios</option></select></label>
           <button disabled={locked}>Agregar jornada</button>
         </form>
         <div className="records-grid">
           {nights.map((night) => <form className="record" key={night.id} onSubmit={submit(`/api/v1/nights/${night.id}`, (data) => ({
-            name: data.get("name"), displayOrder: Number(data.get("displayOrder")), kind: data.get("kind"), eventDate: data.get("eventDate") || null,
-          }), replace(setNights), "PATCH")}>
+            name: data.get("name"), kind: data.get("kind"), eventDate: data.get("eventDate") || null,
+          }), refreshNights, "PATCH")}>
             <label>Editar jornada {night.name}<input name="name" defaultValue={night.name} disabled={locked} required /></label>
-            <label>Orden<input name="displayOrder" type="number" min="1" defaultValue={night.displayOrder} disabled={locked} required /></label>
-            <label>Fecha<input name="eventDate" type="date" defaultValue={night.eventDate?.slice?.(0, 10) ?? ""} disabled={locked} /></label>
+            <label>Fecha<input name="eventDate" type="date" defaultValue={night.eventDate?.slice?.(0, 10) ?? ""} disabled={locked} required /></label>
             <label>Tipo<select name="kind" defaultValue={night.kind} disabled={locked}><option value="COMPETITION">Competencia</option><option value="AWARDS">Premios</option></select></label>
             <button disabled={locked}>Guardar {night.name}</button>
           </form>)}

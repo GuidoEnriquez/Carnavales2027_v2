@@ -66,9 +66,44 @@ test("la API ADMIN gestiona eventos y jornadas, y bloquea eventos OPEN", {
     const createNight = await fetch(`${baseUrl}/api/v1/events/${event.id}/nights`, {
       method: "POST",
       headers: { "content-type": "application/json", "x-test-session": "admin" },
-      body: JSON.stringify({ name: "Premios", displayOrder: 1, kind: "AWARDS" }),
+      body: JSON.stringify({ name: "Premios", kind: "AWARDS", eventDate: "2027-02-12" }),
     });
     assert.equal(createNight.status, 201);
+    const firstNight = await createNight.json();
+    assert.equal(firstNight.displayOrder, 1);
+
+    const createCompetitionNight = await fetch(`${baseUrl}/api/v1/events/${event.id}/nights`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-test-session": "admin" },
+      body: JSON.stringify({ name: "Noche", kind: "COMPETITION", eventDate: "2027-02-06" }),
+    });
+    assert.equal(createCompetitionNight.status, 201);
+    const secondNight = await createCompetitionNight.json();
+    assert.equal(secondNight.displayOrder, 1, "crear una noche mas temprana la coloca primera");
+
+    const duplicateDate = await fetch(`${baseUrl}/api/v1/events/${event.id}/nights`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-test-session": "admin" },
+      body: JSON.stringify({ name: "Duplicada", kind: "COMPETITION", eventDate: "2027-02-06" }),
+    });
+    assert.equal(duplicateDate.status, 409);
+    assert.deepEqual(await duplicateDate.json(), { code: "NIGHT_DATE_DUPLICATE" });
+
+    const missingDate = await fetch(`${baseUrl}/api/v1/events/${event.id}/nights`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-test-session": "admin" },
+      body: JSON.stringify({ name: "Sin fecha", kind: "COMPETITION" }),
+    });
+    assert.equal(missingDate.status, 400);
+    assert.deepEqual(await missingDate.json(), { code: "NIGHT_DATE_REQUIRED" });
+
+    const updateNight = await fetch(`${baseUrl}/api/v1/nights/${secondNight.id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json", "x-test-session": "admin" },
+      body: JSON.stringify({ name: "Noche", kind: "COMPETITION", eventDate: "2027-02-20" }),
+    });
+    assert.equal(updateNight.status, 200);
+    assert.equal((await updateNight.json()).displayOrder, 2, "retrasar la fecha reordena el conjunto");
 
     const getEvent = await fetch(`${baseUrl}/api/v1/events/${event.id}`, {
       headers: { "x-test-session": "admin" },
@@ -79,7 +114,9 @@ test("la API ADMIN gestiona eventos y jornadas, y bloquea eventos OPEN", {
       headers: { "x-test-session": "admin" },
     });
     assert.equal(listNights.status, 200);
-    assert.equal((await listNights.json()).length, 1);
+    const storedNights = await listNights.json();
+    assert.equal(storedNights.length, 2);
+    assert.deepEqual(storedNights.map(({ id }) => id), [firstNight.id, secondNight.id]);
 
     const updateEvent = await fetch(`${baseUrl}/api/v1/events/${event.id}`, {
       method: "PATCH",
