@@ -247,6 +247,19 @@ describe("Design System Tokens (Spec 020 / RF-176, RF-177)", () => {
     expect(components).toMatch(/@media\s*\(max-width:\s*480px\)\s*\{\s*\.ballot-bottom-bar/);
   });
 
+  it("evita que el rail desktop de la planilla desborde con nombres extensos", () => {
+    const index = readFileSync(resolve(__dirname, "../index.css"), "utf8");
+    expect(index).toMatch(/\.ballot-context-rail\s*\{[\s\S]*?min-inline-size:\s*0;[\s\S]*?overflow-y:\s*auto;[\s\S]*?overflow-x:\s*hidden;/);
+    expect(index).toMatch(/\.ballot-summary-item\s*\{[\s\S]*?min-inline-size:\s*0;[\s\S]*?max-inline-size:\s*100%;/);
+    expect(index).toMatch(/\.ballot-summary-name\s*\{[\s\S]*?text-overflow:\s*ellipsis;[\s\S]*?white-space:\s*nowrap;/);
+  });
+
+  it("alinea el shell operativo ligeramente hacia la izquierda en desktop amplio", () => {
+    const index = readFileSync(resolve(__dirname, "../index.css"), "utf8");
+    expect(index).toMatch(/@media\s*\(min-width:\s*80rem\)[\s\S]*?\.judge-operation-shell\s*\{[\s\S]*?margin-inline-start:\s*max\(0px, calc\(\(100% - 1160px\) \/ 2 - 198px\)\);/);
+    expect(index).toMatch(/\.app-navigation\.judge-navigation\s*\{[\s\S]*?max-inline-size:\s*1160px;[\s\S]*?margin-inline-start:\s*max\(0px, calc\(\(100% - 1160px\) \/ 2 - 198px\)\);/);
+  });
+
   it("garantiza altura física estable (68px) y foco visible accesible en botones de puntaje", () => {
     const components = readFileSync(resolve(__dirname, "../styles/components.css"), "utf8");
     const btn = components.match(/\.score-option-btn\s*\{([^{}]*)\}/)?.[1] ?? "";

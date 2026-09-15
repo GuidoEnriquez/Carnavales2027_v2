@@ -53,6 +53,9 @@ function ballotHref(troupe) {
   return `#/judge/ballot?ballotId=${troupe.ballotId}&troupeId=${encodeURIComponent(troupe.troupeId)}`;
 }
 
+function isTroupeEvaluated(troupe) {
+  return troupe.status === "SUBMITTED" || (troupe.total > 0 && troupe.resolved >= troupe.total);
+}
 
 export function JudgeHomePage({ session }) {
   const profile = session?.judgeProfile;
@@ -110,10 +113,13 @@ export function JudgeHomePage({ session }) {
   }, [profile?.registrationStatus, session?.user?.id]);
 
   const troupes = ballots.flatMap((ballot) => ballot.troupes || []);
-  const closed = troupes.filter((troupe) => troupe.status === "SUBMITTED").length;
+  const evaluated = troupes.filter(isTroupeEvaluated).length;
   const resolved = troupes.reduce((sum, troupe) => sum + troupe.resolved, 0);
   const total = troupes.reduce((sum, troupe) => sum + troupe.total, 0);
-  const progress = total > 0 ? Math.round((resolved / total) * 100) : 0;
+  const allSubmitted = ballots.length > 0 && ballots.every((ballot) => ballot.status === "SUBMITTED");
+  const readyBallots = ballots.filter((ballot) =>
+    ["OPEN", "REOPENED"].includes(ballot.status) && ballot.total > 0 && ballot.resolved >= ballot.total,
+  );
 
   const getState = (troupe, isLocked) => {
     if (isLocked) return { label: "En espera", icon: "🔒", className: "is-locked", statusKey: "LOCKED" };
@@ -129,13 +135,13 @@ export function JudgeHomePage({ session }) {
     const locked = isTroupeLockedInSequence(index, troupes);
     return { troupe, index, locked, state: getState(troupe, locked) };
   });
-  const isActionable = (entry) => !entry.locked && entry.troupe.status !== "SUBMITTED";
+  const isActionable = (entry) => !entry.locked && !isTroupeEvaluated(entry.troupe) && entry.troupe.resolved < entry.troupe.total;
   const actionable = entries.filter(isActionable);
   const currentEntry = actionable.find((entry) => entry.troupe.resolved > 0)
     ?? actionable[0]
     ?? null;
-  const evaluatedEntries = entries.filter((entry) => entry.troupe.status === "SUBMITTED");
-  const upcomingEntries = entries.filter((entry) => entry.troupe.status !== "SUBMITTED" && entry !== currentEntry);
+  const evaluatedEntries = entries.filter((entry) => isTroupeEvaluated(entry.troupe));
+  const upcomingEntries = entries.filter((entry) => !isTroupeEvaluated(entry.troupe) && entry !== currentEntry);
   const hasLockedUpcoming = upcomingEntries.some((entry) => entry.locked);
 
   const currentRemaining = currentEntry ? currentEntry.troupe.total - currentEntry.troupe.resolved : 0;
@@ -155,14 +161,14 @@ export function JudgeHomePage({ session }) {
           value={resolved}
           max={total}
           label="Progreso de la noche"
-          sublabel={`${closed} de ${troupes.length} comparsas confirmadas`}
+          sublabel={`${evaluated} de ${troupes.length} comparsas evaluadas`}
         />
-        {progress === 100 && troupes.length > 0 && (
+        {allSubmitted && troupes.length > 0 && (
           <div className="judge-completion-message">
             <span className="completion-icon" aria-hidden="true">✓</span>
             <div>
-              <strong>Votación completada</strong>
-              <p>Confirmaste las {troupes.length} comparsas asignadas.</p>
+              <strong>Planillas confirmadas</strong>
+              <p>La evaluación de las {troupes.length} comparsas está confirmada.</p>
               <p>No tenés votaciones pendientes.</p>
             </div>
           </div>
@@ -199,11 +205,29 @@ export function JudgeHomePage({ session }) {
                   />
                   {currentRemaining > 1 && <p className="judge-now-remaining">Faltan {currentRemaining} puntuaciones</p>}
                   {currentRemaining === 1 && <p className="judge-now-remaining">Falta 1 puntuación</p>}
-                  {currentRemaining === 0 && <p className="judge-now-remaining">Todos los ítems puntuados. Revisá y confirmá la planilla.</p>}
                   <a className="button-link judge-now-cta" href={ballotHref(currentEntry.troupe)}>
                     {currentCta}
                   </a>
                 </article>
+              </section>
+            )}
+            {readyBallots.length > 0 && (
+              <section aria-label="Planillas listas para confirmar" className="judge-evaluated">
+                <h2 className="judge-section-title">Revisión final pendiente</h2>
+                <p className="judge-note">Completaste todos los ítems de estas planillas. Revisalas y confirmalas para finalizar.</p>
+                <ul className="judge-list">
+                  {readyBallots.map((ballot) => (
+                    <li key={ballot.id} className="judge-list-row">
+                      <div className="judge-list-main">
+                        <h3>{ballot.nightName} · {ballot.specialtyName}</h3>
+                        <p>Evaluación completa · Planilla sin confirmar</p>
+                      </div>
+                      <a className="button-link secondary judge-list-action" href={`#/judge/ballot?ballotId=${ballot.id}`}>
+                        Revisar planilla →
+                      </a>
+                    </li>
+                  ))}
+                </ul>
               </section>
             )}
             {(evaluatedEntries.length > 0 || upcomingEntries.length > 0) && (
@@ -217,10 +241,10 @@ export function JudgeHomePage({ session }) {
                       <span className="judge-list-check" aria-hidden="true">✓</span>
                       <div className="judge-list-main">
                         <h3>{entry.troupe.troupeName}</h3>
-                        <p>Planilla confirmada</p>
+                        <p>{entry.troupe.status === "SUBMITTED" ? "Planilla confirmada" : "Evaluación completa"}</p>
                       </div>
                       <a className="button-link secondary judge-list-action" href={ballotHref(entry.troupe)}>
-                        Ver planilla →
+                        {entry.troupe.status === "SUBMITTED" ? "Ver planilla →" : "Ver evaluación →"}
                       </a>
                     </li>
                   ))}

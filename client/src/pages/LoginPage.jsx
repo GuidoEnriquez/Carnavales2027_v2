@@ -265,10 +265,10 @@ export function LoginPage({ onAuthenticated }) {
         {step === "credentials" ? (
           <form onSubmit={submitCredentials}>
             <label className="login-field-label">
-              Usuario / DNI
+              Correo electrónico
               <div className="login-input-wrapper">
                 <span className="login-input-icon" aria-hidden="true"><UserIcon /></span>
-                <input name="email" type="text" autoComplete="username" placeholder="Ingrese su identificador" required />
+                <input name="email" type="email" autoComplete="email" placeholder="nombre@correo.com" required />
               </div>
             </label>
             <label className="login-field-label">

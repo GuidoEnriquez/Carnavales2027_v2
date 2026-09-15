@@ -14,6 +14,7 @@
 | Subsanación | Los registros existentes se conservan como historial. | El procedimiento operativo se difiere a escrutinio. |
 | Reapertura | Reemplazada por Spec 006. | No se permiten reaperturas nuevas; las históricas pueden finalizar. |
 | Secreto | Un jurado solo ve sus scores. Admin ve estado sin puntajes. Veedor ve conteos. | No se exponen totales, rankings ni scores de otros jurados. |
+| Apertura de jornada en UI (2026-09-15) | La mesa de control (`AdminVotingPage`) expone "Abrir jornada" cuando la noche seleccionada está en `DRAFT`: llama al `PATCH /api/v1/nights/:id` existente con los valores vigentes más `status: OPEN` y recarga el listado. "Abrir votación" queda deshabilitado hasta que la jornada esté en `OPEN`, con indicador de estado visible. Sin endpoints ni reglas nuevas; el servidor sigue exigiendo evento `OPEN` y jornada `OPEN` para `voting/open`. | Flujo evento `OPEN` → jornada `OPEN` → votación `OPEN` operable sin consola y sin errores evitables. |
 | Actas | I3 no genera actas. | Quedan para un incremento SDD posterior. |
 | Rubros nominativos vs aleatorios | I3 no los diferencia. La distinción queda pendiente para un futuro incremento de penalizaciones. | Todos los rubros se puntúan igual en I3. |
 
