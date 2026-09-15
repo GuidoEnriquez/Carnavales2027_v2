@@ -50,9 +50,9 @@ describe("Recupero y cambio de contraseña", () => {
     fireEvent.change(screen.getByLabelText("Correo"), { target: { value: "a@example.test" } });
     fireEvent.click(screen.getByRole("button", { name: "Enviar enlace" }));
     expect(await screen.findByText("Revisá tu correo")).toBeInTheDocument();
-    expect(apiRequest).toHaveBeenCalledWith("/api/auth/forget-password", {
+    expect(apiRequest).toHaveBeenCalledWith("/api/auth/request-password-reset", {
       method: "POST",
-      body: JSON.stringify({ email: "a@example.test", redirectTo: "/#/reset-password" }),
+      body: JSON.stringify({ email: "a@example.test", redirectTo: "http://localhost:3000/#/reset-password" }),
     });
   });
 

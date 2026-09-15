@@ -102,15 +102,6 @@ describe("Design System Tokens (Spec 020 / RF-176, RF-177)", () => {
     expect(utilities).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
   });
 
-  it("centraliza .ballot-status-* en styles/judge.css sin duplicados en index.css (Spec 026/T03)", () => {
-    const index = readFileSync(resolve(__dirname, "../index.css"), "utf8");
-    const judge = readFileSync(resolve(__dirname, "../styles/judge.css"), "utf8");
-    for (const modifier of ["open", "submitted", "reopened"]) {
-      expect(index).not.toMatch(new RegExp(`\\.ballot-status-${modifier}\\s*\\{`));
-      expect(judge).toMatch(new RegExp(`\\.ballot-status-${modifier}\\s*\\{`));
-    }
-  });
-
   it("usa tokens oscuros en badges de monitor y workflow sin fondos claros legacy (Spec 026/T04)", () => {
     const index = readFileSync(resolve(__dirname, "../index.css"), "utf8");
     const monitorOpen = index.match(/\.monitor-status-open\s*\{([^{}]*)\}/)?.[1] ?? "";

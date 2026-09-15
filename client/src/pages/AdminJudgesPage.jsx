@@ -227,9 +227,9 @@ export function AdminJudgesPage() {
                         setBusy(`${judge.id}-reset`);
                         setMessage("");
                         try {
-                          await apiRequest("/api/auth/forget-password", {
+                          await apiRequest("/api/auth/request-password-reset", {
                             method: "POST",
-                            body: JSON.stringify({ email: judge.email, redirectTo: "/#/reset-password" }),
+                            body: JSON.stringify({ email: judge.email, redirectTo: `${window.location.origin}/#/reset-password` }),
                           });
                           setMessage("Enlace enviado.");
                         } catch {

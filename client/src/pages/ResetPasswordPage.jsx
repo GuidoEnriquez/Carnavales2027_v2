@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { apiRequest } from "../api/http.js";
 import { PageShell } from "../components/PageShell.jsx";
+import { PasswordField } from "../components/PasswordField.jsx";
 
 export function ResetPasswordPage({ token }) {
   const [password, setPassword] = useState("");
@@ -52,12 +53,8 @@ export function ResetPasswordPage({ token }) {
     <PageShell>
       <h1>Definir nueva contraseña</h1>
       <form onSubmit={submit}>
-        <label>Nueva contraseña
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
-        </label>
-        <label>Repetir contraseña
-          <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />
-        </label>
+        <PasswordField label="Nueva contraseña" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
+        <PasswordField label="Repetir contraseña" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />
         <button type="submit" disabled={loading}>Guardar contraseña</button>
       </form>
       {message && <p role="status">{message}</p>}
