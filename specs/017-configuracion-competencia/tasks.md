@@ -102,7 +102,7 @@
 **RF:** RF-153, RF-154, RF-155, RF-156, RF-157; RNF-33, RNF-34.
 **Alcance:** `PATCH /events/:id/schedule/reorder` (`{nightId, orderedIds[], reason?}`) habilitado en `OPEN` solo con ADMIN+2FA, motivo obligatorio (422 sin motivo) y cero ballots en la jornada (409 con votacion iniciada); en `CONFIGURING` mantiene reglas vigentes sin motivo. Auditoria append-only `NIGHT_TROUPE_SCHEDULE_REORDERED`. UI Subir/Bajar + motivo en mesa de control (`AdminVotingPage`), no en Competencia. Sin tocar votacion/puntajes/resultados.
 **Hecho cuando:** tests API (OPEN con motivo OK; sin motivo 422; con ballots 409; sin 2FA 403; CONFIGURING sin motivo OK) y tests cliente en verde; suites API + cliente + build + `git diff --check` sin fallos.
-**Estado:** En curso (automatica 2026-09-12).
+**Estado:** En curso (automatica 2026-09-12). Visibilidad solo-cuando-corresponde agregada el 2026-09-15: la seccion se oculta con votacion iniciada (`total > 0`), sin cambio de reglas; test de regresion en verde, suite cliente y build OK. Comprobacion manual pendiente.
 
 ## T09d - Eliminacion logica rotulada Eliminar (2026-09-14)
 

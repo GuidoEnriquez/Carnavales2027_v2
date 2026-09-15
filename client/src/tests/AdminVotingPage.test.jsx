@@ -174,4 +174,23 @@ describe("AdminVotingPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Confirmar reorden" }));
     expect(await screen.findByText("Indicá el motivo del reorden para continuar.")).toBeInTheDocument();
   });
+
+  it("oculta el reorden cuando la jornada ya inició votación", async () => {
+    const troupes = [
+      { scheduleId: "s-1", troupeName: "Ara Berá", presentationOrder: 1 },
+      { scheduleId: "s-2", troupeName: "Porambá", presentationOrder: 2 },
+    ];
+    apiRequest.mockImplementation((path) => {
+      if (path === "/api/v1/events") return Promise.resolve([{ id: "event-1", name: "Carnaval", status: "OPEN" }]);
+      if (path === "/api/v1/events/event-1/nights") return Promise.resolve([{ id: "night-1", name: "Noche 1", kind: "COMPETITION", status: "OPEN" }]);
+      if (path.endsWith("/voting/status")) return Promise.resolve({ nightId: "night-1", nightStatus: "OPEN", counts: { OPEN: 2, SUBMITTED: 0, REOPENED: 0 }, total: 2, troupes });
+      if (path.endsWith("/voting/ballots")) return Promise.resolve([]);
+      return Promise.resolve({});
+    });
+    render(<AdminVotingPage />);
+
+    expect(await screen.findByRole("heading", { name: "Control de pista y orden de pasada" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Reorden de pasada" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Confirmar reorden" })).not.toBeInTheDocument();
+  });
 });
