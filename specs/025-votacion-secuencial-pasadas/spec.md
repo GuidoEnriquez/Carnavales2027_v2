@@ -2,7 +2,7 @@
 
 ## Estado
 
-- **Fase SDD:** Especificación propuesta / Plan a implementar (pendiente de aprobación de desarrollo).
+- **Fase SDD:** Especificación APROBADA (decisión de producto 2026-09-15: se vota en orden de pasada, sin salteos). Implementada y validada.
 - **Fuente:** Solicitud directa de usuario (2026-09-08); Specs 003, 004, 007, 009, 013, 020 y 021.
 - **Relación:** Complementa la Planilla de Jurado v3 (Spec 021) y el Control de Votación de Administración (Spec 003 y 020). Garantiza que los jurados no elijan arbitrariamente qué comparsa puntuar, sino que sigan rigurosamente el orden cronológico de salida a pista (`presentation_order`).
 
