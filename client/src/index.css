@@ -944,7 +944,7 @@ button.button-link:disabled {
 .ballot-header h1 { font-family: var(--font-sans); font-size: clamp(1.5rem, 4vw, 2.25rem); line-height: 1.05; letter-spacing: -0.02em; }
 .back-link { display: inline-flex; min-block-size: 2.75rem; align-items: center; margin-block-end: 0.5rem; color: var(--accent-light); font-size: 0.9rem; font-weight: 750; text-decoration: none; }
 .ballot-header-status { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.5rem; }
-/* .ballot-status-* — fuente única en styles/judge.css (Spec 026/T03). */
+/* .ballot-status-* — definidos en index.css (judge.css huérfana eliminada, Spec 026/T11). */
 .ballot-progress { margin-block-end: 1rem; border-inline-start: 5px solid var(--accent-primary); background: linear-gradient(145deg, var(--surface-card), var(--accent-subtle)); }
 .sync-panel { border-color: var(--border-subtle); background: var(--surface-input); color: var(--text-muted); }
 .sync-panel strong { color: var(--success-text); }
