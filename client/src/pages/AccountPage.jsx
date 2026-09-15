@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { apiRequest } from "../api/http.js";
 import { PageShell } from "../components/PageShell.jsx";
+import { PasswordField } from "../components/PasswordField.jsx";
 
 export function AccountPage() {
   const [current, setCurrent] = useState("");
@@ -44,15 +45,9 @@ export function AccountPage() {
       <h1>Mi cuenta</h1>
       <h2>Cambiar contraseña</h2>
       <form onSubmit={submit}>
-        <label>Contraseña actual
-          <input type="password" value={current} onChange={(e) => setCurrent(e.target.value)} autoComplete="current-password" />
-        </label>
-        <label>Nueva contraseña
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
-        </label>
-        <label>Repetir nueva contraseña
-          <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />
-        </label>
+        <PasswordField label="Contraseña actual" value={current} onChange={(e) => setCurrent(e.target.value)} autoComplete="current-password" />
+        <PasswordField label="Nueva contraseña" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
+        <PasswordField label="Repetir nueva contraseña" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />
         <button type="submit" disabled={loading}>Guardar nueva contraseña</button>
       </form>
       {message && <p role="status">{message}</p>}
