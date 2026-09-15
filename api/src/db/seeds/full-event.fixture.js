@@ -16,9 +16,9 @@ export const FULL_EVENT = {
   },
 };
 
-// Fechas relativas a hoy (zona America/Argentina/Cordoba): J1 = hoy+7, J2 = hoy+8,
-// J3 = hoy+14 (mismos intervalos del fixture original). Cada seed nuevo queda
-// siempre en el futuro, listo para probar sin tocar fechas a mano.
+// Fechas relativas a hoy (zona America/Argentina/Cordoba): J1 = hoy, J2 = mañana,
+// J3 = hoy+7 (mismos intervalos del fixture original). Cada seed nuevo queda
+// listo para probar el mismo día, sin tocar fechas a mano.
 function relativeNightDate(daysAhead) {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: FULL_EVENT.timezone, year: "numeric", month: "2-digit", day: "2-digit",
@@ -26,9 +26,9 @@ function relativeNightDate(daysAhead) {
   return parts; // YYYY-MM-DD
 }
 export const FULL_NIGHTS = [
-  { code: "J1", name: "Primera Jornada Puntuable", order: 1, date: relativeNightDate(7) },
-  { code: "J2", name: "Segunda Jornada Puntuable", order: 2, date: relativeNightDate(8) },
-  { code: "J3", name: "Tercera Jornada Puntuable", order: 3, date: relativeNightDate(14) },
+  { code: "J1", name: "Primera Jornada Puntuable", order: 1, date: relativeNightDate(0) },
+  { code: "J2", name: "Segunda Jornada Puntuable", order: 2, date: relativeNightDate(1) },
+  { code: "J3", name: "Tercera Jornada Puntuable", order: 3, date: relativeNightDate(7) },
 ];
 export const FULL_TROUPES = [
   { code: "TEST-ARA", name: "Ará Porá" },
