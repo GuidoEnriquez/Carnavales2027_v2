@@ -119,7 +119,7 @@ export async function validateFullCarnivalEvent(client, eventId) {
 }
 
 async function insertConfiguration(client, users) {
-  const { rows: [event] } = await client.query("INSERT INTO carnival_event(name) VALUES($1) RETURNING id", [FULL_EVENT.name]);
+  const { rows: [event] } = await client.query("INSERT INTO carnival_event(name, reglamento_version) VALUES($1, $2) RETURNING id", [FULL_EVENT.name, FULL_EVENT.reglamentoVersion]);
   const eventId = event.id;
   await client.query("INSERT INTO configuration_seed(seed_key,event_id) VALUES($1,$2)", [FULL_EVENT.seedKey, eventId]);
   const { rows: [category] } = await client.query(

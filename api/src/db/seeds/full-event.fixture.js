@@ -4,6 +4,7 @@ import { NOMINATIVE_RUBRICS, RANDOM_RUBRICS } from "./full-event.catalog.js";
 export const FULL_EVENT = {
   seedKey: "carnavales-goya-2027-integral-test",
   name: "Carnavales Goyanos 2027 - Evento Integral TEST",
+  reglamentoVersion: "v1",
   year: 2027,
   timezone: "America/Argentina/Cordoba",
   firstPass: "20:30:00",

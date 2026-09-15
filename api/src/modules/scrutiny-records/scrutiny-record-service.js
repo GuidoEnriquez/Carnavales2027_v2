@@ -91,7 +91,7 @@ export async function certifyScrutinyRecord({
 
     // 3. Obtener metadatos del evento
     const { rows: eventRows } = await client.query(
-      "SELECT id, name, created_at FROM carnival_event WHERE id = $1",
+      "SELECT id, name, reglamento_version, created_at FROM carnival_event WHERE id = $1",
       [id],
     );
     if (eventRows.length === 0) {
@@ -199,6 +199,7 @@ export async function certifyScrutinyRecord({
       event: {
         id: event.id,
         name: event.name,
+        reglamentoVersion: event.reglamento_version ?? null,
       },
       certifiedAt,
       certifiedBy: {
@@ -250,10 +251,10 @@ export async function certifyScrutinyRecord({
     // 10. Persistir en official_scrutiny_record
     const { rows: inserted } = await client.query(
       `INSERT INTO official_scrutiny_record(
-         event_id, record_number, certified_by, certified_role, record_hash, payload, created_at
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING id, event_id, record_number, certified_by, certified_role, record_hash, payload, created_at`,
-      [id, recordNumber, certifierUser.id, role, recordHash, JSON.stringify(payload), certifiedAt],
+         event_id, record_number, certified_by, certified_role, record_hash, payload, reglamento_version, created_at
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING id, event_id, record_number, certified_by, certified_role, record_hash, payload, reglamento_version, created_at`,
+      [id, recordNumber, certifierUser.id, role, recordHash, JSON.stringify(payload), event.reglamento_version ?? null, certifiedAt],
     );
 
     const record = inserted[0];

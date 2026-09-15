@@ -105,6 +105,7 @@ test("evento integral: seed idempotente, horarios, apertura normal y aislamiento
     printFullEventSummary(first, (line) => lines.push(line));
     assert.ok(lines.some((line) => line.includes("0 iniciales; 9")));
     assert.ok(!lines.join("\n").includes(password));
+    assert.equal((await pool.query("SELECT reglamento_version FROM carnival_event WHERE id=$1", [eventId])).rows[0].reglamento_version, "v1");
     const audit = (await pool.query("SELECT actor_user_id,after_data FROM audit_event WHERE action='EVENT_CONFIGURED_FROM_SEED' AND entity_id=$1", [eventId])).rows;
     assert.equal(audit.length, 1);
     assert.equal(audit[0].actor_user_id, null);
