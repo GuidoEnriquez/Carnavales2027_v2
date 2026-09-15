@@ -131,6 +131,7 @@ export function AdminVotingPage() {
   const isNightDraft = selectedNight?.status === "DRAFT";
   const isNightOpen = selectedNight?.status === "OPEN";
   const runwayTroupes = [...(status?.troupes ?? [])].sort((a, b) => a.presentationOrder - b.presentationOrder);
+  const hasBallots = (status?.total ?? 0) > 0;
   const reorderView = reorderIds ?? runwayTroupes.map((troupe) => troupe.scheduleId);
 
   const moveReorder = (scheduleId, delta) => {
@@ -293,7 +294,7 @@ export function AdminVotingPage() {
           </div>
         </section>
       )}
-      {isEventOpen && runwayTroupes.length > 1 && (
+      {isEventOpen && runwayTroupes.length > 1 && !hasBallots && (
         <section className="config-section" aria-label="Reorden de pasada">
           <div className="section-heading"><div>
             <p className="eyebrow">Corrección operativa</p>

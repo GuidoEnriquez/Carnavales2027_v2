@@ -131,3 +131,7 @@ Comandos desde api/ con el preloader local aislado, salvo los del cliente:
 - Una ejecucion integral del cliente fallo en OfficialRecordPage.test.jsx:108 (137/138 aprobados); repeticion focalizada 35/35 y repeticion integral 138/138. La causa no se declara resuelta. No se modifico el modulo de actas; investigar intermitencia antes de cierre integral.
 - Nuevos controles Subir/Bajar tienen nombres accesibles, no ejecutan cambios optimistas, bloquean envios repetidos y se ocultan con OPEN. No se afirma comprobacion manual de foco/responsive/tactil.
 - Lint/typecheck siguen sin scripts configurados. T08 no cierra T04/T06 ni implementa T09, estados, versiones o reglas temporales.
+
+## T09c - Visibilidad solo-cuando-corresponde (2026-09-15)
+
+La seccion "Reorden de pasada" de la mesa de control solo se renderiza con evento `OPEN`, mas de una comparsa programada y cero planillas en la jornada (`hasBallots` desde `status.total`). Con votacion iniciada se oculta; sin cambio de reglas RF-153–157. Evidencia: focal `AdminVotingPage` 9/9 (incluye regresion "oculta el reorden cuando la jornada ya inició votación"), suite cliente 48 archivos / 328 tests en verde, build Vite 88 módulos, `git diff --check` limpio. Comprobacion manual pendiente.

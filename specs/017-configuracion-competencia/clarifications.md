@@ -51,6 +51,11 @@
 - `brandColor` no activa el filtro de secretos de auditoria (`password|token|secret|otp|authorization|cookie`): se audita como campo funcional en `TROUPE_CREATED/UPDATED` con before/after.
 - El orden de pasada se edita solo sobre filas existentes de `night_troupe_schedule` (creadas por seeds/flujo de jornadas); T09b no crea ni elimina asignaciones a jornadas, solo intercambia `presentation_order` entre vecinos de la misma `night_id`.
 - T09b no toca Spec 025: es lectura + reorden administrativo bajo `CONFIGURING`; con evento `OPEN` los controles se ocultan igual que el resto de la configuracion.
+## T09c - Visibilidad del reorden en mesa de control (2026-09-15)
+
+- La seccion "Reorden de pasada" de `AdminVotingPage` se muestra solo cuando el reorden es viable: evento `OPEN`, mas de una comparsa programada en la jornada y cero planillas creadas en ella (`total` del estado de votacion en 0).
+- Con votacion iniciada la seccion se oculta (el servidor ya la rechazaria con `NIGHT_VOTING_STARTED`); no se muestra deshabilitada ni con error previo. Sin cambio de reglas: RF-153–157 intactos.
+
 ## T09d - Eliminacion logica (2026-09-14)
 
 - `Eliminar` es rotulo UX de baja logica (`active=false`); nunca `DELETE` fisico ni tabla de archivo. Una sola fuente de verdad por entidad.
