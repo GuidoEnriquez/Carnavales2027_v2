@@ -52,11 +52,17 @@ export function AdminVotingPage() {
     }).catch(() => setMessage("No se pudieron cargar los eventos."));
   }, [adminEvent]);
 
+  const loadNights = async (selectedEventId = eventId) => {
+    if (!selectedEventId) return [];
+    const items = await apiRequest(`/api/v1/events/${selectedEventId}/nights`);
+    const competitionNights = items.filter((night) => night.kind === "COMPETITION");
+    setNights(competitionNights);
+    return competitionNights;
+  };
+
   useEffect(() => {
     if (!eventId) return;
-    void apiRequest(`/api/v1/events/${eventId}/nights`).then((items) => {
-      const competitionNights = items.filter((night) => night.kind === "COMPETITION");
-      setNights(competitionNights);
+    void loadNights().then((competitionNights) => {
       setNightId(competitionNights[0]?.id ?? "");
       setStatus(null);
       setBallots([]);
@@ -93,6 +99,7 @@ export function AdminVotingPage() {
       const messages = {
         EVENT_NOT_OPEN: "El evento debe estar abierto para habilitar la votación.",
         NIGHT_NOT_OPEN: "La noche no está disponible para votar.",
+        NIGHT_NOT_FOUND: "La jornada seleccionada ya no existe.",
         NIGHT_SCHEDULE_EMPTY: "Programá comparsas en la jornada antes de abrir la votación.",
       };
       setMessage(messages[error.code] ?? "No se pudo completar la operación.");
@@ -101,8 +108,28 @@ export function AdminVotingPage() {
     }
   };
 
+  const openNight = () => void action("open-night", async () => {
+    const night = nights.find((item) => item.id === nightId);
+    if (!night) throw new Error("NIGHT_NOT_FOUND");
+    const updated = await apiRequest(`/api/v1/nights/${nightId}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        name: night.name,
+        displayOrder: night.displayOrder,
+        kind: night.kind,
+        eventDate: night.eventDate ?? null,
+        status: "OPEN",
+      }),
+    });
+    await loadNights();
+    return updated;
+  }, () => "Jornada abierta.");
+
   const selectedEvent = events.find((event) => event.id === eventId);
   const isEventOpen = selectedEvent?.status === "OPEN";
+  const selectedNight = nights.find((night) => night.id === nightId);
+  const isNightDraft = selectedNight?.status === "DRAFT";
+  const isNightOpen = selectedNight?.status === "OPEN";
   const runwayTroupes = [...(status?.troupes ?? [])].sort((a, b) => a.presentationOrder - b.presentationOrder);
   const reorderView = reorderIds ?? runwayTroupes.map((troupe) => troupe.scheduleId);
 
@@ -168,8 +195,8 @@ export function AdminVotingPage() {
         <div><span>Total</span><strong>{status?.total ?? 0}</strong></div>
       </section>
       <section className="config-section">
-        <div className="section-heading"><div><h2>Ventana de votación</h2><p>La apertura crea las planillas pendientes. El cierre exige que todas estén completas y confirma las que sigan en carga.</p></div></div>
-        <div className="event-actions"><button type="button" disabled={Boolean(busy)} onClick={() => void action("open", () => apiRequest(`/api/v1/events/${eventId}/nights/${nightId}/voting/open`, { method: "POST" }), (result) => `${result.ballotsCreated} planilla(s) habilitada(s).`)}>Abrir votación</button><button ref={closeButtonRef} className="danger-action" type="button" disabled={Boolean(busy)} onClick={() => void action("close", () => apiRequest(`/api/v1/events/${eventId}/nights/${nightId}/voting/close`, { method: "POST" }), (result) => `${result.autoSubmitted} planilla(s) confirmada(s) al cerrar.`)}>Cerrar votación</button></div>
+        <div className="section-heading"><div><h2>Ventana de votación</h2><p>La jornada debe estar abierta antes de habilitar la votación. La apertura crea las planillas pendientes. El cierre exige que todas estén completas y confirma las que sigan en carga.</p></div>{selectedNight && <StatusPill status={selectedNight.status} />}</div>
+        <div className="event-actions">{isNightDraft && <button type="button" disabled={Boolean(busy)} onClick={openNight}>Abrir jornada</button>}<button type="button" disabled={Boolean(busy) || !isNightOpen} title={isNightOpen ? undefined : "Abrí la jornada para habilitar la votación."} onClick={() => void action("open", () => apiRequest(`/api/v1/events/${eventId}/nights/${nightId}/voting/open`, { method: "POST" }), (result) => `${result.ballotsCreated} planilla(s) habilitada(s).`)}>Abrir votación</button><button ref={closeButtonRef} className="danger-action" type="button" disabled={Boolean(busy)} onClick={() => void action("close", () => apiRequest(`/api/v1/events/${eventId}/nights/${nightId}/voting/close`, { method: "POST" }), (result) => `${result.autoSubmitted} planilla(s) confirmada(s) al cerrar.`)}>Cerrar votación</button></div>
       </section>
       {status?.troupes && status.troupes.length > 0 && (
         <section className="config-section runway-control-section" aria-label="Control de pista y orden de pasada">
@@ -289,7 +316,7 @@ export function AdminVotingPage() {
             })}
           </ol>
           <label>Motivo del reorden<input value={reorderReason} onChange={(event) => setReorderReason(event.target.value)} aria-label="Motivo del reorden" placeholder="Ej.: intercambio acordado entre comparsas" /></label>
-          <div className="event-actions"><button type="button" disabled={reorderBusy || !reorderIds} onClick={() => void confirmReorder()}>Confirmar reorden</button></div>
+          <div className="event-actions u-mt-4"><button type="button" disabled={reorderBusy || !reorderIds} onClick={() => void confirmReorder()}>Confirmar reorden</button></div>
         </section>
       )}
       <section className="assignment-grid" aria-label="Planillas de la noche">

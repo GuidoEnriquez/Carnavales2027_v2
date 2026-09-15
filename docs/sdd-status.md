@@ -1,6 +1,6 @@
 # Estado SDD — Carnavales2027_v2
 
-> Estado actualizado: 2026-09-10. Esta nota distingue implementación, validación automatizada y validación manual; las specs y validaciones son la evidencia detallada.
+> Estado actualizado: 2026-09-15. Esta nota distingue implementación, validación automatizada y validación manual; las specs y validaciones son la evidencia detallada. Los trabajos del 2026-09-15 están commiteados en la rama `feat/manual-closures-and-seeds` (ver sección dedicada más abajo).
 
 ## Incrementos completados
 
@@ -33,7 +33,16 @@
 | Spec 025 | Votación secuencial por orden de pasada: bloqueo por `presentation_order`, guardia anti-URL directa, banner de continuidad, defensa backend `TROUPE_PRECEDENCE_REQUIRED` (409) y control de pista en vivo. **[NECESITA ACLARACIÓN]:** `spec.md` la declara "propuesta / pendiente de aprobación" mientras `tasks.md` marca las 4 fases `[x]` y `validation.md` la declara "100% Cerrada". Hasta resolver la contradicción, se registra como propuesta con evidencia no aprobada. | `specs/025-votacion-secuencial-pasadas/validation.md` |
 | Spec 026 | Optimización de diseño sin framework (deuda técnica): inventario, CSS muerto, fuente única `.ballot-status-*`, badges monitor/workflow a tokens, resultados/portal a tokens, `utilities.css`, `PageShell` + `DialogFooter` con adopción 100%, test `EventCard`, veredicto fundado de no-aplica para `useApiResource`. T01–T10 validadas (T11 pendiente: reconciliación de `judge.css` huérfana, requiere navegador). | `specs/026-optimizacion-diseno/validation.md` |
 | Spec 027 | Rediseño UX del Panel Administrador: fundaciones compartidas, dashboard, configuración, competencia, operación/cierre, evento activo global, separación Eventos/Competencia y catálogo visual de eventos. G0–G4 validadas automáticamente; comprobación manual responsive/teclado/táctil pendiente. | `specs/027-admin-ux-redesign/validation.md` |
-| Spec 028 | Panel del jurado por jerarquía (AHORA/EVALUADAS/PRÓXIMAS) + planilla un-ítem-por-vez con tablet-first, rail desktop único, resumen contextual y readonly como resumen. Ratifica supersesión de RF-184/RF-188/RF-189 de Spec 021. Validada automáticamente y con comprobación manual de viewports aprobada (2026-09-11). Cerrada. | `specs/028-panel-jurado-jerarquia/validation.md` |
+| Spec 028 | Panel del jurado por jerarquía (AHORA/EVALUADAS/PRÓXIMAS) + planilla un-ítem-por-vez con tablet-first, rail desktop único, resumen contextual y readonly como resumen. Ratifica supersesión de RF-184/RF-188/RF-189 de Spec 021. Validada automáticamente y con comprobación manual de viewports aprobada (2026-09-11). Cerrada. FIX-HOME/FIX-RAIL/FIX-SHELL del 2026-09-15 (RF-HOME-01–04, rail sin desborde, alineación desktop): validados automáticamente, comprobación manual pendiente. | `specs/028-panel-jurado-jerarquia/validation.md` |
+
+## Trabajo del 2026-09-15 (rama `feat/manual-closures-and-seeds`)
+
+- Login (`LoginPage.jsx`): etiqueta `Usuario / DNI` → `Correo electrónico`, input `type="email"`. Solo copia: el backend ya era exclusivamente email (`/api/auth/sign-in/email`). Sin cambio de reglas.
+- Asignaciones (`AdminAssignmentsPage.jsx`): corrección de `ReferenceError: Cannot access 'selectedNight' before initialization` que rompía la página al existir asignaciones inactivas (p. ej. tras Reemplazar jurado). Con test de regresión.
+- Mesa de control (`AdminVotingPage.jsx`, Spec 003): botón `Abrir jornada` (PATCH `/api/v1/nights/:id` con `status: OPEN`) visible con jornada en `DRAFT`, indicador de estado, y `Abrir votación` deshabilitado hasta jornada `OPEN`. Decisión registrada en `specs/003-votacion-planillas/clarifications.md`; sin endpoints ni reglas nuevas.
+- Spec 028 FIX-HOME/FIX-RAIL/FIX-SHELL (RF-HOME-01–04): completas a EVALUADAS con consulta, AHORA solo con pendientes, revisión por planilla, contador de evaluadas, rail sin desborde horizontal y alineación desktop compartida logo/planilla. `spec.md`, `clarifications.md` y `plan.md` nuevos/actualizados; `tasks.md` y `validation.md` con evidencia.
+- Entorno local (no versionado): `api/.env` con SMTP Gmail `smtp.gmail.com:587` + STARTTLS; base local nueva `carnavales2027_v2_integral_20260915` con seed integral cargado (evento `OPEN`, reglamento `v1`); base anterior conservada. Red local con fallos intermitentes de DNS/SMTP el 2026-09-15 (Gmail reachable vía DNS público).
+- Evidencia 2026-09-15: suite cliente 48 archivos / 327 tests en verde, build Vite 88 módulos exitoso, `git diff --check` limpio, sin secretos. Comprobación manual en navegador de los cambios de UI pendiente.
 
 ## Estado del working tree (2026-09-10)
 

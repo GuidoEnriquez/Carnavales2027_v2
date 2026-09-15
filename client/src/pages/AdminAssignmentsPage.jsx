@@ -113,6 +113,8 @@ export function AdminAssignmentsPage() {
       (assignment) => assignment.status === "ACTIVE" && sameNight(assignment, night) && sameSpecialty(assignment, specialty),
     );
 
+  const selectedNight = nights.find((night) => night.id === nightId);
+
   const inactiveForNight = data.assignments.filter(
     (assignment) => assignment.status !== "ACTIVE" && (nightId === "" || (selectedNight ? sameNight(assignment, selectedNight) : assignment.nightId === nightId)),
   );
@@ -175,7 +177,6 @@ export function AdminAssignmentsPage() {
     }
   };
 
-  const selectedNight = nights.find((night) => night.id === nightId);
   const assignNight = assignTarget ? nights.find((night) => night.id === assignTarget.nightId) : null;
   const assignSpecialty = assignTarget ? specialties.find((specialty) => specialty.id === assignTarget.specialtyId) : null;
   const quotaNight = quotaTarget ? nights.find((night) => night.id === quotaTarget.nightId) : null;

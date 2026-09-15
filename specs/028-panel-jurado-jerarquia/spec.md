@@ -18,7 +18,7 @@
 
 ### Incluye
 
-1. Home: protagonista única (primera accionable con progreso, si no la primera habilitada), EVALUADAS compacta con acción secundaria, PRÓXIMAS compacta sin botones disabled y explicación única del orden de pasada, CTA primario único, progreso "X de Y comparsas confirmadas".
+1. Home: protagonista única con ítems pendientes (primera accionable con progreso, si no la primera habilitada pendiente), EVALUADAS compacta con acción secundaria, PRÓXIMAS compacta sin botones disabled y explicación única del orden de pasada, CTA primario único, progreso "X de Y comparsas evaluadas" separado de la confirmación de planillas.
 2. Ballot: tarjeta única como flujo principal (se elimina toggle tarjeta/lista y lista completa), header compacto con comparsa activa, progreso "X de N puntuaciones · %", navegación Anterior/Ítem X de N/Siguiente integrada al contenido, resuelto compacto ("N puntos / Decisión registrada").
 3. Táctil tablet-first (64px en 768–1120), mobile 390 sin overflow, desktop con rail lateral único sticky (navegación + resumen, hijos estáticos), resumen contextual con salto por `activeItemIndex`, banner "Lista para revisar", readonly como resumen de lectura, hint de atajos solo desktop.
 4. Sin indicador online/sync: no existe fuente real (Spec 012); prohibido simularlo.
@@ -46,3 +46,28 @@
 - Un ítem activo por vez; sin lista simultánea; progreso simplificado; navegación integrada; faltantes y submit intactos.
 - Tablet prioritaria, mobile sin overflow, desktop con contexto sin cambiar el modelo.
 - Suite cliente y build en verde (salvo fallos preexistentes de entorno documentados en validación).
+
+## Corrección aprobada de jerarquía — 2026-09-15
+
+Fuente: captura del panel con dos comparsas completas y solicitud explícita
+de corregir los errores visuales. Alcance acotado al home y sus estilos.
+
+- **RF-HOME-01:** AHORA solo destaca comparsas habilitadas con ítems pendientes.
+  Una comparsa con `total > 0 && resolved >= total`, o planilla `SUBMITTED`,
+  pertenece a EVALUADAS, nunca a PRÓXIMAS ni a AHORA.
+- **RF-HOME-02:** las completas de planillas aún abiertas muestran "Evaluación
+  completa" y "Ver evaluación →"; las `SUBMITTED` conservan "Planilla confirmada"
+  y "Ver planilla →". No se crea confirmación por comparsa.
+- **RF-HOME-03:** el contador muestra comparsas evaluadas; la barra sigue
+  representando ítems resueltos. Completar ítems no equivale a confirmar la
+  planilla. Cada planilla abierta íntegramente evaluada ofrece acceso al flujo
+  existente de revisión; solo todas las planillas `SUBMITTED` habilitan el
+  mensaje de confirmación final. No usar un porcentaje redondeado para ello.
+- **RF-HOME-04:** la tarjeta de progreso ocupa su ancho disponible, con etiquetas
+  separadas y wrap, sin las columnas heredadas que comprimen el encabezado.
+  Conservar capa Instrumento, tokens, foco y controles táctiles existentes.
+
+Validación: regresión de dos comparsas completas, siguiente habilitada y otra
+bloqueada; caso completo sin submit, todo SUBMITTED y avance cercano a 100%
+con pendientes; API de progreso y fallback; suite cliente y build. Comprobación
+visual de 390x844, 768x1024 y 1440x900 cuando haya navegador disponible.

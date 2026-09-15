@@ -53,6 +53,7 @@ describe("JudgeBallotPage", () => {
       expect.objectContaining({ method: "PUT" }),
     ));
 
+    await screen.findByRole("region", { name: "Lista para revisar" });
     fireEvent.click(screen.getByRole("button", { name: "Confirmar planilla" }));
     fireEvent.click(await screen.findByRole("button", { name: "Confirmar y cerrar" }));
     await waitFor(() => expect(apiRequest).toHaveBeenCalledWith(

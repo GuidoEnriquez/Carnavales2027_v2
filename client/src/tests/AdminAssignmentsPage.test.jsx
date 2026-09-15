@@ -89,6 +89,47 @@ describe("AdminAssignmentsPage", () => {
     expect(screen.getByText(/Falta cubrir el puesto de Vestuario/)).toBeInTheDocument();
   });
 
+  it("muestra el historial tras reemplazar un jurado sin romper la página", async () => {
+    let assignments = [
+      { id: "primary-1", judgeName: "Titular", judgeProfileId: "judge-1", nightId: "night-1", nightName: "Noche 1", specialtyId: "specialty-1", specialtyName: "Baile", assignmentType: "PRIMARY", status: "ACTIVE", nightStatus: "DRAFT" },
+    ];
+    apiRequest.mockImplementation((path, options) => {
+      if (path === "/api/v1/events") return Promise.resolve([{ id: "event-1", name: "Carnaval", status: "CONFIGURING" }]);
+      if (path === "/api/v1/judges") return Promise.resolve([
+        { id: "judge-1", name: "Titular", registrationStatus: "REGISTERED" },
+        { id: "judge-2", name: "Nuevo", registrationStatus: "REGISTERED" },
+      ]);
+      if (path.endsWith("/nights")) return Promise.resolve([{ id: "night-1", name: "Noche 1", kind: "COMPETITION", status: "DRAFT" }]);
+      if (path.endsWith("/specialties")) return Promise.resolve([{ id: "specialty-1", name: "Baile", active: true }]);
+      if (path.endsWith("/judge-assignments") && !options) return Promise.resolve({ quotas: [], assignments });
+      if (path === "/api/v1/judge-assignments/primary-1/replace") {
+        assignments = [
+          { id: "primary-1", judgeName: "Titular", judgeProfileId: "judge-1", nightId: "night-1", nightName: "Noche 1", specialtyId: "specialty-1", specialtyName: "Baile", assignmentType: "PRIMARY", status: "REPLACED", nightStatus: "DRAFT" },
+          { id: "primary-2", judgeName: "Nuevo", judgeProfileId: "judge-2", nightId: "night-1", nightName: "Noche 1", specialtyId: "specialty-1", specialtyName: "Baile", assignmentType: "PRIMARY", status: "ACTIVE", nightStatus: "DRAFT", replacedAssignmentId: "primary-1" },
+        ];
+        return Promise.resolve({});
+      }
+      return Promise.resolve({});
+    });
+    render(<AdminAssignmentsPage />);
+    fireEvent.click(await screen.findByRole("button", { name: "Acciones para Titular" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Reemplazar jurado" }));
+    const dialogForm = screen.getByLabelText("Motivo").closest("form");
+    fireEvent.change(dialogForm.querySelector("select[name='replacementJudgeProfileId']"), { target: { value: "judge-2" } });
+    fireEvent.change(dialogForm.querySelector("input[name='reason']"), { target: { value: "Ausente" } });
+    fireEvent.submit(dialogForm);
+
+    await waitFor(() => expect(apiRequest).toHaveBeenCalledWith(
+      "/api/v1/judge-assignments/primary-1/replace",
+      {
+        method: "POST",
+        body: JSON.stringify({ replacementJudgeProfileId: "judge-2", assignmentType: "PRIMARY", reason: "Ausente" }),
+      },
+    ));
+    expect(await screen.findByText("Historial de la noche (1)")).toBeInTheDocument();
+    expect(screen.getByText("Nuevo")).toBeInTheDocument();
+  });
+
   it("revela Suplente de solo al elegir suplente y crea la asignación", async () => {
     apiRequest.mockImplementation((path, options) => {
       if (path === "/api/v1/events") return Promise.resolve([{ id: "event-1", name: "Carnaval", status: "CONFIGURING" }]);
