@@ -7,18 +7,28 @@ export const FULL_EVENT = {
   year: 2027,
   timezone: "America/Argentina/Cordoba",
   firstPass: "20:30:00",
-  utcOffset: "-03:00", // Offset for the fictional February 2027 dates below.
+  utcOffset: "-03:00", // Offset de America/Argentina/Cordoba (sin horario de verano).
   intervalMinutes: 90,
   orderSource: "TEST_SIMULATED_DRAW",
   metadata: {
-    seed: true, fixture: "FULL_EVENT", fixtureVersion: "2027.2", officialData: false,
+    seed: true, fixture: "FULL_EVENT", fixtureVersion: "2027.3", officialData: false,
     orderType: "SIMULATED_DRAW", description: "Fixture integral para pruebas funcionales de Carnavales 2027",
   },
 };
+
+// Fechas relativas a hoy (zona America/Argentina/Cordoba): J1 = hoy+7, J2 = hoy+8,
+// J3 = hoy+14 (mismos intervalos del fixture original). Cada seed nuevo queda
+// siempre en el futuro, listo para probar sin tocar fechas a mano.
+function relativeNightDate(daysAhead) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: FULL_EVENT.timezone, year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date(Date.now() + daysAhead * 86_400_000));
+  return parts; // YYYY-MM-DD
+}
 export const FULL_NIGHTS = [
-  { code: "J1", name: "Primera Jornada Puntuable", order: 1, date: "2027-02-06" },
-  { code: "J2", name: "Segunda Jornada Puntuable", order: 2, date: "2027-02-07" },
-  { code: "J3", name: "Tercera Jornada Puntuable", order: 3, date: "2027-02-13" },
+  { code: "J1", name: "Primera Jornada Puntuable", order: 1, date: relativeNightDate(7) },
+  { code: "J2", name: "Segunda Jornada Puntuable", order: 2, date: relativeNightDate(8) },
+  { code: "J3", name: "Tercera Jornada Puntuable", order: 3, date: relativeNightDate(14) },
 ];
 export const FULL_TROUPES = [
   { code: "TEST-ARA", name: "Ará Porá" },

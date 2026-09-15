@@ -16,8 +16,11 @@ test("fixture puro: rotación determinista y medianoche local", () => {
     ["TEST-BRI", "TEST-ARA", "TEST-IMP", "TEST-YAS", "TEST-SAM", "TEST-FEN", "TEST-ALG"],
     ["TEST-ALG", "TEST-BRI", "TEST-ARA", "TEST-IMP", "TEST-YAS", "TEST-SAM", "TEST-FEN"],
   ]);
-  assert.equal(fullScheduleForNight(FULL_NIGHTS[0])[0].scheduledAt, "2027-02-06T23:30:00.000Z");
-  assert.equal(fullScheduleForNight(FULL_NIGHTS[0])[3].scheduledAt, "2027-02-07T04:00:00.000Z");
+  const firstNightUtc = `${FULL_NIGHTS[0].date}T23:30:00.000Z`;
+  const firstNightLateUtc = new Date(`${FULL_NIGHTS[0].date}T23:30:00.000Z`);
+  firstNightLateUtc.setUTCMinutes(firstNightLateUtc.getUTCMinutes() + 270);
+  assert.equal(fullScheduleForNight(FULL_NIGHTS[0])[0].scheduledAt, firstNightUtc);
+  assert.equal(fullScheduleForNight(FULL_NIGHTS[0])[3].scheduledAt, firstNightLateUtc.toISOString());
   for (const night of FULL_NIGHTS) {
     const schedule = fullScheduleForNight(night);
     assert.deepEqual(schedule.map((s) => s.position), [1, 2, 3, 4, 5, 6, 7]);
@@ -106,7 +109,7 @@ test("evento integral: seed idempotente, horarios, apertura normal y aislamiento
     assert.equal(audit.length, 1);
     assert.equal(audit[0].actor_user_id, null);
     assert.equal(audit[0].after_data.officialData, false);
-    assert.equal(audit[0].after_data.fixtureVersion, "2027.2");
+    assert.equal(audit[0].after_data.fixtureVersion, "2027.3");
   });
   await t.test("replay concurrente preserva UUIDs, configuración, auditoría y evento ajeno", async () => {
     const snapshot = async () => {

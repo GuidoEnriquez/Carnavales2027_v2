@@ -377,7 +377,7 @@ En una instalación nueva ejecutar primero `npm.cmd run auth:migrate`.
 El seed aplica las migraciones de dominio y crea el evento
 **Carnavales Goyanos 2027 - Evento Integral TEST** con:
 
-- Tres jornadas puntuables ficticias: 06/02, 07/02 y 13/02/2027.
+- Tres jornadas puntuables ficticias con fechas relativas al día del seed: hoy+7, hoy+8 y hoy+14 (misma separación del fixture original).
 - Ará Porá, Imperio del Sur, Yasí Berá, Samba del Paraná, Fénix, Alma Guaraní
   y Brillo de Carnaval, sin prefijo TEST en sus nombres visibles.
 - 25 rubros nominativos, 11 aleatorios y 36 ítems integrales de testing.
